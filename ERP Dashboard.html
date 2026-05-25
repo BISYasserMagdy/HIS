@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy ERP Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Segoe UI, Arial, sans-serif;
+      background: #f3f7fb;
+      color: #1f2937;
+    }
+
+    header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+    }
+
+    .header-info {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .user-info {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .user-info span {
+      font-size: 0.95rem;
+    }
+
+    .lang-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .lang-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .lang-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .lang-btn.active {
+      background: #fff;
+      color: #1d4ed8;
+    }
+
+    .home-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .home-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .container {
+      display: flex;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: #fff;
+      padding: 1.5rem;
+      border-right: 1px solid #e5e7eb;
+      height: calc(100vh - 70px);
+      position: sticky;
+      top: 70px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0;
+      background: #f3f7fb;
+      border-left: 4px solid transparent;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .nav-item:hover {
+      background: #eef5ff;
+      border-left-color: #1d4ed8;
+    }
+
+    .nav-item.active {
+      background: #dbeafe;
+      border-left-color: #1d4ed8;
+      color: #1d4ed8;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-top: 4px solid #1d4ed8;
+    }
+
+    .stat-card h3 {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    .stat-card .change {
+      font-size: 0.85rem;
+      color: #10b981;
+      margin-top: 0.5rem;
+    }
+
+    .table-container {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      margin-bottom: 2rem;
+    }
+
+    .table-header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table th {
+      background: #f3f4f6;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #1f2937;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+
+    table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      color: #4b5563;
+    }
+
+    table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #1d4ed8;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #1d4ed8;
+      background-color: #f0f4ff;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      margin-bottom: 2rem;
+    }
+
+    .card h2 {
+      color: #1d4ed8;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-in-stock {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-low {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-out {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-pending {
+      background: #dbeafe;
+      color: #0c4a6e;
+    }
+
+    .status-completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #9ca3af;
+    }
+
+    .empty-state p {
+      font-size: 1.1rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+
+    .modal-header h2 {
+      color: #1d4ed8;
+      margin: 0;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .close-btn:hover {
+      color: #1f2937;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        position: static;
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-info {
+        width: 100%;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💊 Pharmacy ERP System</h1>
+    <div class="header-info">
+      <div class="user-info">
+        <span>👤 <strong id="pharmacistName">Pharmacist</strong></span>
+      </div>
+      <a href="Home Page.html" class="home-btn">🏠 Home</a>
+      <div class="lang-buttons">
+        <button class="lang-btn active" onclick="changeLanguage('en')">English</button>
+        <button class="lang-btn" onclick="window.location.href='ERP Dashboard AR.html'">العربية</button>
+      </div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="sidebar">
+      <div class="nav-item active" onclick="showSection('dashboard')">📊 Dashboard</div>
+      <div class="nav-item" onclick="showSection('inventory')">📦 Inventory Control</div>
+      <div class="nav-item" onclick="showSection('purchases')">🛒 Purchases</div>
+      <div class="nav-item" onclick="showSection('sales')">💰 Sales</div>
+      <div class="nav-item" onclick="showSection('returns')">↩️ Returns</div>
+      <div class="nav-item" onclick="showSection('suppliers')">🏭 Suppliers</div>
+      <div class="nav-item" onclick="showSection('reports')">📈 Reports</div>
+      <div class="nav-item" onclick="showSection('settings')">⚙️ Settings</div>
+    </div>
+
+    <div class="main-content">
+      <!-- DASHBOARD SECTION -->
+      <div id="dashboard" class="section active">
+        <h2>Dashboard Overview</h2>
+        
+        <div class="dashboard-grid">
+          <div class="stat-card">
+            <h3>Total Items in Stock</h3>
+            <div class="value">1,245</div>
+            <div class="change">↑ 12 items added today</div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Low Stock Items</h3>
+            <div class="value" style="color: #f59e0b;">24</div>
+            <div class="change" style="color: #f59e0b;">Requires ordering</div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Pending Orders</h3>
+            <div class="value" style="color: #3b82f6;">8</div>
+            <div class="change">↓ 3 orders completed</div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Today's Sales</h3>
+            <div class="value" style="color: #10b981;">$4,250</div>
+            <div class="change" style="color: #10b981;">↑ 15% from yesterday</div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">Recent Transactions</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026-05-25</td>
+                <td>Sale</td>
+                <td>Aspirin 500mg</td>
+                <td>50</td>
+                <td>$150.00</td>
+                <td><span class="status-badge status-completed">Completed</span></td>
+              </tr>
+              <tr>
+                <td>2026-05-25</td>
+                <td>Purchase</td>
+                <td>Vitamin D3 1000IU</td>
+                <td>200</td>
+                <td>$180.00</td>
+                <td><span class="status-badge status-completed">Completed</span></td>
+              </tr>
+              <tr>
+                <td>2026-05-24</td>
+                <td>Return</td>
+                <td>Cough Syrup 200ml</td>
+                <td>10</td>
+                <td>$45.00</td>
+                <td><span class="status-badge status-completed">Completed</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INVENTORY SECTION -->
+      <div id="inventory" class="section">
+        <div class="card">
+          <h2>Inventory Management</h2>
+          <button class="btn btn-primary" onclick="showModal('addInventoryModal')">+ Add New Item</button>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">Current Stock</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item Code</th>
+                <th>Item Name</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>ASP-001</td>
+                <td>Aspirin 500mg</td>
+                <td>Pain Relief</td>
+                <td>450</td>
+                <td>$3.00</td>
+                <td><span class="status-badge status-in-stock">In Stock</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editItem('ASP-001')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteItem('ASP-001')">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>VIT-002</td>
+                <td>Vitamin C 500mg</td>
+                <td>Vitamins</td>
+                <td>15</td>
+                <td>$5.50</td>
+                <td><span class="status-badge status-low">Low Stock</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editItem('VIT-002')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteItem('VIT-002')">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>COF-003</td>
+                <td>Cough Syrup 200ml</td>
+                <td>Cough & Cold</td>
+                <td>0</td>
+                <td>$4.50</td>
+                <td><span class="status-badge status-out">Out of Stock</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editItem('COF-003')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteItem('COF-003')">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>VIT-004</td>
+                <td>Vitamin D3 1000IU</td>
+                <td>Vitamins</td>
+                <td>780</td>
+                <td>$2.50</td>
+                <td><span class="status-badge status-in-stock">In Stock</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editItem('VIT-004')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteItem('VIT-004')">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PURCHASES SECTION -->
+      <div id="purchases" class="section">
+        <div class="card">
+          <h2>Purchase Orders</h2>
+          <button class="btn btn-primary" onclick="showModal('addPurchaseModal')">+ New Purchase Order</button>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">Purchase Orders</div>
+          <table>
+            <thead>
+              <tr>
+                <th>PO Number</th>
+                <th>Supplier</th>
+                <th>Items</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>PO-2026-001</td>
+                <td>Prime Pharma Supplies</td>
+                <td>12</td>
+                <td>$2,450.00</td>
+                <td>2026-05-20</td>
+                <td><span class="status-badge status-completed">Received</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewPurchase('PO-2026-001')">View</button>
+                </td>
+              </tr>
+              <tr>
+                <td>PO-2026-002</td>
+                <td>Global Med Distributors</td>
+                <td>8</td>
+                <td>$1,890.00</td>
+                <td>2026-05-22</td>
+                <td><span class="status-badge status-pending">Pending</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewPurchase('PO-2026-002')">View</button>
+                </td>
+              </tr>
+              <tr>
+                <td>PO-2026-003</td>
+                <td>Quality Healthcare Ltd</td>
+                <td>15</td>
+                <td>$3,200.00</td>
+                <td>2026-05-24</td>
+                <td><span class="status-badge status-pending">Pending</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewPurchase('PO-2026-003')">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SALES SECTION -->
+      <div id="sales" class="section">
+        <div class="card">
+          <h2>Sales Records</h2>
+          <button class="btn btn-primary" onclick="showModal('addSaleModal')">+ New Sale</button>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">Today's Sales</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Amount</th>
+                <th>Time</th>
+                <th>Payment</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>INV-001</td>
+                <td>John Smith</td>
+                <td>2</td>
+                <td>$65.99</td>
+                <td>10:30 AM</td>
+                <td>Cash</td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewSale('INV-001')">View</button>
+                </td>
+              </tr>
+              <tr>
+                <td>INV-002</td>
+                <td>Maria Garcia</td>
+                <td>3</td>
+                <td>$120.50</td>
+                <td>11:15 AM</td>
+                <td>Card</td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewSale('INV-002')">View</button>
+                </td>
+              </tr>
+              <tr>
+                <td>INV-003</td>
+                <td>Healthcare Clinic</td>
+                <td>5</td>
+                <td>$340.00</td>
+                <td>02:45 PM</td>
+                <td>Invoice</td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewSale('INV-003')">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RETURNS SECTION -->
+      <div id="returns" class="section">
+        <div class="card">
+          <h2>Return Management</h2>
+          <button class="btn btn-primary" onclick="showModal('addReturnModal')">+ New Return</button>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">Return Records</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Return #</th>
+                <th>Original Invoice</th>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Reason</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>RET-001</td>
+                <td>INV-256</td>
+                <td>Cough Syrup 200ml</td>
+                <td>10</td>
+                <td>Expired Stock</td>
+                <td>$45.00</td>
+                <td><span class="status-badge status-completed">Approved</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewReturn('RET-001')">View</button>
+                </td>
+              </tr>
+              <tr>
+                <td>RET-002</td>
+                <td>INV-257</td>
+                <td>Vitamin C 500mg</td>
+                <td>5</td>
+                <td>Damaged Packaging</td>
+                <td>$27.50</td>
+                <td><span class="status-badge status-pending">Pending</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewReturn('RET-002')">View</button>
+                </td>
+              </tr>
+              <tr>
+                <td>RET-003</td>
+                <td>INV-258</td>
+                <td>Pain Relief Gel</td>
+                <td>3</td>
+                <td>Customer Request</td>
+                <td>$22.50</td>
+                <td><span class="status-badge status-completed">Approved</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="viewReturn('RET-003')">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SUPPLIERS SECTION -->
+      <div id="suppliers" class="section">
+        <div class="card">
+          <h2>Supplier Management</h2>
+          <button class="btn btn-primary" onclick="showModal('addSupplierModal')">+ Add Supplier</button>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">Registered Suppliers</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Supplier Name</th>
+                <th>Contact Person</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>City</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Prime Pharma Supplies</td>
+                <td>Ahmed Hassan</td>
+                <td>+1 (555) 123-4567</td>
+                <td>ahmed@primepharma.com</td>
+                <td>Cairo</td>
+                <td><span class="status-badge status-in-stock">Active</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editSupplier('PPS-001')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Global Med Distributors</td>
+                <td>Sarah Johnson</td>
+                <td>+1 (555) 234-5678</td>
+                <td>sarah@globalmed.com</td>
+                <td>Alexandria</td>
+                <td><span class="status-badge status-in-stock">Active</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editSupplier('GMD-001')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Quality Healthcare Ltd</td>
+                <td>Mohammed Ali</td>
+                <td>+1 (555) 345-6789</td>
+                <td>contact@qualityhealth.com</td>
+                <td>Giza</td>
+                <td><span class="status-badge status-in-stock">Active</span></td>
+                <td class="action-buttons">
+                  <button class="btn btn-secondary" onclick="editSupplier('QHL-001')">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REPORTS SECTION -->
+      <div id="reports" class="section">
+        <div class="card">
+          <h2>Reports & Analytics</h2>
+          
+          <div class="form-row" style="margin-bottom: 2rem;">
+            <input type="date" placeholder="From Date">
+            <input type="date" placeholder="To Date">
+            <button class="btn btn-primary">Generate Report</button>
+          </div>
+
+          <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h3 style="color: #1d4ed8; margin-bottom: 1rem;">Monthly Summary</h3>
+            <div class="dashboard-grid">
+              <div>
+                <strong>Total Sales:</strong> $12,450.00
+              </div>
+              <div>
+                <strong>Total Purchases:</strong> $8,320.00
+              </div>
+              <div>
+                <strong>Total Returns:</strong> $450.00
+              </div>
+              <div>
+                <strong>Net Profit:</strong> $3,680.00
+              </div>
+            </div>
+          </div>
+
+          <h3 style="color: #1d4ed8; margin-bottom: 1rem;">Available Reports</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">📊 Sales Report</button>
+            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">📦 Inventory Report</button>
+            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">💰 Financial Report</button>
+            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">📈 Trend Analysis</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS SECTION -->
+      <div id="settings" class="section">
+        <div class="card">
+          <h2>Account Settings</h2>
+          
+          <form onsubmit="saveSettings(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>First Name</label>
+                <input type="text" value="Ahmed" placeholder="First Name">
+              </div>
+              <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" value="Hassan" placeholder="Last Name">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" value="ahmed@pharmacy.com" placeholder="Email Address">
+            </div>
+
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" value="+1 (555) 123-4567" placeholder="Phone Number">
+            </div>
+
+            <h3 style="color: #1d4ed8; margin: 2rem 0 1rem;">Change Password</h3>
+
+            <div class="form-group">
+              <label>Current Password</label>
+              <input type="password" placeholder="Enter current password">
+            </div>
+
+            <div class="form-group">
+              <label>New Password</label>
+              <input type="password" placeholder="Enter new password">
+            </div>
+
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" placeholder="Confirm new password">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div id="addInventoryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Inventory Item</h2>
+        <button class="close-btn" onclick="closeModal('addInventoryModal')">×</button>
+      </div>
+      <form onsubmit="addInventory(event)">
+        <div class="form-group">
+          <label>Item Code</label>
+          <input type="text" required placeholder="e.g., ASP-001">
+        </div>
+        <div class="form-group">
+          <label>Item Name</label>
+          <input type="text" required placeholder="e.g., Aspirin 500mg">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select required>
+            <option>Pain Relief</option>
+            <option>Vitamins</option>
+            <option>Cough & Cold</option>
+            <option>Antibiotics</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" required placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Unit Price</label>
+            <input type="number" step="0.01" required placeholder="0.00">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 0.75rem;">Add Item</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="addPurchaseModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>New Purchase Order</h2>
+        <button class="close-btn" onclick="closeModal('addPurchaseModal')">×</button>
+      </div>
+      <form onsubmit="addPurchase(event)">
+        <div class="form-group">
+          <label>Supplier</label>
+          <select required>
+            <option>Prime Pharma Supplies</option>
+            <option>Global Med Distributors</option>
+            <option>Quality Healthcare Ltd</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Items (JSON format)</label>
+          <textarea required placeholder="[{&quot;item&quot;: &quot;Aspirin&quot;, &quot;quantity&quot;: 100, &quot;price&quot;: 150}]"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Expected Delivery Date</label>
+          <input type="date" required>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 0.75rem;">Create Order</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="addReturnModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Process Return</h2>
+        <button class="close-btn" onclick="closeModal('addReturnModal')">×</button>
+      </div>
+      <form onsubmit="addReturn(event)">
+        <div class="form-group">
+          <label>Original Invoice Number</label>
+          <input type="text" required placeholder="e.g., INV-001">
+        </div>
+        <div class="form-group">
+          <label>Item Name</label>
+          <input type="text" required placeholder="Item to return">
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" required placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Reason for Return</label>
+          <select required>
+            <option>Expired Stock</option>
+            <option>Damaged Packaging</option>
+            <option>Wrong Item</option>
+            <option>Customer Request</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 0.75rem;">Process Return</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const firstName = localStorage.getItem('pharmacistFirstName') || 'Ahmed';
+      const lastName = localStorage.getItem('pharmacistLastName') || 'Hassan';
+      updatePharmacistName(firstName, lastName);
+      
+      // Update form values
+      document.querySelectorAll('.section')[7].querySelectorAll('input[type="text"]')[0].value = firstName;
+      document.querySelectorAll('.section')[7].querySelectorAll('input[type="text"]')[1].value = lastName;
+    });
+
+    function updatePharmacistName(firstName, lastName) {
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : 'Pharmacist';
+      document.getElementById('pharmacistName').textContent = fullName;
+      // Store for persistence
+      localStorage.setItem('pharmacistFirstName', firstName || 'Ahmed');
+      localStorage.setItem('pharmacistLastName', lastName || 'Hassan');
+    }
+
+    function changeLanguage(lang) {
+      // Mark the button as active
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+    }
+
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      // Remove active class from all nav items
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Show selected section
+      document.getElementById(sectionId).classList.add('active');
+
+      // Add active class to clicked nav item
+      event.target.classList.add('active');
+    }
+
+    function showModal(modalId) {
+      document.getElementById(modalId).classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+
+    function addInventory(event) {
+      event.preventDefault();
+      alert('Item added successfully!');
+      closeModal('addInventoryModal');
+    }
+
+    function addPurchase(event) {
+      event.preventDefault();
+      alert('Purchase order created successfully!');
+      closeModal('addPurchaseModal');
+    }
+
+    function addReturn(event) {
+      event.preventDefault();
+      alert('Return processed successfully!');
+      closeModal('addReturnModal');
+    }
+
+    function editItem(itemCode) {
+      alert('Editing item: ' + itemCode);
+    }
+
+    function deleteItem(itemCode) {
+      if (confirm('Are you sure you want to delete this item?')) {
+        alert('Item deleted: ' + itemCode);
+      }
+    }
+
+    function viewPurchase(poNumber) {
+      alert('Viewing purchase order: ' + poNumber);
+    }
+
+    function viewSale(invoiceNum) {
+      alert('Viewing sale: ' + invoiceNum);
+    }
+
+    function viewReturn(returnNum) {
+      alert('Viewing return: ' + returnNum);
+    }
+
+    function editSupplier(supplierId) {
+      alert('Editing supplier: ' + supplierId);
+    }
+
+    function saveSettings(event) {
+      event.preventDefault();
+      const inputs = event.target.querySelectorAll('input[type="text"]');
+      const firstName = inputs[0].value.trim();
+      const lastName = inputs[1].value.trim();
+      
+      if (!firstName || !lastName) {
+        alert('Please enter both first and last name');
+        return;
+      }
+      
+      updatePharmacistName(firstName, lastName);
+      alert('Settings saved successfully!');
+    }
+
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('pharmacistFirstName');
+        localStorage.removeItem('pharmacistLastName');
+        window.location.href = 'ERP Pharmacy Sign in Page.html';
+      }
+    }
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+      const modals = document.querySelectorAll('.modal');
+      modals.forEach(modal => {
+        if (event.target === modal) {
+          modal.classList.remove('show');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
