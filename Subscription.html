@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription - Health Information System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f3f7fb;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    header a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title h2 {
+      color: #1f2937;
+      font-size: 2rem;
+      margin: 0 0 0.5rem;
+    }
+
+    .page-title p {
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .currency-note {
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: #92400e;
+    }
+
+    .currency-note strong {
+      color: #b45309;
+    }
+
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .plan-card {
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .plan-card:hover {
+      border-color: #2563eb;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15);
+      transform: translateY(-5px);
+    }
+
+    .plan-card.popular {
+      border-color: #2563eb;
+      background: linear-gradient(to bottom, #eff6ff, #fff);
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2563eb;
+      color: #fff;
+      padding: 0.3rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .plan-card h3 {
+      color: #1f2937;
+      margin: 0.5rem 0;
+      font-size: 1.3rem;
+    }
+
+    .plan-duration {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .plan-price {
+      margin: 1.5rem 0;
+    }
+
+    .price-usd {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .price-usd span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: #6b7280;
+    }
+
+    .price-egp {
+      font-size: 1.2rem;
+      color: #2563eb;
+      margin-top: 0.3rem;
+    }
+
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 1.5rem 0;
+      text-align: left;
+    }
+
+    .plan-features li {
+      padding: 0.5rem 0;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .plan-features li::before {
+      content: "✓";
+      color: #10b981;
+      font-weight: bold;
+    }
+
+    .select-btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .select-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .payment-section {
+      background: #fff;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .payment-section h3 {
+      color: #1f2937;
+      margin: 0 0 1.5rem;
+      text-align: center;
+    }
+
+    .payment-methods {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .payment-method {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .payment-method:hover {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .payment-method.selected {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .payment-method input[type="radio"] {
+      display: none;
+    }
+
+    .payment-method .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .payment-method h4 {
+      margin: 0.5rem 0;
+      color: #1f2937;
+    }
+
+    .payment-method p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .form-section {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .form-section h4 {
+      margin: 0 0 1rem;
+      color: #1f2937;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #4b5563;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      background: #10b981;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    .submit-btn:hover {
+      background: #059669;
+    }
+
+    .summary-box {
+      background: #1d4ed8;
+      color: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-box h4 {
+      margin: 0 0 1rem;
+      font-size: 1.1rem;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding-top: 1rem;
+    }
+
+    .success-message {
+      display: none;
+      background: #d1fae5;
+      border: 1px solid #10b981;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      color: #065f46;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .success-message h3 {
+      margin: 0 0 1rem;
+      color: #059669;
+    }
+
+    .fawry-logo {
+      color: #ed1c24;
+    }
+
+    .instapay-logo {
+      color: #00a651;
+    }
+
+    .orange-logo {
+      color: #ff6600;
+    }
+
+    .etisalat-logo {
+      color: #0085c3;
+    }
+
+    .visa-logo {
+      color: #1a1f71;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        justify-content: center;
+        text-align: center;
+      }
+
+      header nav {
+        margin-top: 0.75rem;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .page-title h2 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🏥 Health Information System</h1>
+    <nav>
+      <a href="index.html">← Back to Home</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div class="page-title">
+      <h2>Subscription Plans</h2>
+      <p>Choose the plan that fits your needs. All prices are shown in USD and EGP.</p>
+    </div>
+
+    <div class="currency-note">
+      💡 <strong>Exchange Rate:</strong> 1 USD ≈ 50 EGP (Egyptian Pounds)
+    </div>
+
+    <div class="plans-grid">
+      <div class="plan-card">
+        <h3>Monthly</h3>
+        <p class="plan-duration">Billed monthly</p>
+        <div class="plan-price">
+          <div class="price-usd">$5<span>/month</span></div>
+          <div class="price-egp">≈ 250 EGP/month</div>
+        </div>
+        <ul class="plan-features">
+          <li>Full system access</li>
+          <li>ERP Pharmacy module</li>
+          <li>Appointment booking</li>
+          <li>Health chatbot support</li>
+        </ul>
+        <button class="select-btn" onclick="selectPlan('monthly', 5, 250)">Select Plan</button>
+      </div>
+
+      <div class="plan-card">
+        <h3>Quarterly</h3>
+        <p class="plan-duration">Billed every 3 months</p>
+        <div class="plan-price">
+          <div class="price-usd">$15<span>/3 months</span></div>
+          <div class="price-egp">≈ 750 EGP/3 months</div>
+        </div>
+        <ul class="plan-features">
+          <li>Full system access</li>
+          <li>ERP Pharmacy module</li>
+          <li>Appointment booking</li>
+          <li>Health chatbot support</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="select-btn" onclick="selectPlan('quarterly', 15, 750)">Select Plan</button>
+      </div>
+
+      <div class="plan-card">
+        <h3>Semi-Annual</h3>
+        <p class="plan-duration">Billed every 6 months</p>
+        <div class="plan-price">
+          <div class="price-usd">$30<span>/6 months</span></div>
+          <div class="price-egp">≈ 1,500 EGP/6 months</div>
+        </div>
+        <ul class="plan-features">
+          <li>Full system access</li>
+          <li>ERP Pharmacy module</li>
+          <li>Appointment booking</li>
+          <li>Health chatbot support</li>
+          <li>Priority support</li>
+          <li>Advanced analytics</li>
+        </ul>
+        <button class="select-btn" onclick="selectPlan('semiannual', 30, 1500)">Select Plan</button>
+      </div>
+
+      <div class="plan-card popular">
+        <span class="popular-badge">BEST VALUE</span>
+        <h3>Annual</h3>
+        <p class="plan-duration">Billed yearly - Save 40%</p>
+        <div class="plan-price">
+          <div class="price-usd">$60<span>/year</span></div>
+          <div class="price-egp">≈ 3,000 EGP/year</div>
+        </div>
+        <ul class="plan-features">
+          <li>Full system access</li>
+          <li>ERP Pharmacy module</li>
+          <li>Appointment booking</li>
+          <li>Health chatbot support</li>
+          <li>Priority support</li>
+          <li>Advanced analytics</li>
+          <li>Exclusive updates</li>
+        </ul>
+        <button class="select-btn" onclick="selectPlan('annual', 60, 3000)">Select Plan</button>
+      </div>
+    </div>
+
+    <div class="payment-section" id="paymentSection">
+      <h3>💳 Payment Information</h3>
+
+      <div class="summary-box" id="summaryBox" style="display: none;">
+        <h4>📋 Order Summary</h4>
+        <div class="summary-row">
+          <span>Plan:</span>
+          <span id="selectedPlanName">-</span>
+        </div>
+        <div class="summary-row">
+          <span>USD Amount:</span>
+          <span id="selectedPlanUSD">-</span>
+        </div>
+        <div class="summary-row">
+          <span>EGP Amount:</span>
+          <span id="selectedPlanEGP">-</span>
+        </div>
+      </div>
+
+      <h4 style="color: #4b5563; margin-bottom: 1rem;">Select Payment Method:</h4>
+
+      <div class="payment-methods">
+        <label class="payment-method" id="fawryMethod">
+          <input type="radio" name="payment" value="fawry" onchange="selectPayment('fawry')">
+          <div class="icon">📱</div>
+          <h4 class="fawry-logo">Fawry</h4>
+          <p>Pay via Fawry services</p>
+        </label>
+
+        <label class="payment-method" id="instapayMethod">
+          <input type="radio" name="payment" value="instapay" onchange="selectPayment('instapay')">
+          <div class="icon">💚</div>
+          <h4 class="instapay-logo">Instapay</h4>
+          <p>Instant payment service</p>
+        </label>
+
+        <label class="payment-method" id="orangeMethod">
+          <input type="radio" name="payment" value="orange" onchange="selectPayment('orange')">
+          <div class="icon">🟠</div>
+          <h4 class="orange-logo">Orange Money</h4>
+          <p>Orange Wallet payment</p>
+        </label>
+
+        <label class="payment-method" id="etisalatMethod">
+          <input type="radio" name="payment" value="etisalat" onchange="selectPayment('etisalat')">
+          <div class="icon">🔵</div>
+          <h4 class="etisalat-logo">Etisalat Cash</h4>
+          <p>Etisalat Wallet payment</p>
+        </label>
+
+        <label class="payment-method" id="visaMethod">
+          <input type="radio" name="payment" value="visa" onchange="selectPayment('visa')">
+          <div class="icon">💳</div>
+          <h4 class="visa-logo">Credit/Debit Card</h4>
+          <p>Visa, Mastercard, etc.</p>
+        </label>
+      </div>
+
+      <div class="form-section" id="cardForm">
+        <h4>💰 Card Payment Details</h4>
+        <div class="form-group">
+          <label>Cardholder Name</label>
+          <input type="text" placeholder="Name on card">
+        </div>
+        <div class="form-group">
+          <label>Card Number</label>
+          <input type="text" placeholder="1234 5678 9012 3456" maxlength="19">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Expiry Date</label>
+            <input type="text" placeholder="MM/YY" maxlength="5">
+          </div>
+          <div class="form-group">
+            <label>CVV</label>
+            <input type="text" placeholder="123" maxlength="3">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="walletForm" style="display: none;">
+        <h4>📱 Wallet Payment Details</h4>
+        <div class="form-group">
+          <label>Wallet Number (Mobile)</label>
+          <input type="text" id="walletNumber" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>Transaction Reference (Fawry Code)</label>
+          <input type="text" placeholder="Enter Fawry payment code">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 1.5rem;">
+        <label>Email Address (for receipt)</label>
+        <input type="email" id="emailInput" placeholder="your.email@example.com">
+      </div>
+
+      <button class="submit-btn" onclick="processPayment()">Complete Subscription</button>
+    </div>
+
+    <div class="success-message" id="successMessage">
+      <h3>✅ Subscription Successful!</h3>
+      <p>Thank you for subscribing to Health Information System.</p>
+      <p>Your account has been activated. Please check your email for confirmation and payment receipt.</p>
+      <button class="submit-btn" style="background: #1d4ed8; margin-top: 1rem;"
+        onclick="window.location.href='index.html'">Go to Home</button>
+    </div>
+  </div>
+
+  <script>
+    let selectedPlan = null;
+    let selectedPayment = null;
+
+    function selectPlan(plan, usd, egp) {
+      selectedPlan = { plan, usd, egp };
+
+      document.querySelectorAll('.plan-card').forEach(card => {
+        card.style.borderColor = '#e2e8f0';
+        card.style.background = '#fff';
+      });
+
+      event.target.closest('.plan-card').style.borderColor = '#2563eb';
+
+      const planNames = {
+        'monthly': 'Monthly Plan',
+        'quarterly': 'Quarterly Plan (3 Months)',
+        'semiannual': 'Semi-Annual Plan (6 Months)',
+        'annual': 'Annual Plan (Best Value)'
+      };
+
+      document.getElementById('selectedPlanName').textContent = planNames[plan];
+      document.getElementById('selectedPlanUSD').textContent = '$' + usd;
+      document.getElementById('selectedPlanEGP').textContent = egp + ' EGP';
+      document.getElementById('summaryBox').style.display = 'block';
+
+      document.getElementById('paymentSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function selectPayment(method) {
+      selectedPayment = method;
+
+      document.querySelectorAll('.payment-method').forEach(m => {
+        m.classList.remove('selected');
+      });
+
+      document.getElementById(method + 'Method').classList.add('selected');
+
+      const cardForm = document.getElementById('cardForm');
+      const walletForm = document.getElementById('walletForm');
+
+      if (method === 'visa') {
+        cardForm.style.display = 'block';
+        walletForm.style.display = 'none';
+      } else {
+        cardForm.style.display = 'none';
+        walletForm.style.display = 'block';
+
+        const walletLabels = {
+          'fawry': 'Fawry Payment Code',
+          'instapay': 'Instapay Reference',
+          'orange': 'Orange Money Reference',
+          'etisalat': 'Etisalat Cash Reference'
+        };
+        walletForm.querySelector('label:last-child').textContent = walletLabels[method] || 'Transaction Reference';
+      }
+    }
+
+    function processPayment() {
+      if (!selectedPlan) {
+        alert('Please select a subscription plan first.');
+        return;
+      }
+
+      if (!selectedPayment) {
+        alert('Please select a payment method.');
+        return;
+      }
+
+      const email = document.getElementById('emailInput').value;
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+
+      document.getElementById('paymentSection').style.display = 'none';
+      document.getElementById('successMessage').classList.add('show');
+
+      document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+
+</html>
