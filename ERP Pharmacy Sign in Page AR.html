@@ -204,6 +204,119 @@ footer {
   opacity: 0.6;
   pointer-events: none;
 }
+.forgot-password {
+  text-align: left;
+  margin-bottom: 16px;
+  margin-top: -8px;
+}
+.forgot-password a {
+  color: var(--brand-blue);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.forgot-password a:hover {
+  text-decoration: underline;
+}
+.new-user-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #d9e5f1;
+  text-align: center;
+}
+.new-user-section p {
+  color: #3a4a6f;
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+.subscribe-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--brand-blue);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--brand-blue);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+.subscribe-btn:hover {
+  background: var(--brand-blue);
+  color: #fff;
+}
+.forgot-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.forgot-modal.show {
+  display: flex;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+.modal-content h3 {
+  margin: 0 0 10px;
+  color: var(--brand-dark);
+}
+.modal-content p {
+  color: #3a4a6f;
+  margin: 0 0 20px;
+  font-size: 1rem;
+}
+.modal-content input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #c8d8f0;
+  border-radius: 10px;
+  background: #f8fbff;
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.modal-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+.modal-btn.primary {
+  background: var(--brand-blue);
+  color: #fff;
+  margin-bottom: 10px;
+}
+.modal-btn.primary:hover {
+  background: var(--brand-dark);
+}
+.modal-btn.secondary {
+  background: #e2e8f0;
+  color: #3a4a6f;
+}
+.modal-btn.secondary:hover {
+  background: #d1d5db;
+}
 </style>
 </head>
 <body>
@@ -217,6 +330,16 @@ footer {
     </div>
   </nav>
 </header>
+<div class="forgot-modal" id="forgotModal">
+  <div class="modal-content">
+    <h3>استعادة كلمة المرور</h3>
+    <p>أدخل رقم الصيدلي الخاص بك وسنرسل لك رابط إعادة تعيين كلمة المرور.</p>
+    <input type="text" id="resetPharmId" placeholder="أدخل رقم الصيدلي">
+    <input type="email" id="resetEmail" placeholder="أدخل بريدك الإلكتروني">
+    <button class="modal-btn primary" onclick="sendResetLink()">إرسال رابط الاستعادة</button>
+    <button class="modal-btn secondary" onclick="closeForgotPassword()">إلغاء</button>
+  </div>
+</div>
 <section class="banner">
   <h2>نظام الـ ERP للصيادلة</h2>
   <p>أهلاً بك في بوابة نظام الـ ERP المصممة حصراً للصيادلة المرخصين. توفر هذه الصفحة الآمنة التحكم بالمخزون وإدارة الروشتات وتتبع الموردين والتقارير مع الحفاظ على قيود الوصول للمرضى.</p>
@@ -249,42 +372,49 @@ footer {
       <input id="pharmId" type="text" placeholder="أدخل رقم الصيدلي" required>
       <label for="password">كلمة المرور</label>
       <input id="password" type="password" placeholder="أدخل كلمة المرور" required>
+      <div class="forgot-password">
+        <a href="#" onclick="showForgotPassword()">نسيت كلمة المرور؟</a>
+      </div>
       <button type="submit" id="submitBtn">تسجيل الدخول</button>
     </form>
+    <div class="new-user-section">
+      <p>جديد في نظامنا؟ اشترك الآن للوصول إلى بوابة نظام الـ ERP للصيدلية.</p>
+      <a href="Subscription.html" class="subscribe-btn">اشترك الآن</a>
+    </div>
   </div>
 </section>
 
 <script>
 document.getElementById('loginForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const pharmId = document.getElementById('pharmId').value.trim();
     const password = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('errorMessage');
     const successDiv = document.getElementById('successMessage');
     const submitBtn = document.getElementById('submitBtn');
     const form = document.getElementById('loginForm');
-    
+
     // Clear previous messages
     errorDiv.classList.remove('show');
     successDiv.classList.remove('show');
-    
+
     // Validate input
     if (!pharmId || !password) {
         errorDiv.textContent = 'يرجى إدخال رقم الصيدلي وكلمة المرور';
         errorDiv.classList.add('show');
         return;
     }
-    
+
     // Disable button and show loading state
     submitBtn.disabled = true;
     form.classList.add('loading');
-    
+
     // Create FormData for POST request
     const formData = new FormData();
     formData.append('pharmacist_id', pharmId);
     formData.append('password', password);
-    
+
     // Send login request to PHP backend
     fetch('../Back End/ERP Pharmacy System.php', {
         method: 'POST',
@@ -321,6 +451,33 @@ function changeLanguage(lang) {
     btn.classList.remove('active');
   });
   event.target.classList.add('active');
+}
+
+function showForgotPassword() {
+  document.getElementById('forgotModal').classList.add('show');
+  return false;
+}
+
+function closeForgotPassword() {
+  document.getElementById('forgotModal').classList.remove('show');
+}
+
+function sendResetLink() {
+  const pharmId = document.getElementById('resetPharmId').value.trim();
+  const email = document.getElementById('resetEmail').value.trim();
+
+  if (!pharmId || !email) {
+      alert('يرجى إدخال كل من رقم الصيدلي والبريد الإلكتروني.');
+      return;
+  }
+
+  if (!email.includes('@')) {
+      alert('يرجى إدخال بريد إلكتروني صحيح.');
+      return;
+  }
+
+  alert('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد.');
+  closeForgotPassword();
 }
 </script>
 <footer>
