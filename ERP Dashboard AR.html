@@ -507,26 +507,26 @@
         <div class="dashboard-grid">
           <div class="stat-card">
             <h3>إجمالي العناصر في المخزون</h3>
-            <div class="value">1,245</div>
-            <div class="change">↑ 12 عنصر تم إضافته اليوم</div>
+            <div class="value" id="totalStockValue">--</div>
+            <div class="change" id="totalStockChange">جاري التحميل...</div>
           </div>
 
           <div class="stat-card">
             <h3>العناصر منخفضة الكمية</h3>
-            <div class="value" style="color: #f59e0b;">24</div>
-            <div class="change" style="color: #f59e0b;">تتطلب طلب</div>
-          </div>
-
-          <div class="stat-card">
-            <h3>الطلبات المعلقة</h3>
-            <div class="value" style="color: #3b82f6;">8</div>
-            <div class="change">↓ 3 طلبات مكتملة</div>
+            <div class="value" style="color: #f59e0b;" id="lowStockValue">--</div>
+            <div class="change" style="color: #f59e0b;" id="lowStockChange">جاري التحميل...</div>
           </div>
 
           <div class="stat-card">
             <h3>مبيعات اليوم</h3>
-            <div class="value" style="color: #10b981;">4,250 ر.ع</div>
-            <div class="change" style="color: #10b981;">↑ 15% من أمس</div>
+            <div class="value" style="color: #10b981;" id="todaysSalesValue">--</div>
+            <div class="change" style="color: #10b981;">تحديث فوري</div>
+          </div>
+
+          <div class="stat-card">
+            <h3>المعاملات الحديثة</h3>
+            <div class="value" style="color: #6366f1;" id="transactionCountValue">--</div>
+            <div class="change" style="color: #6366f1;">آخر 10 مبيعات</div>
           </div>
         </div>
 
@@ -543,32 +543,7 @@
                 <th>الحالة</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2026-05-25</td>
-                <td>بيع</td>
-                <td>أسبرين 500 ملغ</td>
-                <td>50</td>
-                <td>150 ر.ع</td>
-                <td><span class="status-badge status-completed">مكتمل</span></td>
-              </tr>
-              <tr>
-                <td>2026-05-25</td>
-                <td>شراء</td>
-                <td>فيتامين D3 1000 وحدة</td>
-                <td>200</td>
-                <td>180 ر.ع</td>
-                <td><span class="status-badge status-completed">مكتمل</span></td>
-              </tr>
-              <tr>
-                <td>2026-05-24</td>
-                <td>مرتجع</td>
-                <td>شراب السعال 200 مل</td>
-                <td>10</td>
-                <td>45 ر.ع</td>
-                <td><span class="status-badge status-completed">مكتمل</span></td>
-              </tr>
-            </tbody>
+            <tbody id="transactionsBody"></tbody>
           </table>
         </div>
       </div>
@@ -594,20 +569,7 @@
                 <th>إجراء</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>ASP-001</td>
-                <td>أسبرين 500 ملغ</td>
-                <td>مسكنات الألم</td>
-                <td>450</td>
-                <td>3 ر.ع</td>
-                <td><span class="status-badge status-in-stock">في المخزون</span></td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="editItem('ASP-001')">تعديل</button>
-                  <button class="btn btn-danger" onclick="deleteItem('ASP-001')">حذف</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody id="inventoryBody"></tbody>
           </table>
         </div>
       </div>
@@ -671,19 +633,7 @@
                 <th>إجراء</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>INV-001</td>
-                <td>محمد أحمد</td>
-                <td>2</td>
-                <td>65.99 ر.ع</td>
-                <td>10:30 ص</td>
-                <td>نقد</td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="viewSale('INV-001')">عرض</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody id="salesBody"></tbody>
           </table>
         </div>
       </div>
@@ -963,6 +913,7 @@
       const firstName = localStorage.getItem('pharmacistFirstName') || 'أحمد';
       const lastName = localStorage.getItem('pharmacistLastName') || 'حسن';
       updatePharmacistName(firstName, lastName);
+      loadDashboardData();
       
       // Update form values
       document.querySelectorAll('.section')[7].querySelectorAll('input[type="text"]')[0].value = firstName;
@@ -1070,11 +1021,132 @@
       alert('تم حفظ الإعدادات بنجاح!');
     }
 
+    async function loadDashboardData() {
+      try {
+        const [statsRes, productRes, salesRes] = await Promise.all([
+          fetch('../Back End/ERP Pharmacy System.php?action=dashboard_stats'),
+          fetch('../Back End/ERP Pharmacy System.php?action=products&lang=ar'),
+          fetch('../Back End/ERP Pharmacy System.php?action=sales')
+        ]);
+        const statsData = await statsRes.json();
+        const productData = await productRes.json();
+        const salesData = await salesRes.json();
+
+        if (statsData.success) {
+          renderDashboardStats(statsData);
+          renderTransactions(statsData.transactions);
+        }
+        if (productData.success) {
+          renderInventory(productData.products);
+        }
+        if (salesData.success) {
+          renderSales(salesData.sales);
+        }
+      } catch (error) {
+        console.error('Dashboard load failed:', error);
+      }
+    }
+
+    function renderDashboardStats(data) {
+      // Total Items in Stock
+      const totalStockValue = document.getElementById('totalStockValue');
+      if (totalStockValue) {
+        totalStockValue.textContent = data.total_stock.toLocaleString();
+      }
+
+      // Low Stock Items
+      const lowStockValue = document.getElementById('lowStockValue');
+      const lowStockChange = document.getElementById('lowStockChange');
+      if (lowStockValue) {
+        lowStockValue.textContent = data.low_stock_count;
+        lowStockChange.textContent = data.low_stock_count > 0 ? 'تتطلب طلب' : 'جميع العناصر متوفرة';
+      }
+
+      // Today's Sales
+      const todaysSalesValue = document.getElementById('todaysSalesValue');
+      if (todaysSalesValue) {
+        todaysSalesValue.textContent = parseFloat(data.todays_sales).toFixed(2) + ' ر.ع';
+      }
+
+      // Transaction Count
+      const transactionCountValue = document.getElementById('transactionCountValue');
+      if (transactionCountValue) {
+        transactionCountValue.textContent = data.transactions ? data.transactions.length : 0;
+      }
+    }
+
+    function renderInventory(products) {
+      const tbody = document.getElementById('inventoryBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      products.forEach(product => {
+        const statusClass = product.quantity_in_stock > 10 ? 'status-in-stock' : product.quantity_in_stock > 0 ? 'status-low' : 'status-out';
+        const statusLabel = product.quantity_in_stock > 0 ? 'متاح' : 'غير متاح';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${product.code}</td>
+          <td>${product.name}</td>
+          <td>${product.category}</td>
+          <td>${product.quantity_in_stock}</td>
+          <td>${product.unit_price.toFixed(2)} ر.ع</td>
+          <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+          <td class="action-buttons">
+            <button class="btn btn-secondary" onclick="editItem('${product.code}')">تعديل</button>
+            <button class="btn btn-danger" onclick="deleteItem('${product.code}')">حذف</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderSales(sales) {
+      const tbody = document.getElementById('salesBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      sales.forEach(sale => {
+        const itemCount = (sale.items || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${sale.invoice_number}</td>
+          <td>${sale.user_name || sale.user_id}</td>
+          <td>${itemCount}</td>
+          <td>${sale.total_amount.toFixed(2)} ر.ع</td>
+          <td>${new Date(sale.created_at).toLocaleString()}</td>
+          <td>نقد</td>
+          <td class="action-buttons">
+            <button class="btn btn-secondary" onclick="viewSale('${sale.invoice_number}')">عرض</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderTransactions(transactions) {
+      const tbody = document.getElementById('transactionsBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      transactions.forEach(transaction => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${new Date(transaction.created_at).toLocaleDateString('ar-EG')}</td>
+          <td>بيع</td>
+          <td>${transaction.invoice_number}</td>
+          <td>${transaction.item_count}</td>
+          <td>${transaction.total_amount.toFixed(2)} ر.ع</td>
+          <td><span class="status-badge status-completed">${transaction.status === 'completed' ? 'مكتمل' : 'معلق'}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
     function logout() {
       if (confirm('هل أنت متأكد من رغبتك في تسجيل الخروج؟')) {
         localStorage.removeItem('pharmacistFirstName');
         localStorage.removeItem('pharmacistLastName');
-        window.location.href = 'ERP Pharmacy System.html';
+        window.location.href = 'ERP Pharmacy Sign in Page AR.html';
       }
     }
 

@@ -505,26 +505,26 @@
         <div class="dashboard-grid">
           <div class="stat-card">
             <h3>Total Items in Stock</h3>
-            <div class="value">1,245</div>
-            <div class="change">↑ 12 items added today</div>
+            <div class="value" id="totalStockValue">--</div>
+            <div class="change" id="totalStockChange">Loading...</div>
           </div>
 
           <div class="stat-card">
             <h3>Low Stock Items</h3>
-            <div class="value" style="color: #f59e0b;">24</div>
-            <div class="change" style="color: #f59e0b;">Requires ordering</div>
-          </div>
-
-          <div class="stat-card">
-            <h3>Pending Orders</h3>
-            <div class="value" style="color: #3b82f6;">8</div>
-            <div class="change">↓ 3 orders completed</div>
+            <div class="value" style="color: #f59e0b;" id="lowStockValue">--</div>
+            <div class="change" style="color: #f59e0b;" id="lowStockChange">Loading...</div>
           </div>
 
           <div class="stat-card">
             <h3>Today's Sales</h3>
-            <div class="value" style="color: #10b981;">$4,250</div>
-            <div class="change" style="color: #10b981;">↑ 15% from yesterday</div>
+            <div class="value" style="color: #10b981;" id="todaysSalesValue">--</div>
+            <div class="change" id="todaysSalesChange" style="color: #10b981;">Loading...</div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Recent Transactions</h3>
+            <div class="value" style="color: #6366f1;" id="transactionCountValue">--</div>
+            <div class="change" style="color: #6366f1;">Last 10 sales</div>
           </div>
         </div>
 
@@ -541,32 +541,7 @@
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2026-05-25</td>
-                <td>Sale</td>
-                <td>Aspirin 500mg</td>
-                <td>50</td>
-                <td>$150.00</td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-              </tr>
-              <tr>
-                <td>2026-05-25</td>
-                <td>Purchase</td>
-                <td>Vitamin D3 1000IU</td>
-                <td>200</td>
-                <td>$180.00</td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-              </tr>
-              <tr>
-                <td>2026-05-24</td>
-                <td>Return</td>
-                <td>Cough Syrup 200ml</td>
-                <td>10</td>
-                <td>$45.00</td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-              </tr>
-            </tbody>
+            <tbody id="transactionsBody"></tbody>
           </table>
         </div>
       </div>
@@ -592,56 +567,7 @@
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>ASP-001</td>
-                <td>Aspirin 500mg</td>
-                <td>Pain Relief</td>
-                <td>450</td>
-                <td>$3.00</td>
-                <td><span class="status-badge status-in-stock">In Stock</span></td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="editItem('ASP-001')">Edit</button>
-                  <button class="btn btn-danger" onclick="deleteItem('ASP-001')">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>VIT-002</td>
-                <td>Vitamin C 500mg</td>
-                <td>Vitamins</td>
-                <td>15</td>
-                <td>$5.50</td>
-                <td><span class="status-badge status-low">Low Stock</span></td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="editItem('VIT-002')">Edit</button>
-                  <button class="btn btn-danger" onclick="deleteItem('VIT-002')">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>COF-003</td>
-                <td>Cough Syrup 200ml</td>
-                <td>Cough & Cold</td>
-                <td>0</td>
-                <td>$4.50</td>
-                <td><span class="status-badge status-out">Out of Stock</span></td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="editItem('COF-003')">Edit</button>
-                  <button class="btn btn-danger" onclick="deleteItem('COF-003')">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>VIT-004</td>
-                <td>Vitamin D3 1000IU</td>
-                <td>Vitamins</td>
-                <td>780</td>
-                <td>$2.50</td>
-                <td><span class="status-badge status-in-stock">In Stock</span></td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="editItem('VIT-004')">Edit</button>
-                  <button class="btn btn-danger" onclick="deleteItem('VIT-004')">Delete</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody id="inventoryBody"></tbody>
           </table>
         </div>
       </div>
@@ -727,41 +653,7 @@
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>INV-001</td>
-                <td>John Smith</td>
-                <td>2</td>
-                <td>$65.99</td>
-                <td>10:30 AM</td>
-                <td>Cash</td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="viewSale('INV-001')">View</button>
-                </td>
-              </tr>
-              <tr>
-                <td>INV-002</td>
-                <td>Maria Garcia</td>
-                <td>3</td>
-                <td>$120.50</td>
-                <td>11:15 AM</td>
-                <td>Card</td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="viewSale('INV-002')">View</button>
-                </td>
-              </tr>
-              <tr>
-                <td>INV-003</td>
-                <td>Healthcare Clinic</td>
-                <td>5</td>
-                <td>$340.00</td>
-                <td>02:45 PM</td>
-                <td>Invoice</td>
-                <td class="action-buttons">
-                  <button class="btn btn-secondary" onclick="viewSale('INV-003')">View</button>
-                </td>
-              </tr>
-            </tbody>
+            <tbody id="salesBody"></tbody>
           </table>
         </div>
       </div>
@@ -1087,6 +979,7 @@
       const firstName = localStorage.getItem('pharmacistFirstName') || 'Ahmed';
       const lastName = localStorage.getItem('pharmacistLastName') || 'Hassan';
       updatePharmacistName(firstName, lastName);
+      loadDashboardData();
       
       // Update form values
       document.querySelectorAll('.section')[7].querySelectorAll('input[type="text"]')[0].value = firstName;
@@ -1192,6 +1085,146 @@
       
       updatePharmacistName(firstName, lastName);
       alert('Settings saved successfully!');
+    }
+
+    async function loadDashboardData() {
+      try {
+        const [statsRes, productRes, salesRes] = await Promise.all([
+          fetch('../Back End/ERP Pharmacy System.php?action=dashboard_stats'),
+          fetch('../Back End/ERP Pharmacy System.php?action=products&lang=en'),
+          fetch('../Back End/ERP Pharmacy System.php?action=sales')
+        ]);
+        const statsData = await statsRes.json();
+        const productData = await productRes.json();
+        const salesData = await salesRes.json();
+
+        if (statsData.success) {
+          renderDashboardStats(statsData);
+          renderTransactions(statsData.transactions);
+        }
+        if (productData.success) {
+          renderInventory(productData.products);
+        }
+        if (salesData.success) {
+          renderSales(salesData.sales);
+        }
+      } catch (error) {
+        console.error('Dashboard load failed:', error);
+      }
+    }
+
+    function renderDashboardStats(data) {
+      // Total Items in Stock
+      const totalStockValue = document.getElementById('totalStockValue');
+      if (totalStockValue) {
+        totalStockValue.textContent = data.total_stock.toLocaleString();
+      }
+
+      // Low Stock Items
+      const lowStockValue = document.getElementById('lowStockValue');
+      const lowStockChange = document.getElementById('lowStockChange');
+      if (lowStockValue) {
+        lowStockValue.textContent = data.low_stock_count;
+        lowStockChange.textContent = data.low_stock_count > 0 ? 'Requires ordering' : 'All items in stock';
+      }
+
+      // Today's Sales - show change vs yesterday
+      const todaysSalesValue = document.getElementById('todaysSalesValue');
+      const todaysSalesChange = document.getElementById('todaysSalesChange');
+      if (todaysSalesValue && todaysSalesChange) {
+        const todaySales = parseFloat(data.todays_sales) || 0;
+        const yesterdaySales = parseFloat(data.yesterdays_sales) || 0;
+        todaysSalesValue.textContent = '$' + todaySales.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const changeVal = typeof data.sales_change === 'number' ? data.sales_change : 0;
+        if (changeVal >= 0) {
+          todaysSalesChange.innerHTML = '&#9650; ' + Math.abs(changeVal) + '% vs yesterday';
+          todaysSalesChange.style.color = '#10b981';
+          todaysSalesValue.style.color = '#10b981';
+        } else {
+          todaysSalesChange.innerHTML = '&#9660; ' + Math.abs(changeVal) + '% vs yesterday';
+          todaysSalesChange.style.color = '#ef4444';
+          todaysSalesValue.style.color = '#ef4444';
+        }
+        if (todaySales > 0 && yesterdaySales === 0) {
+          todaysSalesChange.innerHTML = 'First sale today';
+          todaysSalesChange.style.color = '#6366f1';
+          todaysSalesValue.style.color = '#10b981';
+        }
+      }
+
+      // Transaction Count
+      const transactionCountValue = document.getElementById('transactionCountValue');
+      if (transactionCountValue) {
+        transactionCountValue.textContent = data.transactions ? data.transactions.length : 0;
+      }
+    }
+
+    function renderInventory(products) {
+      const tbody = document.getElementById('inventoryBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      products.forEach(product => {
+        const status = product.quantity_in_stock > 0 ? 'In Stock' : 'Out of Stock';
+        const statusClass = product.quantity_in_stock > 10 ? 'status-in-stock' : product.quantity_in_stock > 0 ? 'status-low' : 'status-out';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${product.code}</td>
+          <td>${product.name}</td>
+          <td>${product.category}</td>
+          <td>${product.quantity_in_stock}</td>
+          <td>$${product.unit_price.toFixed(2)}</td>
+          <td><span class="status-badge ${statusClass}">${status}</span></td>
+          <td class="action-buttons">
+            <button class="btn btn-secondary" onclick="editItem('${product.code}')">Edit</button>
+            <button class="btn btn-danger" onclick="deleteItem('${product.code}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderSales(sales) {
+      const tbody = document.getElementById('salesBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      sales.forEach(sale => {
+        const record = sale.items || [];
+        const itemCount = record.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${sale.invoice_number}</td>
+          <td>${sale.user_name || sale.user_id}</td>
+          <td>${itemCount}</td>
+          <td>$${sale.total_amount.toFixed(2)}</td>
+          <td>${new Date(sale.created_at).toLocaleString()}</td>
+          <td>Cash</td>
+          <td class="action-buttons">
+            <button class="btn btn-secondary" onclick="viewSale('${sale.invoice_number}')">View</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderTransactions(transactions) {
+      const tbody = document.getElementById('transactionsBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      transactions.forEach(transaction => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+          <td>Sale</td>
+          <td>${transaction.invoice_number}</td>
+          <td>${transaction.item_count}</td>
+          <td>$${transaction.total_amount.toFixed(2)}</td>
+          <td><span class="status-badge status-completed">${transaction.status}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
     }
 
     function logout() {

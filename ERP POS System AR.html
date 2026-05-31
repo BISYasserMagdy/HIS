@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>نظام POS للصيدلية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Cairo', Arial, Helvetica, sans-serif;
+      background: #eef3fb;
+      color: #102a43;
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-actions a,
+    .header-actions button {
+      color: #fff;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .header-actions a:hover,
+    .header-actions button:hover {
+      background: rgba(255,255,255,0.28);
+    }
+
+    .hero {
+      padding: 28px 28px 16px;
+      display: grid;
+      row-gap: 14px;
+      text-align: right;
+    }
+
+    .hero h2 {
+      font-size: 2.2rem;
+      color: #071a3d;
+    }
+
+    .hero p {
+      max-width: 880px;
+      line-height: 1.7;
+      color: #334155;
+    }
+
+    .content {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 28px 32px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .info-box {
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .pos-grid {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: 1.5fr 1fr;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      padding: 22px;
+    }
+
+    .panel h3 {
+      margin-bottom: 14px;
+      color: #102a43;
+    }
+
+    .product-list,
+    .cart-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .product,
+    .cart-item {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .product strong,
+    .cart-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #102a43;
+    }
+
+    .product span,
+    .cart-item span {
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    .product button,
+    .checkout-btn {
+      border: none;
+      border-radius: 12px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 16px;
+      cursor: pointer;
+    }
+
+    .product button:hover,
+    .checkout-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .cart-summary {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .cart-summary div {
+      display: flex;
+      justify-content: space-between;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .cart-summary .total {
+      font-size: 1.3rem;
+      color: #0f172a;
+    }
+
+    .empty-cart {
+      color: #64748b;
+      padding: 18px 16px;
+      background: #f8fafc;
+      border-radius: 14px;
+      text-align: center;
+      border: 1px dashed #cbd5e1;
+    }
+
+    footer {
+      padding: 20px 28px;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>نظام POS للصيدلية</h1>
+    <div class="header-actions">
+      <a href="ERP Pharmacy Sign in Page AR.html">العودة إلى تسجيل الدخول</a>
+      <button onclick="signOut()">تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h2>نظام نقاط البيع للموظفين</h2>
+    <p>بوابة POS للموظفين تتيح إضافة منتجات وإتمام البيع وتسجيل المعاملة في لوحة تحكم الـ ERP.</p>
+  </section>
+
+  <main class="content">
+    <div class="info-box" id="welcomeBox">
+      <strong id="employeeWelcome">مرحباً، موظف</strong>
+      <p>اختر المنتجات من القائمة المتاحة وأكمل البيع ليتم حفظ الفاتورة في سجل المبيعات.</p>
+    </div>
+
+    <div class="pos-grid">
+      <section class="panel">
+        <h3>المنتجات المتاحة</h3>
+        <div id="productStatus" class="empty-cart" style="margin: 0 0 16px; display: none;"></div>
+        <div class="product-list" id="productList"></div>
+      </section>
+
+      <section class="panel">
+        <h3>السلة الحالية</h3>
+        <div class="cart-list" id="cartList"></div>
+        <div id="emptyCart" class="empty-cart">سلتك فارغة. أضف منتجاً للبدء.</div>
+        <div class="cart-summary">
+          <div><span>الإجمالي</span> <span id="cartTotal">0.00 ر.ع</span></div>
+          <button class="checkout-btn" onclick="checkout()">إتمام البيع</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    POS للصيدلية — الموظفون فقط. بيانات تجريبية: EMP001 / employee123، EMP002 / employee456.
+  </footer>
+
+  <script>
+    const API_BASE = encodeURI('../Back End/ERP Pharmacy System.php');
+    const products = [];
+    const cart = {};
+
+    function isFileProtocol() {
+      return window.location.protocol === 'file:';
+    }
+
+    function getApiUrl(params) {
+      return `${API_BASE}?${new URLSearchParams(params).toString()}`;
+    }
+
+    async function loadProducts() {
+      const productStatus = document.getElementById('productStatus');
+      productStatus.textContent = 'جارٍ تحميل المنتجات...';
+      productStatus.style.display = 'block';
+
+      if (isFileProtocol()) {
+        showProductLoadingMessage('افتح هذه الصفحة عبر http://localhost وليس file://.');
+        return;
+      }
+
+      try {
+        const apiUrl = getApiUrl({ action: 'products', lang: 'ar' });
+        console.log('POS product fetch URL:', apiUrl);
+        const res = await fetch(apiUrl);
+        if (!res.ok) {
+          throw new Error(`Server responded ${res.status}`);
+        }
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products)) {
+          products.splice(0, products.length, ...data.products);
+          renderProducts();
+          productStatus.textContent = `تم تحميل ${data.products.length} منتجاً من الخادم.`;
+          productStatus.style.display = 'block';
+        } else {
+          console.error('Unable to load products:', data.message || 'Empty product response');
+          showProductLoadingMessage('لم يتم العثور على منتجات. تحقق من تشغيل الخادم.');
+        }
+      } catch (error) {
+        console.error('Product load failed:', error);
+        showProductLoadingMessage(`تعذر جلب المنتجات: ${error.message}`);
+      }
+    }
+
+    function showProductLoadingMessage(message) {
+      const productList = document.getElementById('productList');
+      const productStatus = document.getElementById('productStatus');
+      productStatus.textContent = message;
+      productStatus.style.display = 'block';
+      productList.innerHTML = '';
+    }
+
+    function renderProducts() {
+      const productList = document.getElementById('productList');
+      productList.innerHTML = '';
+
+      products.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'product';
+        card.innerHTML = `
+          <div>
+            <strong>${product.name}</strong>
+            <span>الرمز: ${product.code} • ${product.quantity_in_stock} متوفر • ${product.unit_price.toFixed(2)} ر.ع</span>
+          </div>
+          <button onclick="addToCart('${product.id}')">إضافة</button>
+        `;
+        productList.appendChild(card);
+      });
+    }
+
+    function renderCart() {
+      const cartList = document.getElementById('cartList');
+      const emptyCart = document.getElementById('emptyCart');
+      const cartTotal = document.getElementById('cartTotal');
+      cartList.innerHTML = '';
+
+      const items = Object.values(cart);
+      if (!items.length) {
+        emptyCart.style.display = 'block';
+      } else {
+        emptyCart.style.display = 'none';
+      }
+
+      let total = 0;
+      items.forEach(item => {
+        total += item.quantity * item.unit_price;
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.innerHTML = `
+          <div>
+            <strong>${item.name}</strong>
+            <span>${item.quantity} × ${item.unit_price.toFixed(2)} ر.ع</span>
+          </div>
+          <button onclick="removeFromCart('${item.id}')">إزالة</button>
+        `;
+        cartList.appendChild(row);
+      });
+
+      cartTotal.textContent = `${total.toFixed(2)} ر.ع`;
+    }
+
+    function addToCart(productId) {
+      const normalizedId = String(productId);
+      const product = products.find(item => String(item.id) === normalizedId);
+      if (!product || product.quantity_in_stock <= 0) return;
+      if (!cart[normalizedId]) {
+        cart[normalizedId] = { ...product, id: normalizedId, quantity: 0 };
+      }
+      cart[normalizedId].quantity += 1;
+      renderCart();
+    }
+
+    function removeFromCart(productId) {
+      const normalizedId = String(productId);
+      if (!cart[normalizedId]) return;
+      cart[normalizedId].quantity -= 1;
+      if (cart[normalizedId].quantity <= 0) {
+        delete cart[normalizedId];
+      }
+      renderCart();
+    }
+
+    async function checkout() {
+      const items = Object.values(cart);
+      if (!items.length) {
+        alert('السلة فارغة. أضف منتجات قبل إتمام البيع.');
+        return;
+      }
+
+      const total = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+      const userId = localStorage.getItem('posEmployeeId') || 'EMP001';
+      const userName = localStorage.getItem('posEmployeeName') || 'موظف';
+      const invoiceNumber = `INV-${Date.now()}`;
+
+      const payload = {
+        action: 'submit_sale',
+        sale_data: JSON.stringify({
+          invoice_number: invoiceNumber,
+          user_id: userId,
+          user_name: userName,
+          items,
+          total_amount: total
+        })
+      };
+
+      const formData = new FormData();
+      Object.entries(payload).forEach(([key, value]) => formData.append(key, value));
+
+      const res = await fetch(API_BASE, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert('تم حفظ البيع بنجاح. رقم الفاتورة: ' + data.invoice_number);
+        Object.keys(cart).forEach(key => delete cart[key]);
+        renderCart();
+        await loadProducts();
+      } else {
+        alert(data.message || 'فشل في حفظ البيع. حاول مرة أخرى.');
+      }
+    }
+
+    function signOut() {
+      localStorage.removeItem('posEmployeeId');
+      localStorage.removeItem('posEmployeeName');
+      window.location.href = 'ERP Pharmacy Sign in Page AR.html';
+    }
+
+    function loadEmployeeName() {
+      const name = localStorage.getItem('posEmployeeName') || 'موظف';
+      document.getElementById('employeeWelcome').textContent = `مرحباً، ${name}`;
+    }
+
+    loadProducts();
+    renderCart();
+    loadEmployeeName();
+  </script>
+</body>
+</html>

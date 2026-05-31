@@ -363,13 +363,13 @@ footer {
 </section>
 <section class="section">
   <div class="login-panel">
-    <h3>دخول الصيدلي</h3>
-    <p>أدخل بيانات المستخدم الخاصة بك للمتابعة. حسابات المرضى غير مسموحة.</p>
+    <h3>دخول المستخدم</h3>
+    <p>أدخل رقم المستخدم وكلمة المرور للمتابعة. سيتم تحويل الموظفين إلى نظام الـ POS والمدراء إلى لوحة تحكم الـ ERP.</p>
     <div id="errorMessage" class="error-message"></div>
     <div id="successMessage" class="success-message"></div>
     <form id="loginForm">
-      <label for="pharmId">رقم الصيدلي</label>
-      <input id="pharmId" type="text" placeholder="أدخل رقم الصيدلي" required>
+      <label for="userId">رقم المستخدم</label>
+      <input id="userId" type="text" placeholder="أدخل رقم المستخدم" required>
       <label for="password">كلمة المرور</label>
       <input id="password" type="password" placeholder="أدخل كلمة المرور" required>
       <div class="forgot-password">
@@ -388,7 +388,7 @@ footer {
 document.getElementById('loginForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const pharmId = document.getElementById('pharmId').value.trim();
+    const userId = document.getElementById('userId').value.trim();
     const password = document.getElementById('password').value.trim();
     const errorDiv = document.getElementById('errorMessage');
     const successDiv = document.getElementById('successMessage');
@@ -400,8 +400,8 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     successDiv.classList.remove('show');
 
     // Validate input
-    if (!pharmId || !password) {
-        errorDiv.textContent = 'يرجى إدخال رقم الصيدلي وكلمة المرور';
+    if (!userId || !password) {
+        errorDiv.textContent = 'يرجى إدخال رقم المستخدم وكلمة المرور';
         errorDiv.classList.add('show');
         return;
     }
@@ -410,10 +410,13 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     submitBtn.disabled = true;
     form.classList.add('loading');
 
-    // Create FormData for POST request
+    // Determine user type by ID prefix and create FormData for POST request
+    const userType = userId.toUpperCase().startsWith('EMP') ? 'employee' : 'pharmacist';
     const formData = new FormData();
-    formData.append('pharmacist_id', pharmId);
+    formData.append('user_type', userType);
+    formData.append('user_id', userId);
     formData.append('password', password);
+    formData.append('lang', 'ar');
 
     // Send login request to PHP backend
     fetch('../Back End/ERP Pharmacy System.php', {
@@ -423,11 +426,17 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            if (data.user_type === 'employee') {
+                localStorage.setItem('posEmployeeId', userId);
+                localStorage.setItem('posEmployeeName', data.name);
+            } else {
+                localStorage.setItem('pharmacistName', data.name);
+            }
+
             successDiv.textContent = 'تم تسجيل الدخول بنجاح! جاري إعادة التوجيه...';
             successDiv.classList.add('show');
-            // Redirect to dashboard after brief delay
             setTimeout(() => {
-                window.location.href = 'ERP Dashboard AR.html';
+                window.location.href = data.redirect || 'ERP Dashboard AR.html';
             }, 1500);
         } else {
             errorDiv.textContent = data.message || 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
