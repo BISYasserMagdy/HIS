@@ -17,6 +17,13 @@
       color: #1f2937;
     }
 
+    /* Chart canvas sizing to avoid layout jumps */
+    #trendChart {
+      width: 100% !important;
+      height: 200px !important;
+      display: block;
+    }
+
     header {
       background: #1d4ed8;
       color: #fff;
@@ -468,6 +475,9 @@
       }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <header>
@@ -787,36 +797,59 @@
         <div class="card">
           <h2>Reports & Analytics</h2>
           
-          <div class="form-row" style="margin-bottom: 2rem;">
-            <input type="date" placeholder="From Date">
-            <input type="date" placeholder="To Date">
-            <button class="btn btn-primary">Generate Report</button>
+          <div class="form-row" style="margin-bottom: 2rem; gap: 8px; display:flex; align-items:center;">
+            <input id="reportStart" type="date" placeholder="From Date">
+            <input id="reportEnd" type="date" placeholder="To Date">
+            <button class="btn btn-primary" onclick="generateSummary()">Generate Summary</button>
           </div>
 
           <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
             <h3 style="color: #1d4ed8; margin-bottom: 1rem;">Monthly Summary</h3>
             <div class="dashboard-grid">
               <div>
-                <strong>Total Sales:</strong> $12,450.00
+                <strong>Total Sales:</strong> <span id="summaryTotalSales">--</span>
               </div>
               <div>
-                <strong>Total Purchases:</strong> $8,320.00
+                <strong>Total Purchases:</strong> <span id="summaryTotalPurchases">--</span>
               </div>
               <div>
-                <strong>Total Returns:</strong> $450.00
+                <strong>Total Returns:</strong> <span id="summaryTotalReturns">--</span>
               </div>
               <div>
-                <strong>Net Profit:</strong> $3,680.00
+                <strong>Net Profit:</strong> <span id="summaryNetProfit">--</span>
               </div>
             </div>
           </div>
 
           <h3 style="color: #1d4ed8; margin-bottom: 1rem;">Available Reports</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">📊 Sales Report</button>
-            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">📦 Inventory Report</button>
-            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">💰 Financial Report</button>
-            <button class="btn btn-primary" style="width: 100%; padding: 1rem;">📈 Trend Analysis</button>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items:start;">
+            <div>
+              <button class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size:0.9rem;" onclick="downloadReport('sales')">📊 Sales CSV</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="downloadReportPDF('sales')">PDF Export</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="printReport('sales')">🖨️ Print</button>
+            </div>
+            <div>
+              <button class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size:0.9rem;" onclick="downloadReport('inventory')">📦 Inventory CSV</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="downloadReportPDF('inventory')">PDF Export</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="printReport('inventory')">🖨️ Print</button>
+            </div>
+            <div>
+              <button class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size:0.9rem;" onclick="downloadReport('financial')">💰 Financial CSV</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="downloadReportPDF('financial')">PDF Export</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="printReport('financial')">🖨️ Print</button>
+            </div>
+            <div>
+              <button class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size:0.9rem;" onclick="downloadReport('trend')">📈 Trend CSV</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="downloadReportPDF('trend')">PDF Export</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-top:6px; padding:0.6rem; font-size:0.85rem;" onclick="printReport('trend')">🖨️ Print</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; background:#fff; padding:12px; border-radius:8px;">
+            <h4 style="margin:0 0 8px 0; color:#1d4ed8">Sales Trend (last 7 days)</h4>
+            <div style="height:220px;">
+              <canvas id="trendChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -973,6 +1006,23 @@
     </div>
   </div>
 
+  <div id="trendPreviewModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Sales Trend Preview</h2>
+        <button class="close-btn" onclick="closeModal('trendPreviewModal')">×</button>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <p style="margin: 0 0 0.75rem; color: #374151;">Review the generated sales trend chart for the selected date range before exporting the CSV.</p>
+        <img id="trendPreviewImage" alt="Trend Preview" style="width: 100%; max-height: 320px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #f8fafc;" />
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end; flex-wrap:wrap;">
+        <button class="btn btn-secondary" style="min-width: 140px;" onclick="closeModal('trendPreviewModal')">Cancel</button>
+        <button class="btn btn-primary" style="min-width: 140px;" onclick="downloadTrendCSV()">Download Trend CSV</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -980,6 +1030,7 @@
       const lastName = localStorage.getItem('pharmacistLastName') || 'Hassan';
       updatePharmacistName(firstName, lastName);
       loadDashboardData();
+      renderTrendChart();
       
       // Update form values
       document.querySelectorAll('.section')[7].querySelectorAll('input[type="text"]')[0].value = firstName;
@@ -1227,6 +1278,286 @@
       });
     }
 
+    async function generateSummary() {
+      const start = document.getElementById('reportStart').value || '';
+      const end = document.getElementById('reportEnd').value || '';
+      const params = new URLSearchParams();
+      if (start) params.append('start_date', start);
+      if (end) params.append('end_date', end);
+
+      try {
+        const res = await fetch('../Back End/ERP Pharmacy System.php?action=monthly_summary&' + params.toString());
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('summaryTotalSales').textContent = '$' + parseFloat(data.total_sales).toFixed(2);
+          document.getElementById('summaryTotalPurchases').textContent = '$' + parseFloat(data.total_purchases).toFixed(2);
+          document.getElementById('summaryTotalReturns').textContent = '$' + parseFloat(data.total_returns).toFixed(2);
+          document.getElementById('summaryNetProfit').textContent = '$' + parseFloat(data.net_profit).toFixed(2);
+        } else {
+          alert('Failed to load summary: ' + (data.message || 'Unknown'));
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error generating summary');
+      }
+    }
+
+    async function downloadReport(type) {
+      const start = document.getElementById('reportStart').value || '';
+      const end = document.getElementById('reportEnd').value || '';
+
+      if (type === 'trend') {
+        await showTrendPreviewModal(start, end);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      if (start) params.append('start_date', start);
+      if (end) params.append('end_date', end);
+
+      let action = '';
+      if (type === 'sales') action = 'sales_report';
+      else if (type === 'inventory') action = 'inventory_report';
+      else if (type === 'financial') action = 'financial_report';
+
+      const url = '../Back End/ERP Pharmacy System.php?action=' + action + '&' + params.toString();
+      // For CSV endpoints we just navigate to the URL to trigger download
+      window.location.href = url;
+    }
+
+    async function showTrendPreviewModal(start = '', end = '') {
+      await renderTrendChart(start, end);
+      if (!window._trendChart) {
+        alert('Unable to generate trend preview. Please try again.');
+        return;
+      }
+
+      const previewImg = document.getElementById('trendPreviewImage');
+      if (previewImg) {
+        previewImg.src = window._trendChart.toBase64Image();
+      }
+      showModal('trendPreviewModal');
+    }
+
+    function downloadTrendCSV() {
+      const start = document.getElementById('reportStart').value || '';
+      const end = document.getElementById('reportEnd').value || '';
+      const params = new URLSearchParams();
+      if (start) params.append('start_date', start);
+      if (end) params.append('end_date', end);
+
+      const url = '../Back End/ERP Pharmacy System.php?action=trend_analysis&' + params.toString();
+      closeModal('trendPreviewModal');
+      window.location.href = url;
+    }
+
+    // Embedded PNG logo used for PDF header (small, 16x16)
+    const logoDataURI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAWlBMVEUAAABkZGT///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmZmaZmZnMzMzPz8/////8AAABmZmYAAABmZmYAAAD///9mZmaZmZn///8h8v7SAAAAGnRSTlMAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0h5B9gAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAdklEQVQY02NgQAXGBiYmBjYGBgQGBgYGBkYmBiYGBgYGJmZ2Dk5uTm5uTm5uZmBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYQGRgYGBgYGBgY2BgYGBgYGAAAPK4D6m0n2QAAAAASUVORK5CYII=';
+
+    async function downloadReportPDF(type) {
+      const start = document.getElementById('reportStart').value || new Date().toISOString().split('T')[0];
+      const end = document.getElementById('reportEnd').value || new Date().toISOString().split('T')[0];
+
+      if (type === 'trend') {
+        await downloadTrendPDF(start, end);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      if (start) params.append('start_date', start);
+      if (end) params.append('end_date', end);
+      // Prefer server-side PDF endpoints (Dompdf). Fallbacks to client-side generation exist.
+      let action = '';
+      if (type === 'sales') action = 'sales_pdf';
+      else if (type === 'inventory') action = 'inventory_pdf';
+      else if (type === 'financial') action = 'financial_pdf';
+
+      const url = '../Back End/ERP Pharmacy System.php?action=' + action + '&' + params.toString();
+      // Open in new tab so downloads do not replace the current view
+      window.open(encodeURI(url), '_blank');
+    }
+
+    async function downloadTrendPDF(start = '', end = '') {
+      await renderTrendChart(start, end);
+      const canvas = document.getElementById('trendChart');
+      if (!canvas || !window._trendChart) {
+        alert('Unable to generate trend chart for PDF export.');
+        return;
+      }
+
+      const chartImage = canvas.toDataURL('image/png');
+      const trendData = window._trendChart.data.labels.map((label, index) => {
+        return [label, parseFloat(window._trendChart.data.datasets[0].data[index]).toFixed(2)];
+      });
+
+      const { jsPDF } = window.jspdf || {};
+      if (!jsPDF) {
+        alert('PDF export is unavailable because jsPDF is not loaded.');
+        return;
+      }
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const margin = 40;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const maxWidth = pageWidth - margin * 2;
+
+      doc.setFontSize(18);
+      doc.text('Sales Trend Report', margin, 50);
+      doc.setFontSize(11);
+      doc.text(`Date range: ${start || 'latest'} to ${end || 'latest'}`, margin, 70);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 86);
+
+      doc.addImage(chartImage, 'PNG', margin, 110, maxWidth, 200);
+
+      doc.autoTable({
+        startY: 330,
+        head: [['Date', 'Total Sales']],
+        body: trendData,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [29, 78, 216], textColor: 255 },
+        alternateRowStyles: { fillColor: [242, 244, 248] },
+        margin: { left: margin, right: margin }
+      });
+
+      const fileName = `trend_report_${start || 'latest'}_to_${end || 'latest'}.pdf`;
+      doc.save(fileName);
+    }
+
+    async function printReport(type) {
+      const start = document.getElementById('reportStart').value || new Date().toISOString().split('T')[0];
+      const end = document.getElementById('reportEnd').value || new Date().toISOString().split('T')[0];
+      const params = new URLSearchParams();
+      if (start) params.append('start_date', start);
+      if (end) params.append('end_date', end);
+
+      try {
+        let html = `
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { background-color: #1d4ed8; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+              h1 { margin: 0; font-size: 24px; }
+              .timestamp { font-size: 12px; margin-top: 5px; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #1d4ed8; color: white; }
+              tr:nth-child(even) { background-color: #f9fafb; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>💊 Pharmacy ERP System</h1>
+              <div class="timestamp">Report Generated: ${new Date().toLocaleString()}</div>
+            </div>
+        `;
+
+        if (type === 'sales') {
+          const res = await fetch('../Back End/ERP Pharmacy System.php?action=sales_data&' + params.toString());
+          const data = await res.json();
+          if (!data.success) throw new Error('No sales data');
+          html += '<h2>Sales Report</h2><table><thead><tr><th>Invoice</th><th>User</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+          data.sales.forEach(s => {
+            html += `<tr><td>${s.invoice_number}</td><td>${s.user_name || s.user_id}</td><td>${s.items.length}</td><td>$${parseFloat(s.total_amount).toFixed(2)}</td><td>${s.created_at.substring(0,10)}</td><td>${s.status}</td></tr>`;
+          });
+          html += '</tbody></table>';
+        } else if (type === 'inventory') {
+          const res = await fetch('../Back End/ERP Pharmacy System.php?action=products&lang=en');
+          const data = await res.json();
+          html += '<h2>Inventory Report</h2><table><thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Quantity</th><th>Unit Price</th></tr></thead><tbody>';
+          data.products.forEach(p => {
+            html += `<tr><td>${p.code}</td><td>${p.name}</td><td>${p.category}</td><td>${p.quantity_in_stock}</td><td>$${p.unit_price.toFixed(2)}</td></tr>`;
+          });
+          html += '</tbody></table>';
+        } else if (type === 'financial') {
+          const res = await fetch('../Back End/ERP Pharmacy System.php?action=monthly_summary&' + params.toString());
+          const data = await res.json();
+          html += '<h2>Financial Summary Report</h2><table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
+          html += `<tr><td>Total Sales</td><td>$${parseFloat(data.total_sales).toFixed(2)}</td></tr>`;
+          html += `<tr><td>Total Purchases</td><td>$${parseFloat(data.total_purchases).toFixed(2)}</td></tr>`;
+          html += `<tr><td>Total Returns</td><td>$${parseFloat(data.total_returns).toFixed(2)}</td></tr>`;
+          html += `<tr><td>Net Profit</td><td>$${parseFloat(data.net_profit).toFixed(2)}</td></tr>`;
+          html += '</tbody></table>';
+        } else if (type === 'trend') {
+          const res = await fetch('../Back End/ERP Pharmacy System.php?action=trend_data&' + params.toString());
+          const data = await res.json();
+          html += '<h2>Sales Trend Analysis</h2><table><thead><tr><th>Date</th><th>Total Sales</th></tr></thead><tbody>';
+          data.trend.forEach(r => {
+            html += `<tr><td>${r.day}</td><td>$${r.total.toFixed(2)}</td></tr>`;
+          });
+          html += '</tbody></table>';
+        }
+
+        html += '</body></html>';
+        const win = window.open('', '', 'height=600,width=800');
+        win.document.write(html);
+        win.document.close();
+        win.print();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to generate print view: ' + err.message);
+      }
+    }
+
+    async function renderTrendChart(start = '', end = '') {
+      try {
+        const scrollPos = window.scrollY || window.pageYOffset;
+        const params = new URLSearchParams();
+        if (start) params.append('start_date', start);
+        if (end) params.append('end_date', end);
+
+        const url = '../Back End/ERP Pharmacy System.php?action=trend_data' + (params.toString() ? '&' + params.toString() : '');
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.success) return;
+        const labels = data.trend.map(r => r.day);
+        const values = data.trend.map(r => r.total);
+        const ctx = document.getElementById('trendChart');
+        if (!ctx) return;
+        if (window._trendChart) {
+          window._trendChart.data.labels = labels;
+          window._trendChart.data.datasets[0].data = values;
+          window._trendChart.update();
+          window.scrollTo(0, scrollPos);
+          return;
+        }
+        const chartCtx = ctx.getContext('2d');
+        window._trendChart = new Chart(chartCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Daily Sales',
+              data: values,
+              borderColor: '#1d4ed8',
+              backgroundColor: 'rgba(29,78,216,0.15)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 6,
+              pointBackgroundColor: '#1d4ed8',
+              pointBorderColor: '#1d4ed8',
+              pointBorderWidth: 2,
+              spanGaps: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+              legend: { position: 'top', align: 'center' }
+            },
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+        window.scrollTo(0, scrollPos);
+      } catch (err) {
+        console.error('Trend chart failed', err);
+      }
+    }
+
     function logout() {
       if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('pharmacistFirstName');
@@ -1236,6 +1567,7 @@
     }
 
     // Close modals when clicking outside
+    let lastScrollPosition = 0;
     window.onclick = function(event) {
       const modals = document.querySelectorAll('.modal');
       modals.forEach(modal => {
@@ -1243,7 +1575,12 @@
           modal.classList.remove('show');
         }
       });
-    }
+    };
+
+    // Prevent auto-scroll when opening reports section
+    window.addEventListener('scroll', function() {
+      lastScrollPosition = window.scrollY || window.pageYOffset;
+    }, { passive: true });
   </script>
 </body>
 </html>
