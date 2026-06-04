@@ -923,12 +923,12 @@
         </div>
         <div class="form-group">
           <label>Category</label>
-          <select required>
-            <option>Pain Relief</option>
-            <option>Vitamins</option>
-            <option>Cough & Cold</option>
-            <option>Antibiotics</option>
-          </select>
+            <select required id="addInventoryCategorySelect">
+            </select>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <input id="addCategoryInput" type="text" placeholder="New category">
+              <button type="button" class="btn btn-secondary" onclick="addCategoryFromInput()">Add</button>
+            </div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -941,6 +941,55 @@
           </div>
         </div>
         <button type="submit" class="btn btn-success" style="width: 100%; padding: 0.75rem;">Add Item</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT ITEM MODAL -->
+  <div id="editItemModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Inventory Item</h2>
+        <button class="close-btn" onclick="closeModal('editItemModal')">×</button>
+      </div>
+      <form onsubmit="saveEditItem(event)">
+        <div class="form-group">
+          <label>Item Code</label>
+          <input type="text" id="editItemCode" readonly>
+        </div>
+        <div class="form-group">
+          <label>Item Name</label>
+          <input type="text" id="editItemName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unit Price</label>
+            <input type="number" step="0.01" id="editUnitPrice" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="editStatusSelect">
+              <option>In Stock</option>
+              <option>Low Stock</option>
+              <option>Out of Stock</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <select id="editCategorySelect"></select>
+          <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+            <input id="editAddCategoryInput" type="text" placeholder="New category">
+            <button type="button" class="btn btn-secondary" onclick="addCategoryFromInput('edit')">Add</button>
+          </div>
+          <div id="categoryListForEdit" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+        </div>
+
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('editItemModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Save Changes</button>
+        </div>
       </form>
     </div>
   </div>
@@ -1079,33 +1128,7 @@
       document.getElementById(modalId).classList.remove('show');
     }
 
-    function addInventory(event) {
-      event.preventDefault();
-      alert('Item added successfully!');
-      closeModal('addInventoryModal');
-    }
-
-    function addPurchase(event) {
-      event.preventDefault();
-      alert('Purchase order created successfully!');
-      closeModal('addPurchaseModal');
-    }
-
-    function addReturn(event) {
-      event.preventDefault();
-      alert('Return processed successfully!');
-      closeModal('addReturnModal');
-    }
-
-    function editItem(itemCode) {
-      alert('Editing item: ' + itemCode);
-    }
-
-    function deleteItem(itemCode) {
-      if (confirm('Are you sure you want to delete this item?')) {
-        alert('Item deleted: ' + itemCode);
-      }
-    }
+    // Inventory editing functions implemented further below (renderInventory, edit/save handlers)
 
     function viewPurchase(poNumber) {
       alert('Viewing purchase order: ' + poNumber);
@@ -1213,19 +1236,34 @@
     function renderInventory(products) {
       const tbody = document.getElementById('inventoryBody');
       if (!tbody) return;
+      // keep products globally available for editing
+      window._products = products || window._products || [];
+
+      // Initialize categories if needed
+      if (!window._categories) {
+        window._categories = ['Pain Relief', 'Vitamins', 'Cough & Cold', 'Antibiotics'];
+      }
+      // Merge categories from products
+      window._products.forEach(p => {
+        if (p.category && !window._categories.includes(p.category)) window._categories.push(p.category);
+      });
+
+      renderCategories();
+
       tbody.innerHTML = '';
 
-      products.forEach(product => {
-        const status = product.quantity_in_stock > 0 ? 'In Stock' : 'Out of Stock';
-        const statusClass = product.quantity_in_stock > 10 ? 'status-in-stock' : product.quantity_in_stock > 0 ? 'status-low' : 'status-out';
+      window._products.forEach(product => {
+        const computedStatus = product.quantity_in_stock > 10 ? 'In Stock' : product.quantity_in_stock > 0 ? 'Low Stock' : 'Out of Stock';
+        const statusText = product._statusOverride || computedStatus;
+        const statusClass = statusText === 'In Stock' ? 'status-in-stock' : statusText === 'Low Stock' ? 'status-low' : 'status-out';
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${product.code}</td>
           <td>${product.name}</td>
           <td>${product.category}</td>
           <td>${product.quantity_in_stock}</td>
-          <td>$${product.unit_price.toFixed(2)}</td>
-          <td><span class="status-badge ${statusClass}">${status}</span></td>
+          <td>$${(parseFloat(product.unit_price) || 0).toFixed(2)}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
           <td class="action-buttons">
             <button class="btn btn-secondary" onclick="editItem('${product.code}')">Edit</button>
             <button class="btn btn-danger" onclick="deleteItem('${product.code}')">Delete</button>
@@ -1233,6 +1271,150 @@
         `;
         tbody.appendChild(row);
       });
+    }
+
+    function renderCategories() {
+      const addSelect = document.getElementById('addInventoryCategorySelect');
+      const editSelect = document.getElementById('editCategorySelect');
+      if (addSelect) {
+        addSelect.innerHTML = '';
+        window._categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          addSelect.appendChild(opt);
+        });
+      }
+      if (editSelect) {
+        editSelect.innerHTML = '';
+        window._categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          editSelect.appendChild(opt);
+        });
+      }
+
+      const list = document.getElementById('categoryListForEdit');
+      if (list) {
+        list.innerHTML = '';
+        window._categories.forEach(cat => {
+          const pill = document.createElement('div');
+          pill.style.display = 'inline-flex';
+          pill.style.alignItems = 'center';
+          pill.style.padding = '6px 8px';
+          pill.style.background = '#f3f4f6';
+          pill.style.borderRadius = '999px';
+          pill.style.fontSize = '0.85rem';
+          pill.style.gap = '6px';
+          const span = document.createElement('span');
+          span.textContent = cat;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-danger';
+          btn.style.padding = '4px 6px';
+          btn.style.fontSize = '0.75rem';
+          btn.textContent = 'Delete';
+          btn.addEventListener('click', () => deleteCategory(cat));
+          pill.appendChild(span);
+          pill.appendChild(btn);
+          list.appendChild(pill);
+        });
+      }
+    }
+
+    function addCategoryFromInput(mode) {
+      const inputId = mode === 'edit' ? 'editAddCategoryInput' : 'addCategoryInput';
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) return alert('Enter a category name');
+      if (!window._categories) window._categories = [];
+      if (!window._categories.includes(val)) {
+        window._categories.push(val);
+        renderCategories();
+      }
+      input.value = '';
+    }
+
+    function deleteCategory(name) {
+      if (!confirm('Delete category "' + name + '"? This will not change existing items.')) return;
+      window._categories = window._categories.filter(c => c !== name);
+      renderCategories();
+    }
+
+    function editItem(itemCode) {
+      const product = (window._products || []).find(p => p.code === itemCode);
+      if (!product) return alert('Product not found: ' + itemCode);
+      document.getElementById('editItemCode').value = product.code;
+      document.getElementById('editItemName').value = product.name;
+      document.getElementById('editUnitPrice').value = parseFloat(product.unit_price).toFixed(2);
+      renderCategories();
+      const editSelect = document.getElementById('editCategorySelect');
+      if (editSelect) editSelect.value = product.category || window._categories[0] || '';
+      const status = product._statusOverride || (product.quantity_in_stock > 10 ? 'In Stock' : product.quantity_in_stock > 0 ? 'Low Stock' : 'Out of Stock');
+      const statusSelect = document.getElementById('editStatusSelect');
+      if (statusSelect) statusSelect.value = status;
+      showModal('editItemModal');
+    }
+
+    function saveEditItem(event) {
+      event.preventDefault();
+      const code = document.getElementById('editItemCode').value;
+      const name = document.getElementById('editItemName').value.trim();
+      const price = parseFloat(document.getElementById('editUnitPrice').value) || 0;
+      const category = document.getElementById('editCategorySelect').value;
+      const status = document.getElementById('editStatusSelect').value;
+      const product = (window._products || []).find(p => p.code === code);
+      if (!product) return alert('Product not found');
+      product.name = name;
+      product.unit_price = price;
+      product.category = category;
+      product._statusOverride = status;
+      renderInventory(window._products);
+      closeModal('editItemModal');
+    }
+
+    function addInventory(event) {
+      event.preventDefault();
+      const modal = document.getElementById('addInventoryModal');
+      const textInputs = modal.querySelectorAll('input[type="text"]');
+      const code = (textInputs[0] && textInputs[0].value.trim()) || '';
+      const name = (textInputs[1] && textInputs[1].value.trim()) || '';
+      const category = document.getElementById('addInventoryCategorySelect').value || '';
+      const numberInputs = modal.querySelectorAll('input[type="number"]');
+      const quantity = parseInt(numberInputs[0].value) || 0;
+      const price = parseFloat(numberInputs[1].value) || 0;
+      if (!code || !name) return alert('Please provide code and name');
+      if (!window._products) window._products = [];
+      // prevent duplicate codes
+      if (window._products.find(p => p.code === code)) return alert('Item code already exists');
+      const newProduct = { code, name, category, quantity_in_stock: quantity, unit_price: price };
+      window._products.push(newProduct);
+      if (!window._categories.includes(category)) window._categories.push(category);
+      renderInventory(window._products);
+      closeModal('addInventoryModal');
+      alert('Item added successfully!');
+    }
+
+    function deleteItem(itemCode) {
+      if (!confirm('Are you sure you want to delete this item?')) return;
+      if (!window._products) return;
+      window._products = window._products.filter(p => p.code !== itemCode);
+      renderInventory(window._products);
+      alert('Item deleted: ' + itemCode);
+    }
+
+    function addPurchase(event) {
+      event.preventDefault();
+      alert('Purchase order created successfully!');
+      closeModal('addPurchaseModal');
+    }
+
+    function addReturn(event) {
+      event.preventDefault();
+      alert('Return processed successfully!');
+      closeModal('addReturnModal');
     }
 
     function renderSales(sales) {
