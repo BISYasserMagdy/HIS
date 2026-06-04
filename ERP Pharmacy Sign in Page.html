@@ -454,7 +454,7 @@
       formData.append('lang', 'en');
 
       // Send login request to PHP backend
-      fetch('../Back End/ERP Pharmacy System.php', {
+      fetch('../Back End/ERP_Pharmacy_System.php', {
         method: 'POST',
         body: formData
       })
@@ -471,7 +471,7 @@
             successDiv.textContent = 'Login successful! Redirecting...';
             successDiv.classList.add('show');
             setTimeout(() => {
-              window.location.href = data.redirect || 'ERP Dashboard.html';
+              window.location.href = data.redirect || 'ERP_Dashboard.html';
             }, 1500);
           } else {
             errorDiv.textContent = data.message || 'Login failed. Please try again.';

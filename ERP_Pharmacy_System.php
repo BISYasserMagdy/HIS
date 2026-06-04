@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user_type === 'employee') {
             $redirect = $lang === 'ar' ? 'ERP POS System AR.html' : 'ERP POS System.html';
         } else {
-            $redirect = $lang === 'ar' ? 'ERP Dashboard AR.html' : 'ERP Dashboard.html';
+            $redirect = $lang === 'ar' ? 'ERP Dashboard AR.html' : 'ERP_Dashboard.html';
         }
 
         http_response_code(200);
