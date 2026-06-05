@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Pharmacy Management System - Pharmacists Only</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --brand-blue: #0a4d8c;
+      --brand-light: #f0f6ff;
+      --brand-dark: #032f5f;
+      --accent: #38a169;
+      --text: #152238;
+      --panel: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f0f6ff 0%, #ffffff 100%);
+      color: var(--text);
+    }
+
+    header {
+      background: var(--brand-blue);
+      color: #fff;
+      padding: 22px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    nav a {
+      color: #d9e8ff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      color: #fff;
+    }
+
+    .lang-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .lang-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .lang-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .lang-btn.active {
+      background: #fff;
+      color: var(--brand-blue);
+    }
+
+    .banner {
+      padding: 64px 24px;
+      text-align: center;
+    }
+
+    .banner h2 {
+      margin: 0 0 12px;
+      font-size: 2.5rem;
+      color: var(--brand-dark);
+    }
+
+    .banner p {
+      max-width: 760px;
+      margin: 0 auto;
+      line-height: 1.75;
+      color: #2c3f61;
+    }
+
+    .section {
+      display: grid;
+      gap: 20px;
+      max-width: 1080px;
+      margin: 0 auto 40px;
+      padding: 0 24px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid #d9e5f1;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: var(--brand-dark);
+    }
+
+    .card p {
+      margin: 10px 0 0;
+      line-height: 1.65;
+      color: #3a4a6f;
+    }
+
+    .notice {
+      background: #fff7db;
+      border-left: 4px solid #f0b429;
+      color: #3c3a37;
+      padding: 18px 22px;
+      border-radius: 12px;
+      max-width: 1080px;
+      margin: 0 auto 40px;
+    }
+
+    footer {
+      background: var(--brand-dark);
+      color: #cbd5e1;
+      padding: 18px 24px;
+      text-align: center;
+      font-size: .95rem;
+    }
+
+    .login-panel {
+      max-width: 420px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid #d9e5f1;
+      border-radius: 16px;
+      padding: 26px;
+      box-shadow: 0 14px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .login-panel label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--brand-dark);
+    }
+
+    .login-panel input {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      border: 1px solid #c8d8f0;
+      border-radius: 10px;
+      background: #f8fbff;
+      color: var(--text);
+      box-sizing: border-box;
+    }
+
+    .login-panel button {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .login-panel button:hover {
+      background: #2f8a50;
+    }
+
+    .error-message {
+      background-color: #fee;
+      border-left: 4px solid #c33;
+      color: #c33;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      background-color: #efe;
+      border-left: 4px solid #3c3;
+      color: #3c3;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .forgot-password {
+      text-align: right;
+      margin-bottom: 16px;
+      margin-top: -8px;
+    }
+
+    .forgot-password a {
+      color: var(--brand-blue);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+
+    .new-user-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #d9e5f1;
+      text-align: center;
+    }
+
+    .new-user-section p {
+      color: #3a4a6f;
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+    }
+
+    .subscribe-btn {
+      display: inline-block;
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--brand-blue);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--brand-blue);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+
+    .subscribe-btn:hover {
+      background: var(--brand-blue);
+      color: #fff;
+    }
+
+    .forgot-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .forgot-modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h3 {
+      margin: 0 0 10px;
+      color: var(--brand-dark);
+    }
+
+    .modal-content p {
+      color: #3a4a6f;
+      margin: 0 0 20px;
+      font-size: 0.95rem;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      border: 1px solid #c8d8f0;
+      border-radius: 10px;
+      background: #f8fbff;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .modal-btn.primary {
+      background: var(--brand-blue);
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .modal-btn.primary:hover {
+      background: var(--brand-dark);
+    }
+
+    .modal-btn.secondary {
+      background: #e2e8f0;
+      color: #3a4a6f;
+    }
+
+    .modal-btn.secondary:hover {
+      background: #d1d5db;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>PMS Portal</h1>
+    <nav>
+      <a href="Home Page.html">Home</a>
+      <div class="lang-buttons">
+        <button class="lang-btn active" onclick="window.location.href='ERP_Pharmacy_Sign_in_Page.html'">English</button>
+        <button class="lang-btn" onclick="window.location.href='ERP_Pharmacy_Sign_in_Page_AR.html'">العربية</button>
+      </div>
+    </nav>
+  </header>
+  <div class="forgot-modal" id="forgotModal">
+    <div class="modal-content">
+      <h3>Reset Password</h3>
+      <p>Enter your Pharmacist ID and we'll send you a password reset link.</p>
+      <input type="text" id="resetPharmId" placeholder="Enter Pharmacist ID">
+      <input type="email" id="resetEmail" placeholder="Enter your email address">
+      <button class="modal-btn primary" onclick="sendResetLink()">Send Reset Link</button>
+      <button class="modal-btn secondary" onclick="closeForgotPassword()">Cancel</button>
+    </div>
+  </div>
+  <section class="banner">
+    <h2>Pharmacy Management System</h2>
+    <p>Welcome to the PMS portal designed exclusively for licensed pharmacists. This secure page provides inventory
+      control, prescription management, supplier tracking and reports while keeping patient access restricted.</p>
+  </section>
+  <section class="notice">
+    <strong>Access Restricted:</strong> Only authenticated pharmacists may use this page. Patients cannot access PMS
+    functions from this portal.
+  </section>
+  <section class="section">
+    <article class="card">
+      <h3>Inventory Management</h3>
+      <p>Track medicine stock in real-time, receive low-stock alerts, and manage purchase orders with a single
+        pharmacist-focused dashboard.</p>
+    </article>
+    <article class="card">
+      <h3>Prescription Workflow</h3>
+      <p>Approve prescriptions, validate dosages, and monitor dispensing history while maintaining regulatory compliance
+        across pharmacy operations.</p>
+    </article>
+    <article class="card">
+      <h3>Supplier & Billing</h3>
+      <p>Streamline supplier orders, compare pricing, and generate billing reports tailored to pharmacy procurement and
+        accounting.</p>
+    </article>
+  </section>
+  <section class="section">
+    <div class="login-panel">
+      <h3>User Sign In</h3>
+      <p>Enter your employee or manager ID and password. Employees will be redirected to the POS page, managers to the ERP dashboard.</p>
+      <div id="errorMessage" class="error-message"></div>
+      <div id="successMessage" class="success-message"></div>
+      <form id="loginForm">
+        <label for="userId">User ID</label>
+        <input id="userId" type="text" placeholder="Enter your employee or manager ID" required>
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="Enter password" required>
+        <div class="forgot-password">
+          <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
+        </div>
+        <button type="submit" id="submitBtn">Sign In</button>
+      </form>
+      <div class="new-user-section">
+        <p>New to our system? Subscribe now to access the PMS portal.</p>
+        <a href="Subscription.html" class="subscribe-btn">Subscribe Now</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // ── Demo credentials (offline / no-backend fallback) ─────────────────────
+    const DEMO_USERS = {
+      pharmacist: {
+        PHARM001: { password: 'password123', name: 'Dr. Ahmed Hassan',  redirect: 'ERP_Dashboard.html' },
+        PHARM002: { password: 'secure456',   name: 'Dr. Sarah Johnson', redirect: 'ERP_Dashboard.html' }
+      },
+      employee: {
+        EMP001: { password: 'employee123', name: 'Amina Saleh', redirect: 'ERP_POS_System.html' },
+        EMP002: { password: 'employee456', name: 'Omar Ali',    redirect: 'ERP_POS_System.html' }
+      }
+    };
+
+    function tryDemoLogin(userId, password) {
+      const userType = userId.toUpperCase().startsWith('EMP') ? 'employee' : 'pharmacist';
+      const group = DEMO_USERS[userType] || {};
+      const user  = group[userId.toUpperCase()];
+      if (user && user.password === password) {
+        return { success: true, user_type: userType, name: user.name, redirect: user.redirect };
+      }
+      return { success: false, message: 'Invalid user ID or password.' };
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const userId   = document.getElementById('userId').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const errorDiv   = document.getElementById('errorMessage');
+      const successDiv = document.getElementById('successMessage');
+      const submitBtn  = document.getElementById('submitBtn');
+      const form       = document.getElementById('loginForm');
+
+      errorDiv.classList.remove('show');
+      successDiv.classList.remove('show');
+
+      if (!userId || !password) {
+        errorDiv.textContent = 'Please enter both User ID and Password';
+        errorDiv.classList.add('show');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      form.classList.add('loading');
+
+      const userType = userId.toUpperCase().startsWith('EMP') ? 'employee' : 'pharmacist';
+      const formData = new FormData();
+      formData.append('user_type', userType);
+      formData.append('user_id',   userId);
+      formData.append('password',  password);
+      formData.append('lang', 'en');
+
+      // URL with %20 for the space in "Back End" folder name
+      const backendURL = '../Back%20End/ERP_Pharmacy_System.php';
+
+      fetch(backendURL, { method: 'POST', body: formData })
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(data => handleLoginResult(data, userId))
+        .catch(err => {
+          console.warn('Backend unreachable (' + err.message + '), trying demo credentials…');
+          // Fallback: authenticate locally against demo credentials
+          const result = tryDemoLogin(userId, password);
+          handleLoginResult(result, userId);
+        });
+
+      function handleLoginResult(data, userId) {
+        if (data.success) {
+          if (data.user_type === 'employee') {
+            localStorage.setItem('posEmployeeId',   userId);
+            localStorage.setItem('posEmployeeName', data.name);
+          } else {
+            localStorage.setItem('pharmacistName',       data.name);
+            localStorage.setItem('pharmacistFirstName',  data.name.split(' ')[0]);
+            localStorage.setItem('pharmacistLastName',   data.name.split(' ').slice(1).join(' '));
+          }
+          successDiv.textContent = 'Login successful! Redirecting…';
+          successDiv.classList.add('show');
+          setTimeout(() => {
+            window.location.href = data.redirect || 'ERP_Dashboard.html';
+          }, 1200);
+        } else {
+          errorDiv.textContent = data.message || 'Invalid user ID or password.';
+          errorDiv.classList.add('show');
+          submitBtn.disabled = false;
+          form.classList.remove('loading');
+        }
+      }
+    });
+
+    function showForgotPassword() {
+      document.getElementById('forgotModal').classList.add('show');
+      return false;
+    }
+
+    function closeForgotPassword() {
+      document.getElementById('forgotModal').classList.remove('show');
+    }
+
+    function sendResetLink() {
+      const pharmId = document.getElementById('resetPharmId').value.trim();
+      const email = document.getElementById('resetEmail').value.trim();
+
+      if (!pharmId || !email) {
+        alert('Please enter both Pharmacist ID and Email address.');
+        return;
+      }
+
+      if (!email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+
+      alert('Password reset link has been sent to your email address. Please check your inbox.');
+      closeForgotPassword();
+    }
+  </script>
+  <footer>
+    <p> Pharmacy System Management — Pharmacists Only</p>
+  </footer>
+</body>
+
+</html>
