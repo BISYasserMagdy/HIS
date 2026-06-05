@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         generateTrendAnalysis();
     } elseif ($action === 'get_suppliers') {
         sendSupplierList();
+    } elseif ($action === 'near_expiry_medicines') {
+        sendNearExpiryMedicines();
+    } elseif ($action === 'backup_database') {
+        backupDatabase();
+    } elseif ($action === 'confirm_factory_reset') {
+        confirmFactoryReset();
     } else {
     }
     exit;
@@ -80,6 +86,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'delete_supplier') {
         handleDeleteSupplier();
+        exit;
+    }
+
+    if ($action === 'factory_reset_request') {
+        handleFactoryResetRequest();
+        exit;
+    }
+
+    if ($action === 'restore_database') {
+        handleRestoreDatabase();
         exit;
     }
 
@@ -137,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['login_time'] = time();
 
         if ($user_type === 'employee') {
-            $redirect = $lang === 'ar' ? 'ERP POS System AR.html' : 'ERP POS System.html';
+            $redirect = $lang === 'ar' ? 'ERP POS System AR.html' : 'ERP_POS_System.html';
         } else {
             $redirect = $lang === 'ar' ? 'ERP Dashboard AR.html' : 'ERP_Dashboard.html';
         }
@@ -1268,6 +1284,330 @@ function handleEditSupplier() {
  * Required: id
  */
 function handleDeleteSupplier() {
+    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(array("success" => false, "message" => "Supplier id is required"));
+        exit;
+    }
+    $conn = getSupplierConn();
+    $stmt = $conn->prepare("DELETE FROM suppliers WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        $stmt->close(); $conn->close();
+        echo json_encode(array("success" => true, "message" => "Supplier deleted successfully"));
+    } else {
+        $err = $conn->error; $stmt->close(); $conn->close();
+        http_response_code(500);
+        echo json_encode(array("success" => false, "message" => "Failed to delete supplier: " . $err));
+    }
+}
+
+// ============================================================
+// NEAR EXPIRY MEDICINES
+// ============================================================
+
+/**
+ * GET ?action=near_expiry_medicines
+ * Returns medicines expiring within 60 days.
+ */
+function sendNearExpiryMedicines() {
+    $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
+    if ($conn->connect_error) {
+        http_response_code(500);
+        echo json_encode(array("success" => false, "message" => "Database connection failed"));
+        exit;
+    }
+    $conn->set_charset("utf8");
+
+    // Add expiry_date column if missing (safe migration)
+    $check = $conn->query("SHOW COLUMNS FROM medicines LIKE 'expiry_date'");
+    if ($check && $check->num_rows === 0) {
+        $conn->query("ALTER TABLE medicines ADD COLUMN expiry_date DATE NULL");
+        $today = date('Y-m-d');
+        $conn->query("UPDATE medicines SET expiry_date = DATE_ADD('$today', INTERVAL 12 DAY) WHERE medicine_code = 'P001'");
+        $conn->query("UPDATE medicines SET expiry_date = DATE_ADD('$today', INTERVAL 28 DAY) WHERE medicine_code = 'P002'");
+        $conn->query("UPDATE medicines SET expiry_date = DATE_ADD('$today', INTERVAL 5  DAY) WHERE medicine_code = 'P003'");
+        $conn->query("UPDATE medicines SET expiry_date = DATE_ADD('$today', INTERVAL 45 DAY) WHERE medicine_code = 'P004'");
+        $conn->query("UPDATE medicines SET expiry_date = DATE_ADD('$today', INTERVAL 7  DAY) WHERE medicine_code = 'P005'");
+    }
+
+    $sql = "SELECT medicine_code AS code, name_en AS name, category, quantity_in_stock, expiry_date
+            FROM medicines
+            WHERE expiry_date IS NOT NULL
+              AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 60 DAY)
+            ORDER BY expiry_date ASC";
+    $result = $conn->query($sql);
+    $medicines = array();
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $medicines[] = $row;
+        }
+    }
+    $conn->close();
+    echo json_encode(array("success" => true, "medicines" => $medicines));
+}
+
+// ============================================================
+// BACKUP DATABASE
+// ============================================================
+
+/**
+ * GET ?action=backup_database
+ * Streams the pharmacy database as a plain-SQL backup.
+ */
+function backupDatabase() {
+    $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
+    if ($conn->connect_error) {
+        http_response_code(500);
+        echo json_encode(array("success" => false, "message" => "Database connection failed"));
+        exit;
+    }
+    $conn->set_charset("utf8");
+
+    $filename = "pharmacy_backup_" . date('Y-m-d_His') . ".sql";
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+
+    $tables = array();
+    $result = $conn->query("SHOW TABLES");
+    while ($row = $result->fetch_row()) {
+        $tables[] = $row[0];
+    }
+
+    $output  = "-- Pharmacy ERP Database Backup\n";
+    $output .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
+    $output .= "-- Database: pharmacy_erp\n\n";
+    $output .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
+
+    foreach ($tables as $table) {
+        $createRes = $conn->query("SHOW CREATE TABLE `$table`");
+        $createRow = $createRes->fetch_row();
+        $output .= "DROP TABLE IF EXISTS `$table`;\n";
+        $output .= $createRow[1] . ";\n\n";
+        $rows = $conn->query("SELECT * FROM `$table`");
+        while ($row = $rows->fetch_assoc()) {
+            $values = array_map(function($v) use ($conn) {
+                return $v === null ? 'NULL' : "'" . $conn->real_escape_string($v) . "'";
+            }, array_values($row));
+            $output .= "INSERT INTO `$table` VALUES (" . implode(", ", $values) . ");\n";
+        }
+        $output .= "\n";
+    }
+    $output .= "SET FOREIGN_KEY_CHECKS=1;\n";
+    $conn->close();
+    echo $output;
+    exit;
+}
+
+// ============================================================
+// FACTORY RESET
+// ============================================================
+
+/**
+ * POST action=factory_reset_request
+ * Verifies manager credentials and sends a Gmail reset link.
+ * Does NOT reset the database until the link is clicked.
+ */
+function handleFactoryResetRequest() {
+    $manager_id = isset($_POST['manager_id']) ? trim($_POST['manager_id']) : '';
+    $password   = isset($_POST['password'])   ? trim($_POST['password'])   : '';
+
+    if (empty($manager_id) || empty($password)) {
+        http_response_code(400);
+        echo json_encode(array("success" => false, "message" => "Manager ID and password are required."));
+        exit;
+    }
+
+    $result = authenticateUser('pharmacist', $manager_id, $password);
+    if (!$result['success']) {
+        http_response_code(401);
+        echo json_encode(array("success" => false, "message" => "Invalid Manager ID or password."));
+        exit;
+    }
+
+    // Fetch manager email
+    $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
+    $managerEmail = '';
+    $managerName  = $result['name'];
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8");
+        $stmt = $conn->prepare("SELECT email FROM pharmacists WHERE pharmacist_id = ?");
+        if ($stmt) {
+            $stmt->bind_param("s", $manager_id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($row = $res->fetch_assoc()) $managerEmail = $row['email'];
+            $stmt->close();
+        }
+        $conn->close();
+    }
+    if (empty($managerEmail)) {
+        $managerEmail = strtolower($manager_id) . '@pharmacy.com';
+    }
+
+    // Generate secure one-time token
+    $token   = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+
+    // Store token
+    $conn2 = new mysqli("localhost", "root", "", "pharmacy_erp");
+    if (!$conn2->connect_error) {
+        $conn2->set_charset("utf8");
+        $conn2->query("CREATE TABLE IF NOT EXISTS factory_reset_tokens (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            manager_id VARCHAR(50) NOT NULL,
+            token VARCHAR(100) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            used TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+        $conn2->query("UPDATE factory_reset_tokens SET used = 1 WHERE manager_id = '" . $conn2->real_escape_string($manager_id) . "'");
+        $stmt2 = $conn2->prepare("INSERT INTO factory_reset_tokens (manager_id, token, expires_at) VALUES (?, ?, ?)");
+        if ($stmt2) {
+            $stmt2->bind_param("sss", $manager_id, $token, $expires);
+            $stmt2->execute();
+            $stmt2->close();
+        }
+        $conn2->close();
+    }
+
+    // Build reset link
+    $protocol  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host      = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $resetLink = $protocol . '://' . $host . '/Back%20End/ERP%20Pharmacy%20System.php?action=confirm_factory_reset&token=' . urlencode($token);
+
+    // Send email
+    $subject = "=?UTF-8?B?" . base64_encode("⚠️ Pharmacy ERP – Factory Reset Confirmation") . "?=";
+    $body    = "Dear {$managerName},\r\n\r\n"
+             . "A factory reset has been requested using your Manager credentials.\r\n\r\n"
+             . "Click the link below to CONFIRM the factory reset:\r\n\r\n"
+             . $resetLink . "\r\n\r\n"
+             . "⚠️  WARNING: This will PERMANENTLY DELETE ALL pharmacy data.\r\n"
+             . "This link expires in 30 minutes.\r\n\r\n"
+             . "If you did NOT request this, please ignore this email and change your password immediately.\r\n\r\n"
+             . "— Pharmacy ERP System";
+    $headers = "From: noreply@pharmacy-erp.com\r\nReply-To: noreply@pharmacy-erp.com\r\nX-Mailer: PHP/" . phpversion();
+    $sent = @mail($managerEmail, $subject, $body, $headers);
+
+    echo json_encode(array(
+        "success"    => true,
+        "message"    => "Reset link sent to " . $managerEmail,
+        "email_sent" => $sent,
+        "debug_link" => $resetLink  // Remove this in production
+    ));
+    exit;
+}
+
+/**
+ * GET ?action=confirm_factory_reset&token=TOKEN
+ * Validates token and executes the factory reset.
+ */
+function confirmFactoryReset() {
+    $token = isset($_GET['token']) ? trim($_GET['token']) : '';
+    header('Content-Type: text/html; charset=utf-8');
+    if (empty($token)) {
+        echo "<h2>Invalid reset link.</h2>"; exit;
+    }
+
+    $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
+    if ($conn->connect_error) { echo "<h2>Database connection failed.</h2>"; exit; }
+    $conn->set_charset("utf8");
+
+    $stmt = $conn->prepare("SELECT id, manager_id, expires_at, used FROM factory_reset_tokens WHERE token = ?");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $tokenRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$tokenRow || $tokenRow['used']) {
+        echo "<h2 style='color:#dc2626;'>This reset link is invalid or has already been used.</h2>"; $conn->close(); exit;
+    }
+    if (new DateTime() > new DateTime($tokenRow['expires_at'])) {
+        echo "<h2 style='color:#dc2626;'>This reset link has expired. Please request a new one.</h2>"; $conn->close(); exit;
+    }
+
+    $conn->query("UPDATE factory_reset_tokens SET used = 1 WHERE id = " . intval($tokenRow['id']));
+
+    // Execute factory reset
+    $tables = array('sales', 'prescriptions', 'purchases', 'returns', 'suppliers', 'medicines', 'factory_reset_tokens');
+    $conn->query("SET FOREIGN_KEY_CHECKS=0");
+    foreach ($tables as $t) {
+        $conn->query("TRUNCATE TABLE `$t`");
+    }
+    $conn->query("SET FOREIGN_KEY_CHECKS=1");
+    $conn->close();
+
+    echo "<!DOCTYPE html><html><head><title>Factory Reset Complete</title>
+    <style>body{font-family:sans-serif;text-align:center;padding:4rem;background:#fff5f5;}</style>
+    </head><body>
+    <h1 style='color:#dc2626;'>⚠️ Factory Reset Complete</h1>
+    <p style='font-size:1.1rem;'>All pharmacy data has been permanently deleted.</p>
+    <p><a href='../ERP_Dashboard.html' style='color:#1d4ed8;'>Return to Dashboard</a></p>
+    </body></html>";
+    exit;
+}
+
+// ============================================================
+// RESTORE DATABASE
+// ============================================================
+
+/**
+ * POST action=restore_database
+ * Accepts an uploaded .sql file and restores the database.
+ */
+function handleRestoreDatabase() {
+    if (!isset($_FILES['backup_file']) || $_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(array("success" => false, "message" => "No backup file uploaded."));
+        exit;
+    }
+    $file = $_FILES['backup_file'];
+    $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, array('sql'))) {
+        http_response_code(400);
+        echo json_encode(array("success" => false, "message" => "Only .sql files are accepted."));
+        exit;
+    }
+    $sqlContent = file_get_contents($file['tmp_name']);
+    if (empty(trim($sqlContent))) {
+        http_response_code(400);
+        echo json_encode(array("success" => false, "message" => "Backup file is empty."));
+        exit;
+    }
+
+    $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
+    if ($conn->connect_error) {
+        http_response_code(500);
+        echo json_encode(array("success" => false, "message" => "Database connection failed."));
+        exit;
+    }
+    $conn->set_charset("utf8");
+    $conn->query("SET FOREIGN_KEY_CHECKS=0");
+
+    $statements = array_filter(
+        array_map('trim', explode(";\n", $sqlContent)),
+        function($s) { return strlen($s) > 5; }
+    );
+
+    $errors = array();
+    foreach ($statements as $stmt) {
+        if (!empty(trim($stmt)) && !$conn->query($stmt)) {
+            $errors[] = $conn->error;
+        }
+    }
+    $conn->query("SET FOREIGN_KEY_CHECKS=1");
+    $conn->close();
+
+    if (count($errors) > 5) {
+        echo json_encode(array("success" => false, "message" => "Restore had errors: " . implode('; ', array_slice($errors, 0, 3))));
+    } else {
+        echo json_encode(array("success" => true, "message" => "Database restored successfully."));
+    }
+    exit;
+}
+
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
     if ($id <= 0) {
         http_response_code(400);

@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electronic Health Records – HealthCare Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f0f6ff;
+      --surface: #ffffff;
+      --primary: #1a73e8;
+      --primary-dark: #0b3c7a;
+      --primary-light: #e8f0fe;
+      --accent: #00b4a6;
+      --accent2: #f59e0b;
+      --text: #1f2937;
+      --muted: #5b6b7b;
+      --border: #dbe4f0;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: 'DM Sans', Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff; padding: 1.5rem 2rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    }
+    .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
+    nav { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    nav a {
+      color: #fff; text-decoration: none; padding: 8px 14px;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+      background: rgba(255,255,255,0.1); font-size: 0.9rem; font-weight: 600; transition: background 0.2s;
+    }
+    nav a:hover { background: rgba(255,255,255,0.22); }
+    nav a.active-link { background: rgba(255,255,255,0.28); border-color: #fff; }
+    .lang-btn {
+      padding: 8px 14px; background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+      cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+    }
+    .lang-btn.active { background: #fff; color: var(--primary); }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, #0b3c7a 0%, #1a73e8 60%, #00b4a6 100%);
+      color: #fff; padding: 3.5rem 2rem 4.5rem; text-align: center; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge {
+      display: inline-block; background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 999px;
+      padding: 6px 18px; font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.2rem;
+    }
+    .hero h2 { font-family: 'Sora', sans-serif; font-size: clamp(1.8rem,4vw,3rem); font-weight: 700; margin: 0 0 1rem; line-height: 1.2; }
+    .hero p { max-width: 680px; margin: 0 auto 2rem; font-size: 1.05rem; opacity: 0.92; line-height: 1.7; }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: #fff; color: var(--primary-dark); padding: 0.85rem 1.8rem;
+      border-radius: 999px; font-weight: 700; font-size: 1rem; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.24); }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+      background: #fff; border-bottom: 1px solid var(--border); box-shadow: 0 4px 14px rgba(23,43,77,0.07);
+    }
+    .stat-item { padding: 1.4rem 1.5rem; text-align: center; border-right: 1px solid var(--border); }
+    .stat-item:last-child { border-right: none; }
+    .stat-num { font-family: 'Sora', sans-serif; font-size: 1.9rem; font-weight: 700; color: var(--primary); display: block; }
+    .stat-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+    /* MAIN */
+    main { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    section { margin-bottom: 3rem; }
+    .section-header { margin-bottom: 1.5rem; }
+    .section-header h3 {
+      font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700;
+      color: var(--primary-dark); margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    /* FEATURE CARDS */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.1rem; }
+    .feature-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem;
+      box-shadow: 0 6px 20px rgba(23,43,77,0.06); transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--card-accent, var(--primary)); border-radius: 16px 16px 0 0;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(23,43,77,0.12); }
+    .feature-icon {
+      width: 48px; height: 48px; background: var(--primary-light); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;
+    }
+    .feature-card h4 { font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.5rem; color: var(--primary-dark); }
+    .feature-card p { margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+
+    /* PATIENT LIST */
+    .patient-list-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .patient-list-card {
+      background: #fff; border: 2px solid var(--border); border-radius: 14px;
+      padding: 1.1rem 1.3rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem;
+    }
+    .patient-list-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(26,115,232,0.13); }
+    .patient-list-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .plc-avatar {
+      width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 1.2rem; color: #fff; flex-shrink: 0;
+    }
+    .plc-info { flex: 1; min-width: 0; }
+    .plc-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .plc-sub  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .plc-badge { flex-shrink: 0; }
+
+    /* NO RESULTS */
+    .no-results { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.95rem; display: none; }
+
+    /* DEMO PANEL */
+    .demo-panel {
+      background: #fff; border: 1px solid var(--border); border-radius: 20px;
+      box-shadow: 0 8px 28px rgba(23,43,77,0.08); overflow: hidden;
+    }
+    .demo-tabs {
+      display: flex; border-bottom: 1px solid var(--border); background: #f8fbff; overflow-x: auto;
+    }
+    .demo-tab {
+      padding: 0.9rem 1.4rem; font-size: 0.9rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s;
+      background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .demo-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: #fff; }
+    .demo-tab:hover:not(.active) { color: var(--text); background: rgba(0,0,0,0.03); }
+    .demo-content { display: none; padding: 1.8rem; animation: fadeIn 0.25s ease; }
+    .demo-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* PATIENT HEADER */
+    .patient-header {
+      display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.5rem;
+      padding-bottom: 1.2rem; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .patient-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; color: #fff; flex-shrink: 0;
+    }
+    .patient-meta h4 { font-family: 'Sora', sans-serif; margin: 0 0 0.3rem; font-size: 1.1rem; }
+    .patient-meta span { font-size: 0.85rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+    .badge-active  { background: #d1fae5; color: #065f46; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-danger  { background: #fee2e2; color: #991b1b; }
+    .badge-info    { background: var(--primary-light); color: var(--primary-dark); }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .info-item label { display: block; font-size: 0.78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .info-item span { font-size: 0.95rem; font-weight: 500; }
+
+    /* VITALS */
+    .vitals-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .vital-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+    .vital-val  { font-family: 'Sora', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .vital-unit { font-size: 0.75rem; color: var(--muted); }
+    .vital-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* TIMELINE */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .tl-item { position: relative; margin-bottom: 1.2rem; }
+    .tl-dot { position: absolute; left: -1.5rem; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--primary); }
+    .tl-dot.warn { background: var(--accent2); box-shadow: 0 0 0 2px var(--accent2); }
+    .tl-dot.ok   { background: var(--success);  box-shadow: 0 0 0 2px var(--success); }
+    .tl-dot.red  { background: var(--danger);   box-shadow: 0 0 0 2px var(--danger); }
+    .tl-date { font-size: 0.78rem; color: var(--muted); margin-bottom: 3px; }
+    .tl-text { font-size: 0.92rem; }
+
+    /* MEDICATIONS TABLE */
+    .med-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .med-table th { background: var(--bg); text-align: left; padding: 10px 12px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .med-table td { padding: 11px 12px; border-top: 1px solid var(--border); }
+    .med-table tr:hover td { background: #f8fbff; }
+
+    /* LAB RESULTS */
+    .lab-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; gap: 0.5rem; flex-wrap: wrap; }
+    .lab-row:last-child { border-bottom: none; }
+    .lab-bar-wrap { width: 120px; background: var(--border); border-radius: 999px; height: 6px; flex-shrink: 0; }
+    .lab-bar { height: 6px; border-radius: 999px; }
+    .lab-bar.ok  { background: var(--success); }
+    .lab-bar.hi  { background: var(--danger); }
+    .lab-bar.med { background: var(--accent2); }
+
+    /* SEARCH & BUTTONS */
+    .search-box { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .search-box input {
+      flex: 1; min-width: 200px; padding: 11px 16px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 0.95rem; background: #fff; outline: none; transition: border-color 0.2s;
+    }
+    .search-box input:focus { border-color: var(--primary); }
+    .btn-primary { padding: 11px 20px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { padding: 11px 18px; background: #fff; color: var(--primary); border: 1px solid var(--primary); border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+    .btn-outline:hover { background: var(--primary-light); }
+    .btn-sm { padding: 7px 13px; font-size: 0.82rem; }
+
+    /* WORKFLOW */
+    .workflow { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; counter-reset: wf; }
+    .wf-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem; counter-increment: wf; }
+    .wf-card::before { content: counter(wf, decimal-leading-zero); font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; color: var(--primary-light); display: block; line-height: 1; margin-bottom: 0.5rem; }
+    .wf-card h4 { font-family: 'Sora', sans-serif; font-size: 0.92rem; margin: 0 0 0.4rem; color: var(--primary-dark); }
+    .wf-card p  { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+
+    /* ALERTS */
+    .alerts-panel { background: #fff; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(23,43,77,0.06); }
+    .alert-row { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.4rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .alert-body { flex: 1; }
+    .alert-body strong { display: block; margin-bottom: 2px; }
+    .alert-body span   { color: var(--muted); font-size: 0.83rem; }
+    .alert-time { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+
+    /* INTEGRATIONS */
+    .integration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; }
+    .int-tile { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow 0.2s; text-decoration: none; color: var(--text); }
+    .int-tile:hover { box-shadow: 0 6px 20px rgba(23,43,77,0.1); }
+    .int-tile-icon { font-size: 2rem; flex-shrink: 0; }
+    .int-tile strong { display: block; font-size: 0.92rem; margin-bottom: 2px; }
+    .int-tile span { font-size: 0.8rem; color: var(--muted); }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #fff; border-radius: 20px; padding: 2rem;
+      width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(15,23,42,0.2);
+      transform: translateY(20px); transition: transform 0.25s;
+    }
+    .modal-overlay.open .modal { transform: none; }
+    .modal h3 { font-family: 'Sora', sans-serif; margin: 0 0 1.5rem; color: var(--primary-dark); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.82rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.92rem; font-family: inherit; background: #f8fbff; color: var(--text); outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+    .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
+    .btn-cancel { padding: 10px 18px; background: #f1f5f9; color: var(--text); border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-cancel:hover { background: #e2e8f0; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+    .empty-state .es-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .empty-state p { margin: 0; font-size: 0.95rem; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1f2937; color: #fff;
+      padding: 0.85rem 1.4rem; border-radius: 12px; font-size: 0.9rem; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000;
+      transform: translateY(80px); opacity: 0; transition: all 0.3s ease;
+    }
+    .toast.show { transform: none; opacity: 1; }
+    .toast.success { background: var(--success); }
+
+    footer { background: #0f172a; color: #cbd5e1; text-align: center; padding: 1.5rem 1rem; font-size: 0.9rem; }
+    @media (max-width: 640px) {
+      header { justify-content: center; text-align: center; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <h1 class="logo">HealthCare Hub</h1>
+  <nav>
+    <a href="Home_Page.html">Home</a>
+    <a href="Appointments_Page.html">Appointments</a>
+    <a href="EHR_Page.html" class="active-link">EHR System</a>
+    <a href="ERP_Pharmacy_Sign_in_Page.html">ERP Pharmacy</a>
+    <a href="Health_Chatbot.html">Chatbot</a>
+    <button class="lang-btn active">English</button>
+    <button class="lang-btn">العربية</button>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🏥 Electronic Health Records</div>
+  <h2>Unified Patient Records,<br>Smarter Clinical Decisions</h2>
+  <p>A centralised EHR platform that brings together patient history, vitals, medications, lab results, and care plans — giving every clinician a complete, real-time picture of patient health.</p>
+  <a href="#ehr-demo" class="hero-cta">▶ View Patient Records</a>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item"><span class="stat-num" id="stat-patients">8</span><span class="stat-label">Registered Patients</span></div>
+  <div class="stat-item"><span class="stat-num">9</span><span class="stat-label">Core EHR Modules</span></div>
+  <div class="stat-item"><span class="stat-num">24/7</span><span class="stat-label">Secure Access</span></div>
+  <div class="stat-item"><span class="stat-num">HIPAA</span><span class="stat-label">Compliant</span></div>
+  <div class="stat-item"><span class="stat-num">↓ 60%</span><span class="stat-label">Admin Time Saved</span></div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="section-header">
+      <h3>🗂️ Core EHR Features</h3>
+      <p>Everything a modern healthcare facility needs — from patient intake to discharge summaries.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card" style="--card-accent:#1a73e8"><div class="feature-icon">📁</div><h4>Patient Record Management</h4><p>Centralized, structured patient profiles with demographics, insurance, and full clinical history in one place.</p></div>
+      <div class="feature-card" style="--card-accent:#00b4a6"><div class="feature-icon">🔬</div><h4>Lab & Diagnostic Analytics</h4><p>Automatically import lab results, trend key biomarkers, and flag abnormal values for immediate review.</p></div>
+      <div class="feature-card" style="--card-accent:#f59e0b"><div class="feature-icon">🔔</div><h4>Smart Reminders</h4><p>Automated alerts for follow-up appointments, medication refills, overdue screenings, and care plan tasks.</p></div>
+      <div class="feature-card" style="--card-accent:#10b981"><div class="feature-icon">💳</div><h4>Payment Management</h4><p>Integrated billing with insurance claim tracking, co-pay collection, and itemised invoicing.</p></div>
+      <div class="feature-card" style="--card-accent:#8b5cf6"><div class="feature-icon">📋</div><h4>Task Management</h4><p>Assign clinical tasks to care team members with priority levels, due dates, and completion tracking.</p></div>
+      <div class="feature-card" style="--card-accent:#ec4899"><div class="feature-icon">🗣️</div><h4>Secure Communication</h4><p>HIPAA-compliant messaging between providers, staff, and patients — keeping conversations in the record.</p></div>
+      <div class="feature-card" style="--card-accent:#ef4444"><div class="feature-icon">💊</div><h4>E-Prescribing</h4><p>Send prescriptions directly to pharmacies with drug–drug interaction checks and allergy alerts built in.</p></div>
+      <div class="feature-card" style="--card-accent:#0b3c7a"><div class="feature-icon">📜</div><h4>Medical History</h4><p>Chronological records of diagnoses, procedures, vaccinations, allergies, and family history.</p></div>
+      <div class="feature-card" style="--card-accent:#06b6d4"><div class="feature-icon">🖥️</div><h4>Customised Templates</h4><p>Specialty-specific note templates and encounter forms to speed up documentation without sacrificing quality.</p></div>
+    </div>
+  </section>
+
+  <!-- PATIENT RECORDS DEMO -->
+  <section id="ehr-demo">
+    <div class="section-header">
+      <h3>📂 Patient Records</h3>
+      <p>Search, select, or add patients — all data updates dynamically.</p>
+    </div>
+
+    <!-- Search + New Patient -->
+    <div class="search-box">
+      <input type="text" id="patientSearch" placeholder="🔍  Search by name, ID, condition, or date of birth…" oninput="filterPatients()" />
+      <button class="btn-outline" onclick="clearSearch()">Clear</button>
+      <button class="btn-primary" onclick="openNewPatientModal()">＋ New Patient</button>
+    </div>
+
+    <!-- Patient List -->
+    <div class="patient-list-grid" id="patientListGrid"></div>
+    <div class="no-results" id="noResults">No patients match your search. Try a different name or ID.</div>
+
+    <!-- Record Panel -->
+    <div class="demo-panel" id="recordPanel" style="display:none;">
+      <div class="demo-tabs">
+        <button class="demo-tab active" onclick="switchTab(this,'tab-overview')">Overview</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-vitals')">Vitals</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-history')">Medical History</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-meds')">Medications</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-labs')">Lab Results</button>
+      </div>
+      <div class="demo-content active" id="tab-overview"></div>
+      <div class="demo-content" id="tab-vitals"></div>
+      <div class="demo-content" id="tab-history"></div>
+      <div class="demo-content" id="tab-meds"></div>
+      <div class="demo-content" id="tab-labs"></div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="es-icon">👆</div>
+      <p>Select a patient above to view their full health record.</p>
+    </div>
+  </section>
+
+  <!-- WORKFLOW -->
+  <section>
+    <div class="section-header">
+      <h3>⚙️ How the EHR Workflow Works</h3>
+      <p>From patient registration to discharge — every step is captured and accessible.</p>
+    </div>
+    <div class="workflow">
+      <div class="wf-card"><h4>Patient Registration</h4><p>Demographics, insurance, and consent forms captured digitally at check-in.</p></div>
+      <div class="wf-card"><h4>Triage & Vitals</h4><p>Nursing staff record vitals directly into the chart; abnormals are flagged instantly.</p></div>
+      <div class="wf-card"><h4>Provider Encounter</h4><p>Physicians document visit notes using templates, link diagnoses with ICD-10 codes.</p></div>
+      <div class="wf-card"><h4>Orders & Prescriptions</h4><p>Lab, imaging, and medication orders sent electronically to the respective departments.</p></div>
+      <div class="wf-card"><h4>Results & Review</h4><p>Results auto-import into the record; providers are notified for critical values.</p></div>
+      <div class="wf-card"><h4>Billing & Discharge</h4><p>Encounter is coded, claims generated, and the patient's record is complete for next visit.</p></div>
+    </div>
+  </section>
+
+  <!-- ALERTS -->
+  <section>
+    <div class="section-header">
+      <h3>🔔 Active Clinical Alerts</h3>
+      <p>Real-time notifications keeping the care team informed and proactive.</p>
+    </div>
+    <div class="alerts-panel">
+      <div class="alert-row"><div class="alert-icon">🔴</div><div class="alert-body"><strong>Drug Interaction Warning</strong><span>Potential interaction between Losartan and Ibuprofen for Patient P-00412. Review required.</span></div><div class="alert-time">Just now</div></div>
+      <div class="alert-row"><div class="alert-icon">🟡</div><div class="alert-body"><strong>Overdue Lab Follow-up</strong><span>Patient P-00389 – Thyroid panel ordered 14 days ago with no result yet.</span></div><div class="alert-time">2 hrs ago</div></div>
+      <div class="alert-row"><div class="alert-icon">🔵</div><div class="alert-body"><strong>Appointment Reminder</strong><span>12 patients have appointments tomorrow. 3 have outstanding pre-visit forms.</span></div><div class="alert-time">3 hrs ago</div></div>
+      <div class="alert-row"><div class="alert-icon">🟢</div><div class="alert-body"><strong>Lab Results Ready</strong><span>Lipid panel and CBC results for Patient P-00401 are now available for review.</span></div><div class="alert-time">5 hrs ago</div></div>
+    </div>
+  </section>
+
+  <!-- INTEGRATIONS -->
+  <section>
+    <div class="section-header">
+      <h3>🔗 Linked System Modules</h3>
+      <p>The EHR connects seamlessly with every other module in HealthCare Hub.</p>
+    </div>
+    <div class="integration-grid">
+      <a href="Appointments_Page.html" class="int-tile"><div class="int-tile-icon">📅</div><div><strong>Appointments</strong><span>Schedule & manage visits</span></div></a>
+      <a href="ERP_Pharmacy_Sign_in_Page.html" class="int-tile"><div class="int-tile-icon">💊</div><div><strong>ERP Pharmacy</strong><span>Prescriptions & dispensing</span></div></a>
+      <a href="Health_Chatbot.html" class="int-tile"><div class="int-tile-icon">🤖</div><div><strong>Health Chatbot</strong><span>Symptom & nutrition advice</span></div></a>
+      <a href="Home_Page.html" class="int-tile"><div class="int-tile-icon">🏠</div><div><strong>Home</strong><span>HealthCare Hub portal</span></div></a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>© 2026 HealthCare Hub · Electronic Health Records Module · Empowering Healthy Living</p>
+</footer>
+
+<!-- NEW PATIENT MODAL -->
+<div class="modal-overlay" id="newPatientModal">
+  <div class="modal">
+    <h3>➕ Register New Patient</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name *</label><input type="text" id="np-fname" placeholder="e.g. Sara" /></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="np-lname" placeholder="e.g. Ahmed" /></div>
+      <div class="form-group"><label>Date of Birth *</label><input type="date" id="np-dob" /></div>
+      <div class="form-group"><label>Gender *</label>
+        <select id="np-gender"><option value="">Select…</option><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="form-group"><label>Blood Type</label>
+        <select id="np-blood"><option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+      </div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="np-phone" placeholder="+20 100 000 0000" /></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="np-email" placeholder="patient@email.com" /></div>
+      <div class="form-group"><label>Insurance Provider</label><input type="text" id="np-insurance" placeholder="e.g. MediCare Plus" /></div>
+      <div class="form-group"><label>Primary Physician</label><input type="text" id="np-physician" placeholder="e.g. Dr. Sara Nour" /></div>
+      <div class="form-group full"><label>Known Allergies</label><input type="text" id="np-allergies" placeholder="e.g. Penicillin, Sulfa Drugs (comma separated)" /></div>
+      <div class="form-group full"><label>Active Conditions</label><input type="text" id="np-conditions" placeholder="e.g. Hypertension, Asthma" /></div>
+      <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem;">
+        <div style="font-family:'Sora',sans-serif;font-size:0.85rem;font-weight:700;color:var(--primary-dark);margin-bottom:0.75rem;">📋 Medical History</div>
+        <div class="form-grid" style="margin:0;">
+          <div class="form-group full"><label>Past Medical History</label><textarea id="np-pmh" rows="2" placeholder="e.g. Appendectomy 2015, Fracture left tibia 2018…" style="resize:vertical;"></textarea></div>
+          <div class="form-group full"><label>Family Medical History</label><textarea id="np-fmh" rows="2" placeholder="e.g. Father: Hypertension, Diabetes; Mother: Breast Cancer…" style="resize:vertical;"></textarea></div>
+          <div class="form-group full"><label>Surgical History</label><textarea id="np-surgical" rows="2" placeholder="e.g. Cholecystectomy 2010, Knee replacement 2020…" style="resize:vertical;"></textarea></div>
+          <div class="form-group"><label>Smoking Status</label>
+            <select id="np-smoking">
+              <option value="Non-smoker">Non-smoker</option>
+              <option value="Current smoker">Current smoker</option>
+              <option value="Ex-smoker">Ex-smoker</option>
+              <option value="Not recorded">Not recorded</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Alcohol Use</label>
+            <select id="np-alcohol">
+              <option value="None">None</option>
+              <option value="Occasional">Occasional</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Heavy">Heavy</option>
+              <option value="Not recorded">Not recorded</option>
+            </select>
+          </div>
+          <div class="form-group full"><label>Immunisations / Vaccinations</label><input type="text" id="np-vaccines" placeholder="e.g. COVID-19 (2022), Flu vaccine (2025), Hepatitis B series…" /></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveNewPatient()">💾 Save Patient</button>
+    </div>
+  </div>
+</div>
+
+<!-- E-PRESCRIBE MODAL -->
+<div class="modal-overlay" id="ePrescribeModal">
+  <div class="modal" style="max-width:520px;">
+    <h3>💊 E-Prescribe New Medication</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Medication Name *</label><input type="text" id="ep-name" placeholder="e.g. Amoxicillin" /></div>
+      <div class="form-group"><label>Dose *</label><input type="text" id="ep-dose" placeholder="e.g. 500 mg" /></div>
+      <div class="form-group"><label>Frequency *</label><input type="text" id="ep-freq" placeholder="e.g. Three times daily" /></div>
+      <div class="form-group"><label>Route</label>
+        <select id="ep-route">
+          <option>Oral</option><option>Inhaled</option><option>Topical</option>
+          <option>IV</option><option>IM</option><option>Subcutaneous</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Duration</label><input type="text" id="ep-duration" placeholder="e.g. 7 days / Ongoing" /></div>
+      <div class="form-group full"><label>Prescribed By *</label><input type="text" id="ep-physician" placeholder="e.g. Dr. Sara Nour" /></div>
+      <div class="form-group full"><label>Notes / Instructions</label><textarea id="ep-notes" rows="2" placeholder="e.g. Take with food. Avoid alcohol." style="resize:vertical;"></textarea></div>
+      <div class="form-group full">
+        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:0.75rem;font-size:0.83rem;color:#92400e;">
+          ⚠️ Drug interactions and allergy checks are simulated. Always verify against the patient's allergy list before prescribing.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEPrescribeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveEPrescription()">📤 Send Prescription</button>
+    </div>
+  </div>
+</div>
+
+<!-- REQUEST REFILL MODAL -->
+<div class="modal-overlay" id="refillModal">
+  <div class="modal" style="max-width:480px;">
+    <h3>🔄 Request Medication Refill</h3>
+    <p style="color:var(--muted);font-size:0.88rem;margin:0 0 1.2rem;">Select a current medication to request a refill.</p>
+    <div class="form-grid">
+      <div class="form-group full"><label>Medication *</label>
+        <select id="rf-med"><option value="">— Select medication —</option></select>
+      </div>
+      <div class="form-group"><label>Quantity / Days Supply</label><input type="text" id="rf-qty" placeholder="e.g. 30 days" /></div>
+      <div class="form-group"><label>Send To Pharmacy</label><input type="text" id="rf-pharmacy" placeholder="e.g. HealthCare Hub Pharmacy" /></div>
+      <div class="form-group full"><label>Refill Notes</label><textarea id="rf-notes" rows="2" placeholder="Additional notes for the pharmacist…" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeRefillModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveRefill()">✅ Confirm Refill Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT LAB RESULT MODAL -->
+<div class="modal-overlay" id="labModal">
+  <div class="modal" style="max-width:480px;">
+    <h3 id="labModalTitle">➕ Add Lab Result</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Test Name *</label><input type="text" id="lab-name" placeholder="e.g. HbA1c" /></div>
+      <div class="form-group"><label>Value *</label><input type="text" id="lab-value" placeholder="e.g. 7.4%" /></div>
+      <div class="form-group"><label>Reference Range *</label><input type="text" id="lab-ref" placeholder="e.g. &lt;7%" /></div>
+      <div class="form-group"><label>Result Status *</label>
+        <select id="lab-status">
+          <option value="ok">Normal</option>
+          <option value="med">Borderline / Elevated</option>
+          <option value="hi">Abnormal / High</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Bar Fill % (0–100)</label><input type="number" id="lab-pct" min="0" max="100" placeholder="e.g. 74" /></div>
+      <div class="form-group full"><label>Label *</label><input type="text" id="lab-lbl" placeholder="e.g. Above Target" /></div>
+      <div class="form-group full"><label>Panel Date</label><input type="date" id="lab-date" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeLabModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveLabResult()">💾 Save Result</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ADD TIMELINE ENTRY MODAL -->
+<div class="modal-overlay" id="timelineModal">
+  <div class="modal" style="max-width:500px;">
+    <h3>🕐 Add Timeline Entry</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Date *</label><input type="date" id="tl-date" /></div>
+      <div class="form-group"><label>Indicator</label>
+        <select id="tl-dot">
+          <option value="">Default (Blue)</option>
+          <option value="ok">✅ Green — Normal / Resolved</option>
+          <option value="warn">⚠️ Yellow — Warning / Elevated</option>
+          <option value="red">🔴 Red — Emergency / Critical</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Title *</label><input type="text" id="tl-title" placeholder="e.g. Cardiology Follow-up" /></div>
+      <div class="form-group full"><label>Details</label><textarea id="tl-details" rows="3" placeholder="e.g. LDL still above target despite statin therapy. Dose escalation discussed." style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeTimelineModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTimelineEntry()">💾 Add Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────
+const API = 'EHR_System.php';
+
+// ─── STATE ───────────────────────────────────────────────────────────
+let patients = [];
+let activePatientId = null;
+let editingLabId = null;
+
+// ─── API HELPER ──────────────────────────────────────────────────────
+async function api(params, method = 'GET', body = null) {
+  const url = API + '?' + new URLSearchParams(params);
+  const opts = { method };
+  if (body) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  try {
+    const r = await fetch(url, opts);
+    return await r.json();
+  } catch(e) {
+    showToast('⚠ Network error: ' + e.message, false);
+    return { success: false };
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────
+async function init() {
+  await loadPatients();
+}
+
+// ─── PATIENT LIST ────────────────────────────────────────────────────
+async function loadPatients(q = '') {
+  const params = { action: 'get_patients' };
+  if (q) params.q = q;
+  const res = await api(params);
+  if (res.success) {
+    patients = res.data;
+    document.getElementById('stat-patients').textContent = patients.length;
+    renderPatientList(patients);
+  }
+}
+
+function getInitials(name) {
+  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+function renderPatientList(list) {
+  const grid = document.getElementById('patientListGrid');
+  const noRes = document.getElementById('noResults');
+  if (!list || list.length === 0) {
+    grid.innerHTML = '';
+    noRes.style.display = 'block';
+    return;
+  }
+  noRes.style.display = 'none';
+  grid.innerHTML = list.map(p => `
+    <div class="patient-list-card" id="plc-${p.id}" onclick="selectPatient('${p.id}')">
+      <div class="plc-avatar" style="background:${p.color}">${getInitials(p.name)}</div>
+      <div class="plc-info">
+        <div class="plc-name">${p.name}</div>
+        <div class="plc-sub">${p.id} · ${p.gender} · ${p.age} yrs</div>
+        <div class="plc-sub" style="margin-top:2px;color:#1a73e8;font-weight:600;">${p.conditions.split(',')[0]}</div>
+      </div>
+      <div class="plc-badge"><span class="badge badge-active">Active</span></div>
+    </div>
+  `).join('');
+}
+
+async function filterPatients() {
+  const q = document.getElementById('patientSearch').value.trim();
+  await loadPatients(q);
+}
+
+async function clearSearch() {
+  document.getElementById('patientSearch').value = '';
+  await loadPatients();
+}
+
+// ─── SELECT PATIENT ──────────────────────────────────────────────────
+async function selectPatient(id) {
+  activePatientId = id;
+  const p = patients.find(x => x.id === id);
+  if (!p) return;
+
+  document.querySelectorAll('.patient-list-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('plc-' + id);
+  if (card) { card.classList.add('selected'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+  document.getElementById('recordPanel').style.display = '';
+  document.getElementById('emptyState').style.display = 'none';
+
+  renderOverview(p);
+
+  // Reset to Overview tab
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('.demo-tab').classList.add('active');
+  document.getElementById('tab-overview').classList.add('active');
+
+  setTimeout(() => document.getElementById('recordPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ─── SWITCH TAB (lazy-load from DB) ──────────────────────────────────
+async function switchTab(btn, tabId) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+
+  if (!activePatientId) return;
+  const p = patients.find(x => x.id === activePatientId);
+
+  if (tabId === 'tab-vitals')   { const v = await api({ action:'get_vitals', patient_id: activePatientId }); renderVitals(v.data); }
+  if (tabId === 'tab-history')  { await loadAndRenderHistory(p); }
+  if (tabId === 'tab-meds')     { await loadAndRenderMeds(p); }
+  if (tabId === 'tab-labs')     { await loadAndRenderLabs(p); }
+}
+
+// ─── BADGE HELPERS ───────────────────────────────────────────────────
+function badgeHtml(status) {
+  return status === 'active' ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-warning">Inactive</span>';
+}
+function allergyBadges(arr) {
+  if (!arr || arr.length === 0) return '<span style="color:var(--success);font-weight:600;">✓ None known</span>';
+  return arr.map(a => `<span class="badge badge-danger">${a}</span>`).join(' ');
+}
+
+// ─── OVERVIEW TAB ────────────────────────────────────────────────────
+function renderOverview(p) {
+  const insHtml = (p.insurance && p.insurance !== '—')
+    ? `${p.insurance} &nbsp;<span class="badge badge-info">Verified</span>`
+    : `<span style="color:var(--muted);">Not provided</span> &nbsp;<span class="badge badge-warning">Unverified</span>`;
+
+  document.getElementById('tab-overview').innerHTML = `
+    <div class="patient-header">
+      <div class="patient-avatar" style="background:${p.color}">${getInitials(p.name)}</div>
+      <div class="patient-meta">
+        <h4>${p.name} &nbsp;<span class="badge badge-active">Active</span></h4>
+        <span>${p.id} &nbsp;·&nbsp; ${p.gender} &nbsp;·&nbsp; ${p.age} yrs &nbsp;·&nbsp; DOB: ${p.dob} &nbsp;·&nbsp; Blood: ${p.blood}</span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:0.6rem;flex-wrap:wrap;">
+        <button class="btn-outline btn-sm">✉ Message</button>
+        <button class="btn-primary btn-sm" onclick="window.location.href='Appointments_Page.html'">📅 Schedule</button>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><label>Phone</label><span>${p.phone}</span></div>
+      <div class="info-item"><label>Email</label><span>${p.email}</span></div>
+      <div class="info-item"><label>Insurance</label><span>${insHtml}</span></div>
+      <div class="info-item"><label>Primary Physician</label><span>${p.physician}</span></div>
+      <div class="info-item"><label>Last Visit</label><span>${p.lastVisit}</span></div>
+      <div class="info-item"><label>Next Appointment</label><span>${p.nextAppt}</span></div>
+    </div>
+    <div class="info-grid" style="margin-bottom:0;">
+      <div class="info-item"><label>Allergies</label><span>${allergyBadges(p.allergies)}</span></div>
+      <div class="info-item"><label>Active Conditions</label><span>${p.conditions}</span></div>
+      <div class="info-item"><label>Smoking Status</label><span>${p.smoking}</span></div>
+    </div>`;
+}
+
+// ─── VITALS TAB ──────────────────────────────────────────────────────
+function renderVitals(v) {
+  if (!v) {
+    document.getElementById('tab-vitals').innerHTML = `<div style="text-align:center;color:var(--muted);padding:2rem;">No vitals recorded yet.</div>`;
+    return;
+  }
+  const bpColor = v.bp_status === 'warn' ? 'var(--accent2)' : (v.bp_status === 'red' ? 'var(--danger)' : 'var(--primary)');
+  const bpBadge = v.bp_status === 'warn' ? '<span class="badge badge-warning" style="font-size:0.7rem;">Elevated</span>'
+    : v.bp_status === 'red' ? '<span class="badge badge-danger" style="font-size:0.7rem;">High</span>' : '';
+  document.getElementById('tab-vitals').innerHTML = `
+    <p style="color:var(--muted);font-size:0.85rem;margin:0 0 1.2rem;">
+      Last recorded: <strong>${v.recorded_at}</strong> &nbsp;·&nbsp; Recorded by: ${v.nurse}
+    </p>
+    <div class="vitals-row">
+      <div class="vital-card"><div class="vital-val" style="color:${bpColor}">${v.bp}</div><div class="vital-label">Blood Pressure ${bpBadge}</div></div>
+      <div class="vital-card"><div class="vital-val">${v.hr}</div><div class="vital-label">Heart Rate <span class="vital-unit">bpm</span></div></div>
+      <div class="vital-card"><div class="vital-val">${v.temp}</div><div class="vital-label">Temp <span class="vital-unit">°C</span></div></div>
+      <div class="vital-card"><div class="vital-val">${v.spo2}</div><div class="vital-label">SpO₂ <span class="vital-unit">%</span></div></div>
+      <div class="vital-card"><div class="vital-val">${v.rr}</div><div class="vital-label">Resp. Rate <span class="vital-unit">/min</span></div></div>
+      <div class="vital-card"><div class="vital-val">${v.bmi}</div><div class="vital-label">BMI <span class="vital-unit">kg/m²</span></div></div>
+    </div>
+    <div style="background:var(--bg);border-radius:12px;padding:1rem;font-size:0.88rem;color:var(--muted);">
+      💡 <strong>Clinical Note:</strong> ${v.note || 'No note recorded.'}
+    </div>`;
+}
+
+// ─── HISTORY / TIMELINE TAB ──────────────────────────────────────────
+async function loadAndRenderHistory(p) {
+  const res = await api({ action: 'get_timeline', patient_id: p.id });
+  const items = res.success ? res.data : [];
+
+  const medHistSection = (p.pmh || p.fmh || p.surgical || p.vaccines || p.alcohol) ? `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.5rem;">
+      <div style="font-family:'Sora',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);margin-bottom:1rem;">📋 Medical History Summary</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        ${p.pmh ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Past Medical History</div><div style="font-size:0.88rem;">${p.pmh}</div></div>` : ''}
+        ${p.fmh ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Family History</div><div style="font-size:0.88rem;">${p.fmh}</div></div>` : ''}
+        ${p.surgical ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Surgical History</div><div style="font-size:0.88rem;">${p.surgical}</div></div>` : ''}
+        ${p.vaccines ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Vaccinations</div><div style="font-size:0.88rem;">${p.vaccines}</div></div>` : ''}
+        ${p.alcohol ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Alcohol Use</div><div style="font-size:0.88rem;">${p.alcohol}</div></div>` : ''}
+      </div>
+    </div>` : '';
+
+  const tlItems = items.length ? items.map(h => `
+    <div class="tl-item" id="tl-${h.id}">
+      <div class="tl-dot ${h.dot_type}"></div>
+      <div class="tl-date">${h.entry_date}</div>
+      <div class="tl-text">${h.entry_text}</div>
+      <button onclick="deleteTimelineEntry(${h.id})" title="Delete entry"
+        style="position:absolute;right:0;top:0;background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.75rem;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;"
+        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✕</button>
+    </div>`).join('') : `<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.9rem;">No timeline entries yet.</div>`;
+
+  document.getElementById('tab-history').innerHTML = `
+    ${medHistSection}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem;">
+      <div style="font-family:'Sora',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);">🕐 Clinical Timeline</div>
+      <button class="btn-primary btn-sm" onclick="openTimelineModal()" style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:1.1rem;line-height:1;">＋</span> Add Entry
+      </button>
+    </div>
+    <div class="timeline" id="timelineContainer" style="position:relative;">${tlItems}</div>`;
+}
+
+// ─── TIMELINE MODAL ──────────────────────────────────────────────────
+function openTimelineModal() {
+  document.getElementById('tl-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('tl-dot').value = '';
+  document.getElementById('tl-title').value = '';
+  document.getElementById('tl-details').value = '';
+  document.getElementById('timelineModal').classList.add('open');
+}
+function closeTimelineModal() {
+  document.getElementById('timelineModal').classList.remove('open');
+}
+async function saveTimelineEntry() {
+  const dateRaw  = document.getElementById('tl-date').value;
+  const dot      = document.getElementById('tl-dot').value;
+  const title    = document.getElementById('tl-title').value.trim();
+  const details  = document.getElementById('tl-details').value.trim();
+  if (!title || !dateRaw) { showToast('⚠ Date and Title are required.', false); return; }
+
+  const dateStr = new Date(dateRaw).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const text = details ? `<strong>${title}</strong> — ${details}` : `<strong>${title}</strong>`;
+
+  const res = await api({ action: 'add_timeline' }, 'POST', {
+    patient_id: activePatientId, entry_date: dateStr, dot_type: dot, entry_text: text
+  });
+  if (res.success) {
+    closeTimelineModal();
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderHistory(p);
+    showToast('✓ Timeline entry added!', true);
+  } else {
+    showToast('⚠ Failed to save entry.', false);
+  }
+}
+async function deleteTimelineEntry(id) {
+  if (!confirm('Delete this timeline entry?')) return;
+  const res = await api({ action: 'delete_timeline' }, 'POST', { id });
+  if (res.success) {
+    const el = document.getElementById('tl-' + id);
+    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }
+    showToast('✓ Entry deleted.', true);
+  }
+}
+
+// ─── MEDICATIONS TAB ─────────────────────────────────────────────────
+async function loadAndRenderMeds(p) {
+  const res = await api({ action: 'get_meds', patient_id: p.id });
+  const meds = res.success ? res.data : [];
+  const rows = meds.length ? meds.map(m => `
+    <tr>
+      <td><strong>${m.med_name}</strong></td>
+      <td>${m.dose}</td>
+      <td>${m.prescribed_by}</td>
+      <td>${m.start_date}</td>
+      <td>${badgeHtml(m.status)}</td>
+      <td><button onclick="deleteMed(${m.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;" title="Remove">🗑</button></td>
+    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem;">No medications on record.</td></tr>`;
+  document.getElementById('tab-meds').innerHTML = `
+    <table class="med-table">
+      <thead><tr><th>Medication</th><th>Dose / Frequency</th><th>Prescribed By</th><th>Start Date</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+      <button class="btn-primary" style="font-size:0.85rem;padding:9px 16px;" onclick="openEPrescribeModal()">💊 E-Prescribe New</button>
+      <button class="btn-outline" style="font-size:0.85rem;padding:9px 16px;" onclick="openRefillModal()">🔄 Request Refill</button>
+    </div>`;
+}
+
+async function deleteMed(id) {
+  if (!confirm('Remove this medication?')) return;
+  const res = await api({ action: 'delete_med' }, 'POST', { id });
+  if (res.success) {
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderMeds(p);
+    showToast('✓ Medication removed.', true);
+  }
+}
+
+// ─── E-PRESCRIBE ─────────────────────────────────────────────────────
+function openEPrescribeModal() {
+  if (!activePatientId) return;
+  document.getElementById('ePrescribeModal').classList.add('open');
+}
+function closeEPrescribeModal() {
+  document.getElementById('ePrescribeModal').classList.remove('open');
+  ['ep-name','ep-dose','ep-freq','ep-duration','ep-physician','ep-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('ep-route').value = 'Oral';
+}
+async function saveEPrescription() {
+  const name = document.getElementById('ep-name').value.trim();
+  const dose = document.getElementById('ep-dose').value.trim();
+  const freq = document.getElementById('ep-freq').value.trim();
+  const by   = document.getElementById('ep-physician').value.trim();
+  if (!name || !dose || !freq || !by) { showToast('⚠ Please fill in all required fields.', false); return; }
+
+  const route = document.getElementById('ep-route').value;
+  const dur   = document.getElementById('ep-duration').value.trim();
+  const fullDose = `${dose} · ${freq}${dur ? ' · ' + dur : ''}${route !== 'Oral' ? ' (' + route + ')' : ''}`;
+
+  const res = await api({ action: 'add_med' }, 'POST', {
+    patient_id: activePatientId, med_name: name, dose: fullDose,
+    prescribed_by: by, start_date: new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
+    status: 'active'
+  });
+  if (res.success) {
+    closeEPrescribeModal();
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderMeds(p);
+    showToast(`✓ Prescription for ${name} sent!`, true);
+  } else {
+    showToast('⚠ Failed to save prescription.', false);
+  }
+}
+
+// ─── REFILL ───────────────────────────────────────────────────────────
+async function openRefillModal() {
+  if (!activePatientId) return;
+  const res = await api({ action: 'get_meds', patient_id: activePatientId });
+  const meds = res.success ? res.data.filter(m => m.status === 'active') : [];
+  const sel = document.getElementById('rf-med');
+  sel.innerHTML = '<option value="">— Select medication —</option>';
+  meds.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.med_name;
+    opt.textContent = `${m.med_name} — ${m.dose}`;
+    sel.appendChild(opt);
+  });
+  document.getElementById('refillModal').classList.add('open');
+}
+function closeRefillModal() {
+  document.getElementById('refillModal').classList.remove('open');
+  ['rf-qty','rf-pharmacy','rf-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('rf-med').value = '';
+}
+async function saveRefill() {
+  const medName = document.getElementById('rf-med').value;
+  if (!medName) { showToast('⚠ Please select a medication.', false); return; }
+  const pharmacy = document.getElementById('rf-pharmacy').value.trim() || 'HealthCare Hub Pharmacy';
+  const qty = document.getElementById('rf-qty').value.trim() || '30 days';
+  const res = await api({ action: 'request_refill' }, 'POST', {
+    patient_id: activePatientId, med_name: medName, pharmacy, qty
+  });
+  if (res.success) {
+    closeRefillModal();
+    showToast(`✓ Refill request for ${medName} sent to ${pharmacy}!`, true);
+  } else {
+    showToast('⚠ Failed to send refill request.', false);
+  }
+}
+
+// ─── LAB RESULTS TAB ─────────────────────────────────────────────────
+async function loadAndRenderLabs(p) {
+  const res = await api({ action: 'get_labs', patient_id: p.id });
+  const labs = res.success ? res.data : [];
+  const latestDate = labs.length ? labs[0].panel_date : 'No labs yet';
+
+  const rows = labs.length ? labs.map(r => {
+    const clr = r.color_type === 'success' ? 'var(--success)' : r.color_type === 'danger' ? 'var(--danger)' : 'var(--accent2)';
+    const badgeCls = r.color_type === 'success' ? 'badge-active' : r.color_type === 'danger' ? 'badge-danger' : 'badge-warning';
+    return `
+    <div class="lab-row">
+      <span><strong>${r.test_name}</strong></span>
+      <span style="color:${clr};font-weight:600;">${r.test_value} <span class="badge ${badgeCls}">${r.label}</span></span>
+      <div class="lab-bar-wrap"><div class="lab-bar ${r.cls}" style="width:${r.pct}%"></div></div>
+      <span style="font-size:0.8rem;color:var(--muted);">Ref: ${r.ref_range}</span>
+      <div style="display:flex;gap:4px;">
+        <button onclick="openEditLabModal(${r.id},'${r.test_name}','${r.test_value}','${r.ref_range}','${r.label}',${r.pct},'${r.cls}','${r.panel_date}')"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:2px 6px;border-radius:6px;transition:background 0.15s;"
+          onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">✏️</button>
+        <button onclick="deleteLab(${r.id})"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:2px 6px;border-radius:6px;transition:background 0.15s;"
+          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">🗑</button>
+      </div>
+    </div>`;
+  }).join('') : `<div style="text-align:center;color:var(--muted);padding:2rem;font-size:0.9rem;">No lab results on record.</div>`;
+
+  document.getElementById('tab-labs').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.2rem;">
+      <p style="color:var(--muted);font-size:0.85rem;margin:0;">Latest panel: <strong>${latestDate}</strong></p>
+      <button class="btn-primary" style="font-size:0.82rem;padding:7px 14px;" onclick="openAddLabModal()">＋ Add Lab Result</button>
+    </div>
+    ${rows}`;
+}
+
+function openAddLabModal() {
+  editingLabId = null;
+  document.getElementById('labModalTitle').textContent = '➕ Add Lab Result';
+  ['lab-name','lab-value','lab-ref','lab-lbl'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('lab-pct').value = '';
+  document.getElementById('lab-status').value = 'ok';
+  document.getElementById('lab-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('labModal').classList.add('open');
+}
+function openEditLabModal(id, name, val, ref, lbl, pct, cls, pd) {
+  editingLabId = id;
+  document.getElementById('labModalTitle').textContent = '✏️ Edit Lab Result';
+  document.getElementById('lab-name').value  = name;
+  document.getElementById('lab-value').value = val;
+  document.getElementById('lab-ref').value   = ref;
+  document.getElementById('lab-lbl').value   = lbl;
+  document.getElementById('lab-pct').value   = pct;
+  document.getElementById('lab-status').value = cls;
+  // Convert "dd Mon yyyy" to yyyy-mm-dd for date input
+  try {
+    const d = new Date(pd); if (!isNaN(d)) document.getElementById('lab-date').value = d.toISOString().split('T')[0];
+  } catch(e) {}
+  document.getElementById('labModal').classList.add('open');
+}
+function closeLabModal() { document.getElementById('labModal').classList.remove('open'); editingLabId = null; }
+
+async function saveLabResult() {
+  const name  = document.getElementById('lab-name').value.trim();
+  const val   = document.getElementById('lab-value').value.trim();
+  const ref   = document.getElementById('lab-ref').value.trim();
+  const lbl   = document.getElementById('lab-lbl').value.trim();
+  const pct   = parseInt(document.getElementById('lab-pct').value) || 50;
+  const cls   = document.getElementById('lab-status').value;
+  const pdRaw = document.getElementById('lab-date').value;
+  if (!name || !val || !ref || !lbl) { showToast('⚠ Please fill in all required fields.', false); return; }
+  const pd = pdRaw ? new Date(pdRaw).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
+
+  const payload = { patient_id: activePatientId, test_name: name, test_value: val, ref_range: ref, label: lbl, pct, cls, panel_date: pd };
+  let res;
+  if (editingLabId) {
+    payload.id = editingLabId;
+    res = await api({ action: 'update_lab' }, 'POST', payload);
+  } else {
+    res = await api({ action: 'add_lab' }, 'POST', payload);
+  }
+  if (res.success) {
+    closeLabModal();
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderLabs(p);
+    showToast(editingLabId ? '✓ Lab result updated.' : `✓ Lab result for ${name} added.`, true);
+  } else {
+    showToast('⚠ Failed to save lab result.', false);
+  }
+}
+async function deleteLab(id) {
+  if (!confirm('Delete this lab result?')) return;
+  const res = await api({ action: 'delete_lab' }, 'POST', { id });
+  if (res.success) {
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderLabs(p);
+    showToast('✓ Lab result deleted.', true);
+  }
+}
+
+// ─── NEW PATIENT MODAL ───────────────────────────────────────────────
+function openNewPatientModal() { document.getElementById('newPatientModal').classList.add('open'); }
+function closeModal() {
+  document.getElementById('newPatientModal').classList.remove('open');
+  ['np-fname','np-lname','np-dob','np-phone','np-email','np-insurance','np-physician','np-allergies','np-conditions','np-pmh','np-fmh','np-surgical','np-vaccines']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('np-gender').value  = '';
+  document.getElementById('np-blood').value   = '';
+  document.getElementById('np-smoking').value = 'Non-smoker';
+  document.getElementById('np-alcohol').value = 'None';
+}
+
+async function saveNewPatient() {
+  const fname  = document.getElementById('np-fname').value.trim();
+  const lname  = document.getElementById('np-lname').value.trim();
+  const dob    = document.getElementById('np-dob').value;
+  const gender = document.getElementById('np-gender').value;
+  if (!fname || !lname || !dob || !gender) { showToast('⚠ Please fill in all required fields.', false); return; }
+
+  const res = await api({ action: 'add_patient' }, 'POST', {
+    first_name: fname, last_name: lname, dob, gender,
+    blood_type:  document.getElementById('np-blood').value || 'Unknown',
+    phone:       document.getElementById('np-phone').value,
+    email:       document.getElementById('np-email').value,
+    insurance:   document.getElementById('np-insurance').value,
+    physician:   document.getElementById('np-physician').value,
+    allergies:   document.getElementById('np-allergies').value,
+    conditions:  document.getElementById('np-conditions').value,
+    smoking:     document.getElementById('np-smoking').value,
+    alcohol:     document.getElementById('np-alcohol').value,
+    pmh:         document.getElementById('np-pmh').value,
+    fmh:         document.getElementById('np-fmh').value,
+    surgical:    document.getElementById('np-surgical').value,
+    vaccines:    document.getElementById('np-vaccines').value,
+  });
+
+  if (res.success) {
+    closeModal();
+    await loadPatients();
+    showToast(`✓ ${res.message}`, true);
+    setTimeout(() => selectPatient(res.patient_id), 400);
+  } else {
+    showToast('⚠ ' + (res.message || 'Failed to register patient.'), false);
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+function showToast(msg, success = true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (success ? ' success' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── CLOSE MODALS ON OVERLAY CLICK ───────────────────────────────────
+['newPatientModal','ePrescribeModal','refillModal','labModal','timelineModal'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', function(e) {
+    if (e.target === this) {
+      if (id === 'newPatientModal') closeModal();
+      else if (id === 'ePrescribeModal') closeEPrescribeModal();
+      else if (id === 'refillModal') closeRefillModal();
+      else if (id === 'labModal') closeLabModal();
+      else if (id === 'timelineModal') closeTimelineModal();
+    }
+  });
+});
+
+// ─── BOOT ────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
