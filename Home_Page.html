@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthCare Hub</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: #f3f7fb;
+      color: #1f2937;
+    }
+
+
+    
+    header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 1.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .lang-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .lang-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .lang-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .lang-btn.active {
+      background: #fff;
+      color: #1d4ed8;
+    }
+
+    .hero {
+      padding: 4rem 1rem;
+      text-align: center;
+      background: #eef5ff;
+    }
+
+    .hero h2 {
+      font-size: 2.5rem;
+      margin: 0 0 1rem;
+    }
+
+    .hero p {
+      max-width: 720px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.7;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 0.85rem 1.5rem;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .section {
+      padding: 3rem 1rem;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #1d4ed8;
+    }
+
+    .card p,
+    .section p {
+      line-height: 1.7;
+    }
+
+    .card-button {
+      display: inline-block;
+      margin-top: auto;
+      padding: 0.7rem 1.2rem;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      align-self: flex-start;
+    }
+
+    .card-button:hover {
+      background: #1d4ed8;
+    }
+
+    footer {
+      background: #0f172a;
+      color: #cbd5e1;
+      text-align: center;
+      padding: 1.5rem 1rem;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        justify-content: center;
+        text-align: center;
+      }
+
+      nav {
+        margin-top: 0.75rem;
+      }
+
+      .hero h2 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HealthCare Hub</h1>
+    <nav>
+      <a href="#services">Services</a>
+      <a href="#about">About</a>
+      <a href="http://localhost/Health%20Information%20System/Front%20End/ERP%20Pharmacy%20Sign%20in%20Page.html">ERP Pharmacy</a>
+      <a href="#contact">Contact</a>
+      <div class="lang-buttons">
+        <button class="lang-btn active" onclick="changeLanguage('en')">English</button>
+        <button class="lang-btn" onclick="window.location.href='Home Page AR.html'">العربية</button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h2>Better health starts with trusted care</h2>
+      <p>HealthCare Hub connects you with preventive health resources, wellness programs, and expert guidance so you can feel your best every day.</p>
+      <a class="button" href="#services">Explore Services</a>
+    </section>
+
+    <section id="services" class="section">
+      <h2>Our Services</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Preventive Screenings</h3>
+          <p>Access health screenings and checkups to catch issues early and maintain long-term wellness.</p>
+        </div>
+        <div class="card">
+          <h3>Telehealth Support</h3>
+          <p>Consult with qualified professionals from home for fast, convenient health advice and care.</p>
+          <a class="card-button" href="Appointments Page.html">Make Appointment</a>
+        </div>
+        <div class="card">
+          <h3>PMS System for Pharmacists</h3>
+          <p>Integrated solution for pharmacies combining an ERP for managers and a POS for employees — centralized inventory, sales, and reporting to streamline daily operations.</p>
+          <a class="card-button" href="ERP_Pharmacy_Sign_in_Page.html">Access System</a>
+        </div>
+        <div class="card">
+          <h3>Health Chatbot</h3>
+          <p>Get instant nutrition advice, personalized diet recommendations, and medicine suggestions based on your symptoms. Our AI-powered chatbot helps you understand your health needs and find the right solutions.</p>
+          <a class="card-button" href="Health_Chatbot.html">Chat Now</a>
+        </div>
+        <div class="card">
+          <h3>Electronic Health Records</h3>
+          <p>Access complete patient records, lab results, medications, vitals, and medical history in one secure, centralised platform — empowering smarter clinical decisions for every care team member.</p>
+          <a class="card-button" href="EHR_Page.html">Open EHR System</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <h2>About HealthCare Hub</h2>
+      <p>We are dedicated to supporting healthy lifestyles with simple, reliable information and services designed for modern life.</p>
+    </section>
+
+    <section id="contact" class="section">
+      <h2>Contact Us</h2>
+      <p>Have a question or need support? Reach out to our team to learn more about our programs and resources.</p>
+      <p>Email: support@healthcarehub.example</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 HealthCare Hub. Empowering healthy living.</p>
+  </footer>
+
+  <script>
+    function changeLanguage(lang) {
+      // Update active button
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

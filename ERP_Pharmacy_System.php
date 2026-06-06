@@ -1476,7 +1476,7 @@ function handleFactoryResetRequest() {
     // Build reset link
     $protocol  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host      = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $resetLink = $protocol . '://' . $host . '/Back%20End/ERP%20Pharmacy%20System.php?action=confirm_factory_reset&token=' . urlencode($token);
+    $resetLink = $protocol . '://' . $host . '/Back%20End/ERP_Pharmacy_System.php?action=confirm_factory_reset&token=' . urlencode($token);
 
     // Send email
     $subject = "=?UTF-8?B?" . base64_encode("⚠️ Pharmacy ERP – Factory Reset Confirmation") . "?=";
@@ -1608,23 +1608,5 @@ function handleRestoreDatabase() {
     exit;
 }
 
-    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-    if ($id <= 0) {
-        http_response_code(400);
-        echo json_encode(array("success" => false, "message" => "Supplier id is required"));
-        exit;
-    }
-    $conn = getSupplierConn();
-    $stmt = $conn->prepare("DELETE FROM suppliers WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        $stmt->close(); $conn->close();
-        echo json_encode(array("success" => true, "message" => "Supplier deleted successfully"));
-    } else {
-        $err = $conn->error; $stmt->close(); $conn->close();
-        http_response_code(500);
-        echo json_encode(array("success" => false, "message" => "Failed to delete supplier: " . $err));
-    }
-}
 
 ?>

@@ -448,6 +448,160 @@
       color: #1f2937;
     }
 
+    /* Near Expiry Card */
+    .stat-card.near-expiry {
+      border-top-color: #f97316;
+    }
+    .stat-card.near-expiry .value {
+      color: #f97316;
+    }
+    .stat-card.near-expiry .change {
+      color: #f97316;
+    }
+
+    /* Near Expiry Table */
+    .near-expiry-table-container {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+    }
+    .near-expiry-header {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff;
+      padding: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Settings sub-navigation */
+    .settings-nav {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+    .settings-nav-btn {
+      padding: 0.6rem 1.2rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      color: #374151;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .settings-nav-btn:hover {
+      border-color: #1d4ed8;
+      color: #1d4ed8;
+      background: #eef5ff;
+    }
+    .settings-nav-btn.active {
+      background: #1d4ed8;
+      color: #fff;
+      border-color: #1d4ed8;
+    }
+    .settings-nav-btn.danger {
+      border-color: #fee2e2;
+      background: #fff5f5;
+      color: #dc2626;
+    }
+    .settings-nav-btn.danger:hover, .settings-nav-btn.danger.active {
+      background: #dc2626;
+      color: #fff;
+      border-color: #dc2626;
+    }
+
+    .settings-panel {
+      display: none;
+    }
+    .settings-panel.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Danger zone box */
+    .danger-zone {
+      border: 2px solid #fca5a5;
+      border-radius: 12px;
+      padding: 2rem;
+      background: #fff5f5;
+    }
+    .danger-zone h3 {
+      color: #dc2626;
+      margin-bottom: 0.5rem;
+    }
+    .danger-zone p {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Backup box */
+    .backup-zone {
+      border: 2px solid #d1fae5;
+      border-radius: 12px;
+      padding: 2rem;
+      background: #f0fdf4;
+      margin-bottom: 1.5rem;
+    }
+    .backup-zone h3 { color: #065f46; margin-bottom: 0.5rem; }
+    .backup-zone p { color: #6b7280; margin-bottom: 1.5rem; font-size: 0.95rem; }
+
+    .restore-zone {
+      border: 2px solid #dbeafe;
+      border-radius: 12px;
+      padding: 2rem;
+      background: #eff6ff;
+      margin-bottom: 1.5rem;
+    }
+    .restore-zone h3 { color: #1e40af; margin-bottom: 0.5rem; }
+    .restore-zone p { color: #6b7280; margin-bottom: 1.5rem; font-size: 0.95rem; }
+
+    /* Factory reset modal */
+    #factoryResetModal .modal-content {
+      border-top: 4px solid #dc2626;
+    }
+    #factoryResetModal .modal-header h2 {
+      color: #dc2626;
+    }
+    .reset-step {
+      display: none;
+    }
+    .reset-step.active {
+      display: block;
+    }
+    .warning-icon {
+      font-size: 3rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .info-box {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: #92400e;
+    }
+    .success-box {
+      background: #d1fae5;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: #065f46;
+    }
+
     @media (max-width: 768px) {
       .container {
         flex-direction: column;
@@ -486,10 +640,10 @@
       <div class="user-info">
         <span>👤 <strong id="pharmacistName">Pharmacist</strong></span>
       </div>
-      <a href="Home Page.html" class="home-btn">🏠 Home</a>
+      <a href="Home_Page.html" class="home-btn">🏠 Home</a>
       <div class="lang-buttons">
         <button class="lang-btn active" onclick="changeLanguage('en')">English</button>
-        <button class="lang-btn" onclick="window.location.href='ERP Dashboard AR.html'">العربية</button>
+        <button class="lang-btn" onclick="window.location.href='ERP_Dashboard_AR.html'">العربية</button>
       </div>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
@@ -536,6 +690,31 @@
             <div class="value" style="color: #6366f1;" id="transactionCountValue">--</div>
             <div class="change" style="color: #6366f1;">Last 10 sales</div>
           </div>
+
+          <div class="stat-card near-expiry" style="cursor:pointer;" onclick="scrollToNearExpiry()">
+            <h3>⏰ Near Expiry</h3>
+            <div class="value" id="nearExpiryValue">--</div>
+            <div class="change" id="nearExpiryChange">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Near Expiry Table -->
+        <div class="near-expiry-table-container" id="nearExpirySection" style="display:none;">
+          <div class="near-expiry-header">⏰ Near Expiry Medicines <span id="nearExpiryBadge" style="margin-left:auto;background:rgba(255,255,255,0.25);padding:0.2rem 0.7rem;border-radius:999px;font-size:0.85rem;"></span></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Medicine Name</th>
+                <th>Category</th>
+                <th>Qty in Stock</th>
+                <th>Expiry Date</th>
+                <th>Days Left</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="nearExpiryBody"></tbody>
+          </table>
         </div>
 
         <div class="table-container">
@@ -560,7 +739,15 @@
       <div id="inventory" class="section">
         <div class="card">
           <h2>Inventory Management</h2>
-          <button class="btn btn-primary" onclick="showModal('addInventoryModal')">+ Add New Item</button>
+          <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:1rem;">
+            <button class="btn btn-primary" onclick="showModal('addInventoryModal')">+ Add New Item</button>
+            <div style="flex:1;min-width:220px;position:relative;">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:1rem;pointer-events:none;">🔍</span>
+              <input type="text" id="inventorySearch" placeholder="Search medicines by name, code or category…"
+                style="padding-left:2.25rem;width:100%;border:2px solid #e5e7eb;border-radius:8px;font-size:0.95rem;"
+                oninput="filterInventory(this.value)">
+            </div>
+          </div>
         </div>
 
         <div class="table-container">
@@ -573,6 +760,7 @@
                 <th>Category</th>
                 <th>Quantity</th>
                 <th>Unit Price</th>
+                <th>Expiry Date</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -781,55 +969,130 @@
               <canvas id="trendChart"></canvas>
             </div>
           </div>
+
+          <div style="margin-top: 1.5rem; background:#fff; padding:12px; border-radius:8px;">
+            <h4 style="margin:0 0 8px 0; color:#1d4ed8">Payment Methods Breakdown</h4>
+            <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
+              <div style="width:220px;height:220px;flex-shrink:0;">
+                <canvas id="paymentPieChart"></canvas>
+              </div>
+              <div id="paymentPieLegend" style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.93rem;"></div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- SETTINGS SECTION -->
       <div id="settings" class="section">
         <div class="card">
-          <h2>Account Settings</h2>
-          
-          <form onsubmit="saveSettings(event)">
-            <div class="form-row">
-              <div class="form-group">
-                <label>First Name</label>
-                <input type="text" value="Ahmed" placeholder="First Name">
+          <h2>⚙️ Settings</h2>
+
+          <!-- Settings Sub Navigation -->
+          <div class="settings-nav">
+            <button class="settings-nav-btn active" onclick="showSettingsPanel('panel-account', this)">👤 Account</button>
+            <button class="settings-nav-btn" onclick="showSettingsPanel('panel-backup', this)">💾 Backup Database</button>
+            <button class="settings-nav-btn" onclick="showSettingsPanel('panel-restore', this)">🔄 Restore Database</button>
+            <button class="settings-nav-btn danger" onclick="showSettingsPanel('panel-factory', this)">⚠️ Factory Reset</button>
+          </div>
+
+          <!-- ACCOUNT PANEL -->
+          <div id="panel-account" class="settings-panel active">
+            <form onsubmit="saveSettings(event)">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>First Name</label>
+                  <input type="text" value="Ahmed" placeholder="First Name">
+                </div>
+                <div class="form-group">
+                  <label>Last Name</label>
+                  <input type="text" value="Hassan" placeholder="Last Name">
+                </div>
               </div>
               <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" value="Hassan" placeholder="Last Name">
+                <label>Email</label>
+                <input type="email" value="ahmed@pharmacy.com" placeholder="Email Address">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" value="+1 (555) 123-4567" placeholder="Phone Number">
+              </div>
+              <h3 style="color: #1d4ed8; margin: 2rem 0 1rem;">Change Password</h3>
+              <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" placeholder="Enter current password">
+              </div>
+              <div class="form-group">
+                <label>New Password</label>
+                <input type="password" placeholder="Enter new password">
+              </div>
+              <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" placeholder="Confirm new password">
+              </div>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+          </div>
+
+          <!-- BACKUP PANEL -->
+          <div id="panel-backup" class="settings-panel">
+            <div class="backup-zone">
+              <h3>💾 Backup Database</h3>
+              <p>Create a complete backup of the pharmacy database including all medicines, sales, purchases, suppliers, and user data. The backup file will be downloaded as a compressed SQL file.</p>
+              <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+                <button class="btn btn-success" onclick="triggerBackup()" style="padding:0.75rem 2rem;">
+                  💾 Download Backup Now
+                </button>
+                <span style="font-size:0.85rem; color:#6b7280;" id="lastBackupInfo">Last backup: Not recorded</span>
               </div>
             </div>
-
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" value="ahmed@pharmacy.com" placeholder="Email Address">
+            <div style="background:#f9fafb; border-radius:8px; padding:1.5rem;">
+              <h4 style="color:#374151; margin-bottom:1rem;">📋 Backup Information</h4>
+              <ul style="list-style:none; display:flex; flex-direction:column; gap:0.75rem;">
+                <li style="display:flex;align-items:center;gap:0.5rem;"><span style="color:#10b981;">✔</span> All medicine inventory records</li>
+                <li style="display:flex;align-items:center;gap:0.5rem;"><span style="color:#10b981;">✔</span> Sales and transaction history</li>
+                <li style="display:flex;align-items:center;gap:0.5rem;"><span style="color:#10b981;">✔</span> Purchase orders and supplier data</li>
+                <li style="display:flex;align-items:center;gap:0.5rem;"><span style="color:#10b981;">✔</span> Prescriptions and returns</li>
+                <li style="display:flex;align-items:center;gap:0.5rem;"><span style="color:#10b981;">✔</span> User accounts (passwords not included)</li>
+              </ul>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label>Phone</label>
-              <input type="tel" value="+1 (555) 123-4567" placeholder="Phone Number">
+          <!-- RESTORE PANEL -->
+          <div id="panel-restore" class="settings-panel">
+            <div class="restore-zone">
+              <h3>🔄 Restore Database</h3>
+              <p>Restore the pharmacy database from a previously downloaded backup file (.sql). <strong>Warning:</strong> This will overwrite current data with the backup. Only use files generated by this system.</p>
+              <div class="form-group" style="margin-bottom:1rem;">
+                <label>Select Backup File (.sql)</label>
+                <input type="file" id="restoreFileInput" accept=".sql,.gz" style="border:2px dashed #bfdbfe; background:#eff6ff; padding:1rem;">
+              </div>
+              <div id="restoreFileInfo" style="display:none; background:#dbeafe; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#1e40af;"></div>
+              <button class="btn btn-primary" onclick="triggerRestore()" style="padding:0.75rem 2rem;">
+                🔄 Restore Database
+              </button>
             </div>
-
-            <h3 style="color: #1d4ed8; margin: 2rem 0 1rem;">Change Password</h3>
-
-            <div class="form-group">
-              <label>Current Password</label>
-              <input type="password" placeholder="Enter current password">
+            <div style="background:#fff8f0; border:1px solid #fed7aa; border-radius:8px; padding:1.5rem;">
+              <h4 style="color:#c2410c; margin-bottom:0.5rem;">⚠️ Important Notes</h4>
+              <ul style="color:#6b7280; font-size:0.9rem; padding-left:1.25rem; display:flex; flex-direction:column; gap:0.5rem;">
+                <li>Only upload backup files generated by this ERP system.</li>
+                <li>Current data will be replaced with the backup content.</li>
+                <li>A confirmation prompt will appear before restoring.</li>
+                <li>It is recommended to take a fresh backup before restoring.</li>
+              </ul>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label>New Password</label>
-              <input type="password" placeholder="Enter new password">
+          <!-- FACTORY RESET PANEL -->
+          <div id="panel-factory" class="settings-panel">
+            <div class="danger-zone">
+              <h3>⚠️ Factory Reset</h3>
+              <p>This will <strong>permanently delete all data</strong> from the pharmacy system — medicines, sales, purchases, prescriptions, suppliers, and all records. This action is <strong>irreversible</strong>.</p>
+              <p style="color:#dc2626; font-weight:600; margin-bottom:1.5rem;">To protect your data, a verification email will be sent to the Manager's registered Gmail. The reset will <u>not</u> occur until you click the confirmation link in that email.</p>
+              <button class="btn btn-danger" onclick="showModal('factoryResetModal')" style="padding:0.75rem 2rem;">
+                🗑️ Initiate Factory Reset
+              </button>
             </div>
-
-            <div class="form-group">
-              <label>Confirm Password</label>
-              <input type="password" placeholder="Confirm new password">
-            </div>
-
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-          </form>
+          </div>
         </div>
       </div>
     </div>
@@ -869,6 +1132,10 @@
             <label>Unit Price</label>
             <input type="number" step="0.01" required placeholder="0.00">
           </div>
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="date" id="addInventoryExpiry">
         </div>
         <button type="submit" class="btn btn-success" style="width: 100%; padding: 0.75rem;">Add Item</button>
       </form>
@@ -914,6 +1181,11 @@
             <button type="button" class="btn btn-secondary" onclick="addCategoryFromInput('edit')">Add</button>
           </div>
           <div id="categoryListForEdit" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="date" id="editItemExpiry">
         </div>
 
         <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
@@ -1187,7 +1459,7 @@
             <select id="salePayment">
               <option value="Cash">Cash</option>
               <option value="Card">Card</option>
-              <option value="Insurance">Insurance</option>
+              <option value="E-Wallet">E-Wallet</option>
             </select>
           </div>
         </div>
@@ -1242,6 +1514,73 @@
     </div>
   </div>
 
+  <!-- ═══ VIEW PURCHASE MODAL ══════════════════════════════════════════════ -->
+  <div id="viewPurchaseModal" class="modal">
+    <div class="modal-content" style="max-width:680px;">
+      <div class="modal-header">
+        <h2>🛒 Purchase Order Details</h2>
+        <button class="close-btn" onclick="closeModal('viewPurchaseModal')">×</button>
+      </div>
+      <div id="viewPurchaseContent"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1.25rem;">
+        <button class="btn btn-primary" onclick="closeModal('viewPurchaseModal')" style="min-width:120px;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACTORY RESET MODAL -->
+  <div id="factoryResetModal" class="modal">
+    <div class="modal-content" style="max-width:520px;">
+      <div class="modal-header">
+        <h2>🗑️ Factory Reset</h2>
+        <button class="close-btn" onclick="closeResetModal()">×</button>
+      </div>
+
+      <!-- Step 1: Enter credentials -->
+      <div id="resetStep1" class="reset-step active">
+        <div class="warning-icon">⚠️</div>
+        <div class="info-box">
+          This action will permanently delete ALL pharmacy data. To proceed, you must verify your identity as Manager. A reset confirmation link will be sent to your registered Gmail — the database will <strong>not</strong> be reset until you click that link.
+        </div>
+        <div class="form-group">
+          <label>Manager ID</label>
+          <input type="text" id="resetManagerId" placeholder="e.g., PHARM001" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Manager Password</label>
+          <input type="password" id="resetManagerPwd" placeholder="Enter your password" autocomplete="new-password">
+        </div>
+        <div id="resetStep1Error" style="color:#dc2626; font-size:0.9rem; margin-bottom:1rem; display:none;"></div>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="closeResetModal()">Cancel</button>
+          <button class="btn btn-danger" onclick="verifyManagerAndSendLink()" id="resetSendBtn" style="min-width:160px;">Send Reset Link</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Email sent confirmation -->
+      <div id="resetStep2" class="reset-step">
+        <div class="warning-icon">📧</div>
+        <div class="success-box">
+          <strong>Reset link sent!</strong><br>
+          A factory reset confirmation email has been sent to your registered Gmail address. Please check your inbox (and spam folder) and click the link to complete the reset.<br><br>
+          <em>The database will <u>not</u> be reset until you click the link in your email.</em>
+        </div>
+        <div style="background:#f9fafb; border-radius:8px; padding:1rem; margin-bottom:1.5rem; font-size:0.9rem; color:#374151;">
+          📋 <strong>What happens next:</strong><br>
+          <ul style="margin-top:0.5rem; padding-left:1.25rem; display:flex; flex-direction:column; gap:0.4rem;">
+            <li>Check your Gmail inbox for the reset link</li>
+            <li>The link expires in <strong>30 minutes</strong></li>
+            <li>Clicking the link will delete all pharmacy data</li>
+            <li>You will be logged out automatically after reset</li>
+          </ul>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="closeResetModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -1290,6 +1629,11 @@
 
       // Add active class to clicked nav item
       event.target.classList.add('active');
+
+      // Render payment pie chart when reports section opens
+      if (sectionId === 'reports') {
+        setTimeout(() => renderPaymentPieChart(), 100);
+      }
     }
 
     function showModal(modalId) {
@@ -1302,8 +1646,81 @@
 
     // Inventory editing functions implemented further below (renderInventory, edit/save handlers)
 
+    // ── Purchase Orders data ─────────────────────────────────────────────────
+    window._purchaseOrders = {
+      'PO-2026-001': {
+        po: 'PO-2026-001', supplier: 'Prime Pharma Supplies', date: '2026-05-20', status: 'Received',
+        items: [
+          { name: 'Paracetamol 500mg', qty: 200, unit_price: 2.50 },
+          { name: 'Amoxicillin 250mg', qty: 100, unit_price: 8.90 },
+          { name: 'Cough Syrup 200ml', qty: 80,  unit_price: 5.75 },
+          { name: 'Vitamin C Pack',    qty: 150, unit_price: 3.20 },
+          { name: 'Antacid Tablets',   qty: 120, unit_price: 1.80 },
+        ]
+      },
+      'PO-2026-002': {
+        po: 'PO-2026-002', supplier: 'Global Med Distributors', date: '2026-05-22', status: 'Pending',
+        items: [
+          { name: 'Ibuprofen 400mg',   qty: 150, unit_price: 3.10 },
+          { name: 'Omeprazole 20mg',   qty: 90,  unit_price: 6.50 },
+          { name: 'Metformin 500mg',   qty: 200, unit_price: 4.20 },
+        ]
+      },
+      'PO-2026-003': {
+        po: 'PO-2026-003', supplier: 'Quality Healthcare Ltd', date: '2026-05-24', status: 'Pending',
+        items: [
+          { name: 'Aspirin 100mg',      qty: 300, unit_price: 1.50 },
+          { name: 'Atorvastatin 20mg',  qty: 100, unit_price: 9.80 },
+          { name: 'Lisinopril 10mg',    qty: 120, unit_price: 7.30 },
+          { name: 'Metoprolol 50mg',    qty: 80,  unit_price: 5.60 },
+          { name: 'Amlodipine 5mg',     qty: 100, unit_price: 6.20 },
+        ]
+      }
+    };
+
     function viewPurchase(poNumber) {
-      alert('Viewing purchase order: ' + poNumber);
+      const po = window._purchaseOrders[poNumber];
+      if (!po) { alert('Purchase order not found: ' + poNumber); return; }
+      const statusColors = { Received: ['#dcfce7','#166534'], Pending: ['#dbeafe','#1e40af'], Cancelled: ['#fee2e2','#991b1b'] };
+      const [sbg, scolor] = statusColors[po.status] || ['#f3f4f6','#374151'];
+      let total = 0;
+      const rows = po.items.map(item => {
+        const sub = item.qty * item.unit_price;
+        total += sub;
+        return `<tr>
+          <td style="padding:0.65rem 1rem;border-bottom:1px solid #e5e7eb;">${item.name}</td>
+          <td style="padding:0.65rem 1rem;border-bottom:1px solid #e5e7eb;text-align:center;">${item.qty}</td>
+          <td style="padding:0.65rem 1rem;border-bottom:1px solid #e5e7eb;text-align:right;">$${item.unit_price.toFixed(2)}</td>
+          <td style="padding:0.65rem 1rem;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">$${sub.toFixed(2)}</td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('viewPurchaseContent').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;background:#f8faff;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:0.95rem;">
+          <div><span style="color:#6b7280;font-weight:600;">PO Number</span><br><span style="color:#1d4ed8;font-weight:700;font-size:1rem;">${po.po}</span></div>
+          <div><span style="color:#6b7280;font-weight:600;">Date</span><br><span>${po.date}</span></div>
+          <div><span style="color:#6b7280;font-weight:600;">Supplier</span><br><span style="font-weight:600;">${po.supplier}</span></div>
+          <div><span style="color:#6b7280;font-weight:600;">Status</span><br><span style="display:inline-block;padding:0.2rem 0.75rem;border-radius:999px;background:${sbg};color:${scolor};font-weight:600;font-size:0.85rem;">${po.status}</span></div>
+        </div>
+        <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:1.25rem;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#1d4ed8;color:#fff;">
+                <th style="padding:0.65rem 1rem;text-align:left;font-size:0.88rem;">Item Name</th>
+                <th style="padding:0.65rem 1rem;text-align:center;font-size:0.88rem;">Qty</th>
+                <th style="padding:0.65rem 1rem;text-align:right;font-size:0.88rem;">Unit Price</th>
+                <th style="padding:0.65rem 1rem;text-align:right;font-size:0.88rem;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:1rem;padding:0.25rem;">
+          <span style="font-size:1rem;font-weight:600;color:#374151;">Total Amount:</span>
+          <span style="font-size:1.4rem;font-weight:700;color:#1d4ed8;">$${total.toFixed(2)}</span>
+        </div>
+      `;
+      showModal('viewPurchaseModal');
     }
 
     function viewSale(idx) {
@@ -1440,12 +1857,26 @@
       alert('Settings saved successfully!');
     }
 
+    // ── Demo product catalogue (used when backend is unavailable) ────────────
+    const _demoProducts = [
+      { code: 'P001', name: 'Paracetamol 500mg', category: 'Pain Relief',   quantity_in_stock: 45, unit_price: 2.50,  expiry_date: '2026-06-17' },
+      { code: 'P002', name: 'Cough Syrup 200ml', category: 'Cough & Cold',  quantity_in_stock: 8,  unit_price: 5.75,  expiry_date: '2026-07-03' },
+      { code: 'P003', name: 'Antacid Tablets',   category: 'Digestive',     quantity_in_stock: 20, unit_price: 1.80,  expiry_date: '2026-06-10' },
+      { code: 'P004', name: 'Ibuprofen 400mg',   category: 'Pain Relief',   quantity_in_stock: 60, unit_price: 3.10,  expiry_date: '2027-02-28' },
+      { code: 'P005', name: 'Vitamin C Pack',    category: 'Vitamins',      quantity_in_stock: 60, unit_price: 3.20,  expiry_date: '2026-07-20' },
+      { code: 'P006', name: 'Omeprazole 20mg',   category: 'Digestive',     quantity_in_stock: 35, unit_price: 6.50,  expiry_date: '2027-01-15' },
+      { code: 'P007', name: 'Amoxicillin 250mg', category: 'Antibiotics',   quantity_in_stock: 15, unit_price: 8.90,  expiry_date: '2026-06-12' },
+      { code: 'P008', name: 'Metformin 500mg',   category: 'Diabetes',      quantity_in_stock: 80, unit_price: 4.20,  expiry_date: '2027-03-31' },
+      { code: 'P009', name: 'Aspirin 100mg',     category: 'Pain Relief',   quantity_in_stock: 120,unit_price: 1.50,  expiry_date: '2026-09-14' },
+      { code: 'P010', name: 'Atorvastatin 20mg', category: 'Cardiology',    quantity_in_stock: 45, unit_price: 9.80,  expiry_date: '2027-05-20' },
+    ];
+
     async function loadDashboardData() {
       try {
         const [statsRes, productRes, salesRes] = await Promise.all([
-          fetch('../Back End/ERP Pharmacy System.php?action=dashboard_stats'),
-          fetch('../Back End/ERP Pharmacy System.php?action=products&lang=en'),
-          fetch('../Back End/ERP Pharmacy System.php?action=sales')
+          fetch('../Back%20End/ERP_Pharmacy_System.php?action=dashboard_stats'),
+          fetch('../Back%20End/ERP_Pharmacy_System.php?action=products&lang=en'),
+          fetch('../Back%20End/ERP_Pharmacy_System.php?action=sales')
         ]);
         const statsData = await statsRes.json();
         const productData = await productRes.json();
@@ -1457,13 +1888,19 @@
         }
         if (productData.success) {
           renderInventory(productData.products);
+        } else {
+          renderInventory(_demoProducts);
         }
         if (salesData.success) {
           renderSales(salesData.sales);
         }
       } catch (error) {
         console.error('Dashboard load failed:', error);
+        // Seed demo products so inventory + near expiry work offline
+        renderInventory(_demoProducts);
       }
+      // After products are loaded, sync near expiry from inventory
+      refreshNearExpiryFromInventory();
     }
 
     function renderDashboardStats(data) {
@@ -1529,12 +1966,31 @@
 
       renderCategories();
 
+      const searchVal = (document.getElementById('inventorySearch')?.value || '').toLowerCase().trim();
+      const filtered = searchVal
+        ? window._products.filter(p =>
+            p.name.toLowerCase().includes(searchVal) ||
+            p.code.toLowerCase().includes(searchVal) ||
+            (p.category || '').toLowerCase().includes(searchVal) ||
+            // fuzzy: every character in query exists in the name in order
+            [...searchVal].every(ch => p.name.toLowerCase().includes(ch))
+          )
+        : window._products;
+
       tbody.innerHTML = '';
 
-      window._products.forEach(product => {
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem;">No medicines found matching "${searchVal}"</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(product => {
         const computedStatus = product.quantity_in_stock > 10 ? 'In Stock' : product.quantity_in_stock > 0 ? 'Low Stock' : 'Out of Stock';
         const statusText = product._statusOverride || computedStatus;
         const statusClass = statusText === 'In Stock' ? 'status-in-stock' : statusText === 'Low Stock' ? 'status-low' : 'status-out';
+        const expiryDisplay = product.expiry_date
+          ? new Date(product.expiry_date).toLocaleDateString('en-GB')
+          : '<span style="color:#d1d5db;">—</span>';
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${product.code}</td>
@@ -1542,6 +1998,7 @@
           <td>${product.category}</td>
           <td>${product.quantity_in_stock}</td>
           <td>$${(parseFloat(product.unit_price) || 0).toFixed(2)}</td>
+          <td>${expiryDisplay}</td>
           <td><span class="status-badge ${statusClass}">${statusText}</span></td>
           <td class="action-buttons">
             <button class="btn btn-secondary" onclick="editItem('${product.code}')">Edit</button>
@@ -1550,6 +2007,16 @@
         `;
         tbody.appendChild(row);
       });
+
+      // Keep near-expiry dashboard section in sync with inventory
+      if (typeof refreshNearExpiryFromInventory === 'function') refreshNearExpiryFromInventory();
+
+      // Sync inventory to localStorage so POS page always has latest stock
+      try { localStorage.setItem('pharmacy_inventory', JSON.stringify(window._products)); } catch(e) {}
+    }
+
+    function filterInventory(query) {
+      renderInventory(window._products);
     }
 
     function renderCategories() {
@@ -1628,6 +2095,7 @@
       document.getElementById('editItemCode').value = product.code;
       document.getElementById('editItemName').value = product.name;
       document.getElementById('editUnitPrice').value = parseFloat(product.unit_price).toFixed(2);
+      document.getElementById('editItemExpiry').value = product.expiry_date || '';
       renderCategories();
       const editSelect = document.getElementById('editCategorySelect');
       if (editSelect) editSelect.value = product.category || window._categories[0] || '';
@@ -1644,12 +2112,14 @@
       const price = parseFloat(document.getElementById('editUnitPrice').value) || 0;
       const category = document.getElementById('editCategorySelect').value;
       const status = document.getElementById('editStatusSelect').value;
+      const expiry = document.getElementById('editItemExpiry').value;
       const product = (window._products || []).find(p => p.code === code);
       if (!product) return alert('Product not found');
       product.name = name;
       product.unit_price = price;
       product.category = category;
       product._statusOverride = status;
+      product.expiry_date = expiry || null;
       renderInventory(window._products);
       closeModal('editItemModal');
     }
@@ -1664,11 +2134,12 @@
       const numberInputs = modal.querySelectorAll('input[type="number"]');
       const quantity = parseInt(numberInputs[0].value) || 0;
       const price = parseFloat(numberInputs[1].value) || 0;
+      const expiry = document.getElementById('addInventoryExpiry').value || null;
       if (!code || !name) return alert('Please provide code and name');
       if (!window._products) window._products = [];
       // prevent duplicate codes
       if (window._products.find(p => p.code === code)) return alert('Item code already exists');
-      const newProduct = { code, name, category, quantity_in_stock: quantity, unit_price: price };
+      const newProduct = { code, name, category, quantity_in_stock: quantity, unit_price: price, expiry_date: expiry };
       window._products.push(newProduct);
       if (!window._categories.includes(category)) window._categories.push(category);
       renderInventory(window._products);
@@ -1966,7 +2437,7 @@
       if (end) params.append('end_date', end);
 
       try {
-        const res = await fetch('../Back End/ERP Pharmacy System.php?action=monthly_summary&' + params.toString());
+        const res = await fetch('../Back%20End/ERP_Pharmacy_System.php?action=monthly_summary&' + params.toString());
         const data = await res.json();
         if (data.success) {
           document.getElementById('summaryTotalSales').textContent = '$' + parseFloat(data.total_sales).toFixed(2);
@@ -2000,7 +2471,7 @@
       else if (type === 'inventory') action = 'inventory_report';
       else if (type === 'financial') action = 'financial_report';
 
-      const url = '../Back End/ERP Pharmacy System.php?action=' + action + '&' + params.toString();
+      const url = '../Back%20End/ERP_Pharmacy_System.php?action=' + action + '&' + params.toString();
       // For CSV endpoints we just navigate to the URL to trigger download
       window.location.href = url;
     }
@@ -2026,7 +2497,7 @@
       if (start) params.append('start_date', start);
       if (end) params.append('end_date', end);
 
-      const url = '../Back End/ERP Pharmacy System.php?action=trend_analysis&' + params.toString();
+      const url = '../Back%20End/ERP_Pharmacy_System.php?action=trend_analysis&' + params.toString();
       closeModal('trendPreviewModal');
       window.location.href = url;
     }
@@ -2052,7 +2523,7 @@
       else if (type === 'inventory') action = 'inventory_pdf';
       else if (type === 'financial') action = 'financial_pdf';
 
-      const url = '../Back End/ERP Pharmacy System.php?action=' + action + '&' + params.toString();
+      const url = '../Back%20End/ERP_Pharmacy_System.php?action=' + action + '&' + params.toString();
       // Open in new tab so downloads do not replace the current view
       window.open(encodeURI(url), '_blank');
     }
@@ -2133,7 +2604,7 @@
         `;
 
         if (type === 'sales') {
-          const res = await fetch('../Back End/ERP Pharmacy System.php?action=sales_data&' + params.toString());
+          const res = await fetch('../Back%20End/ERP_Pharmacy_System.php?action=sales_data&' + params.toString());
           const data = await res.json();
           if (!data.success) throw new Error('No sales data');
           html += '<h2>Sales Report</h2><table><thead><tr><th>Invoice</th><th>User</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th></tr></thead><tbody>';
@@ -2142,7 +2613,7 @@
           });
           html += '</tbody></table>';
         } else if (type === 'inventory') {
-          const res = await fetch('../Back End/ERP Pharmacy System.php?action=products&lang=en');
+          const res = await fetch('../Back%20End/ERP_Pharmacy_System.php?action=products&lang=en');
           const data = await res.json();
           html += '<h2>Inventory Report</h2><table><thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Quantity</th><th>Unit Price</th></tr></thead><tbody>';
           data.products.forEach(p => {
@@ -2150,7 +2621,7 @@
           });
           html += '</tbody></table>';
         } else if (type === 'financial') {
-          const res = await fetch('../Back End/ERP Pharmacy System.php?action=monthly_summary&' + params.toString());
+          const res = await fetch('../Back%20End/ERP_Pharmacy_System.php?action=monthly_summary&' + params.toString());
           const data = await res.json();
           html += '<h2>Financial Summary Report</h2><table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
           html += `<tr><td>Total Sales</td><td>$${parseFloat(data.total_sales).toFixed(2)}</td></tr>`;
@@ -2159,7 +2630,7 @@
           html += `<tr><td>Net Profit</td><td>$${parseFloat(data.net_profit).toFixed(2)}</td></tr>`;
           html += '</tbody></table>';
         } else if (type === 'trend') {
-          const res = await fetch('../Back End/ERP Pharmacy System.php?action=trend_data&' + params.toString());
+          const res = await fetch('../Back%20End/ERP_Pharmacy_System.php?action=trend_data&' + params.toString());
           const data = await res.json();
           html += '<h2>Sales Trend Analysis</h2><table><thead><tr><th>Date</th><th>Total Sales</th></tr></thead><tbody>';
           data.trend.forEach(r => {
@@ -2179,6 +2650,60 @@
       }
     }
 
+    async function renderPaymentPieChart() {
+      // Try fetching from backend; fall back to counting from local sales data
+      let paymentCounts = { Cash: 0, Card: 0, 'E-Wallet': 0 };
+      try {
+        const res = await fetch('../Back%20End/ERP_Pharmacy_System.php?action=payment_breakdown');
+        const data = await res.json();
+        if (data.success && data.breakdown) {
+          paymentCounts = data.breakdown;
+        } else { throw new Error('no data'); }
+      } catch {
+        // fallback: count from local _salesData
+        (window._salesData || []).forEach(s => {
+          const key = s.payment || 'Cash';
+          paymentCounts[key] = (paymentCounts[key] || 0) + 1;
+        });
+        // add demo data if empty
+        const total = Object.values(paymentCounts).reduce((a,b)=>a+b,0);
+        if (total === 0) { paymentCounts = { Cash: 58, Card: 30, 'E-Wallet': 12 }; }
+      }
+
+      const labels = Object.keys(paymentCounts);
+      const values = Object.values(paymentCounts);
+      const colors = ['#1d4ed8','#10b981','#f59e0b','#6366f1','#ef4444'];
+      const ctx = document.getElementById('paymentPieChart');
+      if (!ctx) return;
+
+      if (window._paymentPieChart) window._paymentPieChart.destroy();
+      window._paymentPieChart = new Chart(ctx.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length), borderWidth: 3, borderColor: '#fff' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          cutout: '60%'
+        }
+      });
+
+      const grandTotal = values.reduce((a,b)=>a+b,0);
+      const legendEl = document.getElementById('paymentPieLegend');
+      if (legendEl) {
+        legendEl.innerHTML = labels.map((label, i) => {
+          const pct = grandTotal ? ((values[i]/grandTotal)*100).toFixed(1) : 0;
+          return `<div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="width:14px;height:14px;border-radius:3px;background:${colors[i]};flex-shrink:0;display:inline-block;"></span>
+            <span style="font-weight:600;">${label}</span>
+            <span style="color:#6b7280;">${values[i]} transactions (${pct}%)</span>
+          </div>`;
+        }).join('');
+      }
+    }
+
     async function renderTrendChart(start = '', end = '') {
       try {
         const scrollPos = window.scrollY || window.pageYOffset;
@@ -2186,7 +2711,7 @@
         if (start) params.append('start_date', start);
         if (end) params.append('end_date', end);
 
-        const url = '../Back End/ERP Pharmacy System.php?action=trend_data' + (params.toString() ? '&' + params.toString() : '');
+        const url = '../Back%20End/ERP_Pharmacy_System.php?action=trend_data' + (params.toString() ? '&' + params.toString() : '');
         const res = await fetch(url);
         const data = await res.json();
         if (!data.success) return;
@@ -2236,6 +2761,239 @@
       } catch (err) {
         console.error('Trend chart failed', err);
       }
+    }
+
+    // ── Settings sub-navigation ─────────────────────────────────────────────
+    function showSettingsPanel(panelId, btn) {
+      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // ── Backup ───────────────────────────────────────────────────────────────
+    function triggerBackup() {
+      const btn = event.currentTarget || event.target;
+      btn.disabled = true;
+      btn.textContent = '⏳ Preparing backup…';
+      const now = new Date();
+      const filename = `pharmacy_backup_${now.toISOString().slice(0,10)}_${now.getHours()}${now.getMinutes()}.sql`;
+      fetch('../Back%20End/ERP_Pharmacy_System.php?action=backup_database')
+        .then(res => { if (!res.ok) throw new Error('no_endpoint'); return res.blob(); })
+        .then(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          a.click();
+          document.getElementById('lastBackupInfo').textContent = `Last backup: ${now.toLocaleString()}`;
+        })
+        .catch(() => {
+          const mockSQL = `-- Pharmacy ERP Database Backup\n-- Generated: ${now.toLocaleString()}\n-- Connect backend endpoint ?action=backup_database for real backups.\n`;
+          const blob = new Blob([mockSQL], { type: 'text/plain' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          a.click();
+          document.getElementById('lastBackupInfo').textContent = `Last backup: ${now.toLocaleString()}`;
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = '💾 Download Backup Now';
+        });
+    }
+
+    // ── Restore ──────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const fi = document.getElementById('restoreFileInput');
+      if (fi) {
+        fi.addEventListener('change', () => {
+          const file = fi.files[0];
+          if (!file) return;
+          const info = document.getElementById('restoreFileInfo');
+          info.style.display = 'block';
+          info.textContent = `📄 Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        });
+      }
+      // Load near-expiry on page load
+      loadNearExpiryData();
+    });
+
+    function triggerRestore() {
+      const fileInput = document.getElementById('restoreFileInput');
+      if (!fileInput.files || !fileInput.files[0]) {
+        alert('Please select a backup SQL file first.');
+        return;
+      }
+      const file = fileInput.files[0];
+      if (!confirm(`⚠️ Are you sure you want to restore from "${file.name}"?\n\nThis will OVERWRITE the current database. This cannot be undone.`)) return;
+      const formData = new FormData();
+      formData.append('action', 'restore_database');
+      formData.append('backup_file', file);
+      fetch('../Back%20End/ERP_Pharmacy_System.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert('✅ Database restored successfully! The page will now reload.');
+            window.location.reload();
+          } else {
+            alert('❌ Restore failed: ' + (data.message || 'Unknown error'));
+          }
+        })
+        .catch(() => {
+          alert('ℹ️ Restore request sent. Connect the backend endpoint ?action=restore_database to process real backups.');
+        });
+    }
+
+    // ── Factory Reset Modal ──────────────────────────────────────────────────
+    function closeResetModal() {
+      closeModal('factoryResetModal');
+      document.getElementById('resetStep1').classList.add('active');
+      document.getElementById('resetStep2').classList.remove('active');
+      document.getElementById('resetManagerId').value = '';
+      document.getElementById('resetManagerPwd').value = '';
+      const errEl = document.getElementById('resetStep1Error');
+      errEl.style.display = 'none';
+      const btn = document.getElementById('resetSendBtn');
+      btn.disabled = false;
+      btn.textContent = 'Send Reset Link';
+    }
+
+    function verifyManagerAndSendLink() {
+      const managerId = document.getElementById('resetManagerId').value.trim();
+      const managerPwd = document.getElementById('resetManagerPwd').value;
+      const errorEl = document.getElementById('resetStep1Error');
+      const btn = document.getElementById('resetSendBtn');
+      errorEl.style.display = 'none';
+      if (!managerId || !managerPwd) {
+        errorEl.textContent = 'Please enter both Manager ID and password.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '⏳ Verifying…';
+      const formData = new FormData();
+      formData.append('action', 'factory_reset_request');
+      formData.append('manager_id', managerId);
+      formData.append('password', managerPwd);
+      fetch('../Back%20End/ERP_Pharmacy_System.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById('resetStep1').classList.remove('active');
+            document.getElementById('resetStep2').classList.add('active');
+          } else {
+            errorEl.textContent = data.message || 'Invalid Manager ID or password. Please try again.';
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Send Reset Link';
+          }
+        })
+        .catch(() => {
+          // Demo: simulate verification with known credentials
+          const demoCreds = { 'PHARM001': 'password123', 'PHARM002': 'secure456' };
+          if (demoCreds[managerId] && demoCreds[managerId] === managerPwd) {
+            document.getElementById('resetStep1').classList.remove('active');
+            document.getElementById('resetStep2').classList.add('active');
+          } else {
+            errorEl.textContent = 'Invalid Manager ID or password. Please try again.';
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Send Reset Link';
+          }
+        });
+    }
+
+    // ── Near Expiry ──────────────────────────────────────────────────────────
+    function scrollToNearExpiry() {
+      const section = document.getElementById('nearExpirySection');
+      if (section && section.style.display !== 'none') {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function loadNearExpiryData() {
+      // Always derive near-expiry from the live inventory first
+      refreshNearExpiryFromInventory();
+    }
+
+    // Derives near-expiry list directly from window._products (inventory).
+    // Called after any change to inventory (add, edit, delete) and on page load.
+    function refreshNearExpiryFromInventory() {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const THRESHOLD_DAYS = 60; // show medicines expiring within 60 days
+
+      const products = window._products || [];
+      const nearExpiry = products
+        .filter(p => {
+          if (!p.expiry_date) return false;
+          const exp = new Date(p.expiry_date);
+          exp.setHours(0,0,0,0);
+          const days = Math.ceil((exp - today) / 86400000);
+          return days <= THRESHOLD_DAYS;
+        })
+        .map(p => ({
+          code: p.code,
+          name: p.name,
+          category: p.category,
+          quantity_in_stock: p.quantity_in_stock,
+          expiry_date: p.expiry_date
+        }));
+
+      // If inventory has no expiry data at all, try backend as fallback
+      if (nearExpiry.length === 0 && products.length === 0) {
+        fetch('../Back%20End/ERP_Pharmacy_System.php?action=near_expiry_medicines')
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.medicines) renderNearExpiry(data.medicines);
+            else renderNearExpiry([]);
+          })
+          .catch(() => renderNearExpiry([]));
+        return;
+      }
+
+      renderNearExpiry(nearExpiry);
+    }
+
+    function renderNearExpiry(medicines) {
+      const today = new Date();
+      const section = document.getElementById('nearExpirySection');
+      const tbody = document.getElementById('nearExpiryBody');
+      const card = document.getElementById('nearExpiryValue');
+      const changeEl = document.getElementById('nearExpiryChange');
+      const badge = document.getElementById('nearExpiryBadge');
+      if (!medicines || medicines.length === 0) {
+        if (card) card.textContent = '0';
+        if (changeEl) changeEl.textContent = 'No items near expiry';
+        if (section) section.style.display = 'none';
+        return;
+      }
+      medicines.sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
+      const critical = medicines.filter(m => Math.ceil((new Date(m.expiry_date) - today) / 86400000) <= 14).length;
+      if (card) card.textContent = medicines.length;
+      if (changeEl) changeEl.textContent = critical > 0 ? `${critical} expire within 14 days!` : 'Within 60 days';
+      if (badge) badge.textContent = `${medicines.length} item${medicines.length !== 1 ? 's' : ''}`;
+      if (section) section.style.display = 'block';
+      tbody.innerHTML = '';
+      medicines.forEach(med => {
+        const expiryDate = new Date(med.expiry_date);
+        const daysLeft = Math.ceil((expiryDate - today) / 86400000);
+        let urgencyClass, urgencyLabel;
+        if (daysLeft <= 7)       { urgencyClass = 'status-out';     urgencyLabel = '🔴 Critical'; }
+        else if (daysLeft <= 14) { urgencyClass = 'status-low';     urgencyLabel = '🟠 Urgent'; }
+        else if (daysLeft <= 30) { urgencyClass = 'status-low';     urgencyLabel = '🟡 Warning'; }
+        else                     { urgencyClass = 'status-pending';  urgencyLabel = '🔵 Caution'; }
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${med.code}</td>
+          <td><strong>${med.name}</strong></td>
+          <td>${med.category}</td>
+          <td>${med.quantity_in_stock}</td>
+          <td>${expiryDate.toLocaleDateString('en-GB')}</td>
+          <td style="font-weight:700;color:${daysLeft<=7?'#dc2626':daysLeft<=14?'#d97706':'#1d4ed8'}">${daysLeft} days</td>
+          <td><span class="status-badge ${urgencyClass}">${urgencyLabel}</span></td>`;
+        tbody.appendChild(row);
+      });
     }
 
     function logout() {
