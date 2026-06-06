@@ -285,6 +285,17 @@
     .toast.show { transform: none; opacity: 1; }
     .toast.success { background: var(--success); }
 
+
+    /* EDIT PATIENT MODAL TABS */
+    .epm-tab {
+      padding: 9px 16px; font-size: 0.83rem; font-weight: 600;
+      border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -2px;
+      color: var(--muted); white-space: nowrap; transition: all 0.15s;
+    }
+    .epm-tab:hover { color: var(--text); }
+    .epm-tab.epm-tab-active { color: var(--primary); border-bottom-color: var(--primary); }
+
     footer { background: #0f172a; color: #cbd5e1; text-align: center; padding: 1.5rem 1rem; font-size: 0.9rem; }
     @media (max-width: 640px) {
       header { justify-content: center; text-align: center; }
@@ -492,6 +503,103 @@
   </div>
 </div>
 
+
+<!-- EDIT PATIENT MODAL -->
+<div class="modal-overlay" id="editPatientModal">
+  <div class="modal" style="max-width:620px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <h3 style="margin:0;">✏️ Edit Patient Record</h3>
+      <span id="ep2-patient-id-badge" style="font-size:0.82rem;color:var(--muted);background:var(--bg);padding:4px 12px;border-radius:999px;border:1px solid var(--border);"></span>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1.5rem;overflow-x:auto;" id="editModalTabBar">
+      <button class="epm-tab epm-tab-active" onclick="switchEditTab(this,'epm-basic')"   >👤 Basic Info</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-contact')" >📞 Contact</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-clinical')">🩺 Clinical</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-history')" >📋 History</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-status')"  >⚙️ Status</button>
+    </div>
+
+    <div id="epm-basic" class="epm-section">
+      <div class="form-grid">
+        <div class="form-group"><label>First Name *</label><input type="text" id="epm-fname" /></div>
+        <div class="form-group"><label>Last Name *</label><input type="text" id="epm-lname" /></div>
+        <div class="form-group"><label>Blood Type</label>
+          <select id="epm-blood"><option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+        </div>
+        <div class="form-group"><label>Primary Physician</label><input type="text" id="epm-physician" /></div>
+        <div class="form-group"><label>Insurance Provider</label><input type="text" id="epm-insurance" /></div>
+        <div class="form-group"><label>Last Visit</label><input type="text" id="epm-lastvisit" placeholder="e.g. 01 Jun 2026" /></div>
+        <div class="form-group full"><label>Next Appointment</label><input type="text" id="epm-nextappt" placeholder="e.g. 15 Jul 2026 – 10:30 AM" /></div>
+      </div>
+    </div>
+
+    <div id="epm-contact" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group"><label>Phone</label><input type="tel" id="epm-phone" placeholder="+20 100 000 0000" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="epm-email" /></div>
+      </div>
+    </div>
+
+    <div id="epm-clinical" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group full"><label>Known Allergies <span style="font-weight:400;text-transform:none;">(comma-separated)</span></label><input type="text" id="epm-allergies" placeholder="e.g. Penicillin, Sulfa Drugs" /></div>
+        <div class="form-group full"><label>Active Conditions</label><input type="text" id="epm-conditions" placeholder="e.g. Hypertension, Asthma" /></div>
+        <div class="form-group"><label>Smoking Status</label>
+          <select id="epm-smoking">
+            <option value="Non-smoker">Non-smoker</option>
+            <option value="Ex-smoker">Ex-smoker</option>
+            <option value="Current smoker">Current smoker</option>
+            <option value="Not recorded">Not recorded</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Alcohol Use</label>
+          <select id="epm-alcohol">
+            <option value="None">None</option>
+            <option value="Occasional">Occasional</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Heavy">Heavy</option>
+            <option value="Not recorded">Not recorded</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Vaccinations / Immunisations</label><input type="text" id="epm-vaccines" placeholder="e.g. COVID-19 (2022), Flu (2025)…" /></div>
+      </div>
+    </div>
+
+    <div id="epm-history" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group full"><label>Past Medical History</label><textarea id="epm-pmh" rows="3" style="resize:vertical;"></textarea></div>
+        <div class="form-group full"><label>Family Medical History</label><textarea id="epm-fmh" rows="3" style="resize:vertical;"></textarea></div>
+        <div class="form-group full"><label>Surgical History</label><textarea id="epm-surgical" rows="3" style="resize:vertical;"></textarea></div>
+      </div>
+    </div>
+
+    <div id="epm-status" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group"><label>Patient Status</label>
+          <select id="epm-status-val">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:end;">
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:0.75rem;font-size:0.82rem;color:#92400e;">
+            ⚠️ Setting to <strong>Inactive</strong> hides the patient from active lists.
+          </div>
+        </div>
+        <div class="form-group full" style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem;">
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Danger Zone</div>
+          <button onclick="deletePatientRecord()" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:10px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.88rem;width:100%;transition:background 0.2s;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">🗑 Permanently Delete This Patient Record</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEditPatientModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveEditedPatient()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- E-PRESCRIBE MODAL -->
 <div class="modal-overlay" id="ePrescribeModal">
   <div class="modal" style="max-width:520px;">
@@ -598,7 +706,15 @@
 
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────
-const API = 'EHR_System.php';
+// ── Path to EHR_System.php ───────────────────────────────────────────
+// Your XAMPP structure:
+//   Health Information System/
+//   ├── Front End/
+//   │   └── EHR_Page.html   ← this file (you are here)
+//   └── Back End/
+//       └── EHR_System.php  ← backend
+// We go up one level with ../ then into Back End/
+const API = '../Back End/EHR_System.php';
 
 // ─── STATE ───────────────────────────────────────────────────────────
 let patients = [];
@@ -622,8 +738,28 @@ async function api(params, method = 'GET', body = null) {
   }
 }
 
-// ─── INIT ────────────────────────────────────────────────────────────
+// ─── INIT (ping backend first so path errors show a clear message) ────
 async function init() {
+  try {
+    const ping = await fetch(API + '?action=ping');
+    const ct = ping.headers.get('content-type') || '';
+    if (!ct.includes('json')) {
+      showToast('⚠ Cannot reach EHR_System.php — check folder path & XAMPP is running.', false);
+      document.getElementById('patientListGrid').innerHTML =
+        '<div style="grid-column:1/-1;padding:1.5rem;background:#fee2e2;border-radius:12px;color:#991b1b;font-size:0.9rem;">' +
+        '❌ <strong>Backend not found.</strong> Make sure:<br>' +
+        '1. <code>EHR_System.php</code> is inside the <code>Back End/</code> folder.<br>' +
+        '2. XAMPP Apache &amp; MySQL are running.<br>' +
+        '3. Open the page via <code>http://localhost/...</code>, not from the file system.' +
+        '</div>';
+      document.getElementById('noResults').style.display = 'none';
+      return;
+    }
+    const data = await ping.json();
+    if (!data.success) { showToast('⚠ DB error: ' + data.message, false); return; }
+  } catch(e) {
+    showToast('⚠ Network error — is XAMPP running? ' + e.message, false); return;
+  }
   await loadPatients();
 }
 
@@ -738,6 +874,7 @@ function renderOverview(p) {
         <span>${p.id} &nbsp;·&nbsp; ${p.gender} &nbsp;·&nbsp; ${p.age} yrs &nbsp;·&nbsp; DOB: ${p.dob} &nbsp;·&nbsp; Blood: ${p.blood}</span>
       </div>
       <div style="margin-left:auto;display:flex;gap:0.6rem;flex-wrap:wrap;">
+        <button class="btn-outline btn-sm" onclick="openEditPatientModal()">✏️ Edit Record</button>
         <button class="btn-outline btn-sm">✉ Message</button>
         <button class="btn-primary btn-sm" onclick="window.location.href='Appointments_Page.html'">📅 Schedule</button>
       </div>
@@ -1124,7 +1261,7 @@ function showToast(msg, success = true) {
 }
 
 // ─── CLOSE MODALS ON OVERLAY CLICK ───────────────────────────────────
-['newPatientModal','ePrescribeModal','refillModal','labModal','timelineModal'].forEach(id => {
+['newPatientModal','editPatientModal','ePrescribeModal','refillModal','labModal','timelineModal'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('click', function(e) {
     if (e.target === this) {
@@ -1132,10 +1269,136 @@ function showToast(msg, success = true) {
       else if (id === 'ePrescribeModal') closeEPrescribeModal();
       else if (id === 'refillModal') closeRefillModal();
       else if (id === 'labModal') closeLabModal();
+      else if (id === 'editPatientModal') closeEditPatientModal();
       else if (id === 'timelineModal') closeTimelineModal();
     }
   });
 });
+
+
+// ─── EDIT PATIENT MODAL ──────────────────────────────────────────────
+function switchEditTab(btn, sectionId) {
+  document.querySelectorAll('.epm-tab').forEach(t => {
+    t.classList.remove('epm-tab-active');
+    t.style.color = 'var(--muted)';
+    t.style.borderBottomColor = 'transparent';
+  });
+  document.querySelectorAll('.epm-section').forEach(s => s.style.display = 'none');
+  btn.classList.add('epm-tab-active');
+  btn.style.color = 'var(--primary)';
+  btn.style.borderBottomColor = 'var(--primary)';
+  document.getElementById(sectionId).style.display = '';
+}
+
+function openEditPatientModal() {
+  if (!activePatientId) return;
+  const p = patients.find(x => x.id === activePatientId);
+  if (!p) return;
+
+  // Badge
+  document.getElementById('ep2-patient-id-badge').textContent = p.id;
+
+  // Basic Info
+  document.getElementById('epm-fname').value      = p.first_name || p.name.split(' ')[0] || '';
+  document.getElementById('epm-lname').value      = p.last_name  || p.name.split(' ').slice(1).join(' ') || '';
+  document.getElementById('epm-blood').value      = p.blood !== 'Unknown' ? p.blood : '';
+  document.getElementById('epm-physician').value  = p.physician !== '—' ? p.physician : '';
+  document.getElementById('epm-insurance').value  = p.insurance !== '—' ? p.insurance : '';
+  document.getElementById('epm-lastvisit').value  = p.lastVisit !== 'Not yet visited' ? p.lastVisit : '';
+  document.getElementById('epm-nextappt').value   = p.nextAppt  !== 'None scheduled'  ? p.nextAppt  : '';
+
+  // Contact
+  document.getElementById('epm-phone').value = p.phone !== '—' ? p.phone : '';
+  document.getElementById('epm-email').value = p.email !== '—' ? p.email : '';
+
+  // Clinical
+  document.getElementById('epm-allergies').value  = p.allergies ? p.allergies.join(', ') : '';
+  document.getElementById('epm-conditions').value = p.conditions !== 'None recorded' ? p.conditions : '';
+  document.getElementById('epm-smoking').value    = p.smoking !== 'Not recorded' ? p.smoking : 'Not recorded';
+  document.getElementById('epm-alcohol').value    = p.alcohol !== 'Not recorded' ? p.alcohol : 'Not recorded';
+  document.getElementById('epm-vaccines').value   = p.vaccines || '';
+
+  // History
+  document.getElementById('epm-pmh').value     = p.pmh || '';
+  document.getElementById('epm-fmh').value     = p.fmh || '';
+  document.getElementById('epm-surgical').value= p.surgical || '';
+
+  // Status
+  document.getElementById('epm-status-val').value = p.status || 'active';
+
+  // Reset to first tab
+  document.querySelectorAll('.epm-tab').forEach((t,i) => {
+    t.classList.toggle('epm-tab-active', i === 0);
+    t.style.color = i === 0 ? 'var(--primary)' : 'var(--muted)';
+    t.style.borderBottomColor = i === 0 ? 'var(--primary)' : 'transparent';
+  });
+  document.querySelectorAll('.epm-section').forEach((s,i) => s.style.display = i === 0 ? '' : 'none');
+
+  document.getElementById('editPatientModal').classList.add('open');
+}
+
+function closeEditPatientModal() {
+  document.getElementById('editPatientModal').classList.remove('open');
+}
+
+async function saveEditedPatient() {
+  const fn = document.getElementById('epm-fname').value.trim();
+  const ln = document.getElementById('epm-lname').value.trim();
+  if (!fn || !ln) { showToast('⚠ First name and last name are required.', false); return; }
+
+  const payload = {
+    patient_id:  activePatientId,
+    first_name:  fn,
+    last_name:   ln,
+    blood_type:  document.getElementById('epm-blood').value,
+    physician:   document.getElementById('epm-physician').value.trim(),
+    insurance:   document.getElementById('epm-insurance').value.trim(),
+    last_visit:  document.getElementById('epm-lastvisit').value.trim(),
+    next_appt:   document.getElementById('epm-nextappt').value.trim(),
+    phone:       document.getElementById('epm-phone').value.trim(),
+    email:       document.getElementById('epm-email').value.trim(),
+    allergies:   document.getElementById('epm-allergies').value.trim(),
+    conditions:  document.getElementById('epm-conditions').value.trim(),
+    smoking:     document.getElementById('epm-smoking').value,
+    alcohol:     document.getElementById('epm-alcohol').value,
+    vaccines:    document.getElementById('epm-vaccines').value.trim(),
+    pmh:         document.getElementById('epm-pmh').value.trim(),
+    fmh:         document.getElementById('epm-fmh').value.trim(),
+    surgical:    document.getElementById('epm-surgical').value.trim(),
+    status:      document.getElementById('epm-status-val').value,
+  };
+
+  const res = await api({ action: 'update_patient' }, 'POST', payload);
+  if (res.success) {
+    closeEditPatientModal();
+    // Refresh local patient list from DB and re-render overview
+    await loadPatients();
+    const updated = patients.find(x => x.id === activePatientId);
+    if (updated) renderOverview(updated);
+    showToast('✓ Patient record updated successfully!', true);
+  } else {
+    showToast('⚠ Failed to save: ' + (res.message || 'Unknown error'), false);
+  }
+}
+
+async function deletePatientRecord() {
+  if (!activePatientId) return;
+  const p = patients.find(x => x.id === activePatientId);
+  const name = p ? p.name : activePatientId;
+  if (!confirm(`⚠ PERMANENTLY delete the record for ${name}?\n\nThis cannot be undone. All vitals, medications, labs, and timeline entries will be deleted.`)) return;
+
+  const res = await api({ action: 'delete_patient' }, 'POST', { patient_id: activePatientId });
+  if (res.success) {
+    closeEditPatientModal();
+    activePatientId = null;
+    document.getElementById('recordPanel').style.display = 'none';
+    document.getElementById('emptyState').style.display = '';
+    await loadPatients();
+    showToast(`✓ Patient record for ${name} deleted.`, true);
+  } else {
+    showToast('⚠ Failed to delete patient.', false);
+  }
+}
 
 // ─── BOOT ────────────────────────────────────────────────────────────
 init();
