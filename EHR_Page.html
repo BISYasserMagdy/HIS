@@ -398,7 +398,7 @@
   <h1 class="logo">HealthCare Hub</h1>
   <nav>
     <a href="Home_Page.html">Home</a>
-    <a href="Appointments_Page.html">Appointments</a>
+    <a href="Online_Consultation_Page.html">Review Appointments</a>
     <a href="EHR_Page.html" class="active-link">EHR System</a>
     <a href="ERP_Pharmacy_Sign_in_Page.html">ERP Pharmacy</a>
     <a href="Health_Chatbot.html">Chatbot</a>
@@ -659,7 +659,27 @@
         <div class="form-group"><label>Primary Physician</label><input type="text" id="epm-physician" /></div>
         <div class="form-group"><label>Insurance Provider</label><input type="text" id="epm-insurance" /></div>
         <div class="form-group"><label>Last Visit</label><input type="text" id="epm-lastvisit" placeholder="e.g. 01 Jun 2026" /></div>
-        <div class="form-group full"><label>Next Appointment</label><input type="text" id="epm-nextappt" placeholder="e.g. 15 Jul 2026 – 10:30 AM" /></div>
+        <div class="form-group full">
+          <label>Next Appointment</label>
+          <div style="display:flex;gap:0.6rem;align-items:center;">
+            <input type="date" id="epm-nextappt-date"
+                   style="flex:1;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;
+                          font-size:0.95rem;font-family:'DM Sans',sans-serif;color:var(--text);
+                          background:var(--bg);cursor:pointer;outline:none;transition:border-color .2s,box-shadow .2s;"
+                   onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(26,115,232,.15)'"
+                   onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
+            <span style="color:var(--muted);font-weight:600;font-size:1rem;flex-shrink:0;">at</span>
+            <input type="time" id="epm-nextappt-time"
+                   style="width:130px;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;
+                          font-size:0.95rem;font-family:'DM Sans',sans-serif;color:var(--text);
+                          background:var(--bg);cursor:pointer;outline:none;transition:border-color .2s,box-shadow .2s;"
+                   onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(26,115,232,.15)'"
+                   onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:5px;">
+            📅 Pick a date and time — leave both empty if no appointment is scheduled.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2148,7 +2168,37 @@ function openEditPatientModal() {
   document.getElementById('epm-physician').value  = p.physician !== '—' ? p.physician : '';
   document.getElementById('epm-insurance').value  = p.insurance !== '—' ? p.insurance : '';
   document.getElementById('epm-lastvisit').value  = p.lastVisit !== 'Not yet visited' ? p.lastVisit : '';
-  document.getElementById('epm-nextappt').value   = p.nextAppt  !== 'None scheduled'  ? p.nextAppt  : '';
+  // Populate date+time pickers for Next Appointment
+  (function() {
+    const raw = (p.nextAppt && p.nextAppt !== 'None scheduled') ? p.nextAppt : '';
+    let dateVal = '', timeVal = '';
+    if (raw) {
+      // Try to parse formats like "15 Jul 2026 – 10:30 AM" or ISO "2026-07-15T10:30"
+      const isoMatch = raw.match(/(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}))?/);
+      const humanMatch = raw.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:.*?(\d{1,2}:\d{2}\s*(?:AM|PM)?))?/i);
+      if (isoMatch) {
+        dateVal = isoMatch[1];
+        timeVal = isoMatch[2] || '';
+      } else if (humanMatch) {
+        const months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',
+                        jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+        const mm = months[humanMatch[2].toLowerCase().slice(0,3)] || '01';
+        dateVal = `${humanMatch[3]}-${mm}-${humanMatch[1].padStart(2,'0')}`;
+        if (humanMatch[4]) {
+          // Convert 12h to 24h
+          const t = humanMatch[4].trim();
+          const isPM = /pm/i.test(t);
+          const parts = t.replace(/[APMapm\s]/g,'').split(':');
+          let h = parseInt(parts[0]);
+          if (isPM && h !== 12) h += 12;
+          if (!isPM && h === 12) h = 0;
+          timeVal = `${String(h).padStart(2,'0')}:${parts[1]||'00'}`;
+        }
+      }
+    }
+    document.getElementById('epm-nextappt-date').value = dateVal;
+    document.getElementById('epm-nextappt-time').value = timeVal;
+  })();
 
   // Contact
   document.getElementById('epm-phone').value = p.phone !== '—' ? p.phone : '';
@@ -2197,7 +2247,20 @@ async function saveEditedPatient() {
     physician:   document.getElementById('epm-physician').value.trim(),
     insurance:   document.getElementById('epm-insurance').value.trim(),
     last_visit:  document.getElementById('epm-lastvisit').value.trim(),
-    next_appt:   document.getElementById('epm-nextappt').value.trim(),
+    next_appt:   (function() {
+      const d = document.getElementById('epm-nextappt-date').value;
+      const t = document.getElementById('epm-nextappt-time').value;
+      if (!d) return '';
+      // Format date as "15 Jul 2026"
+      const dateObj = new Date(d + 'T00:00:00');
+      const dayStr  = dateObj.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+      if (!t) return dayStr;
+      // Format time as "10:30 AM"
+      const [hh, mm] = t.split(':').map(Number);
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      const h12  = hh % 12 || 12;
+      return `${dayStr} – ${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+    })(),
     phone:       document.getElementById('epm-phone').value.trim(),
     email:       document.getElementById('epm-email').value.trim(),
     allergies:   document.getElementById('epm-allergies').value.trim(),
