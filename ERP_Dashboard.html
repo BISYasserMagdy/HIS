@@ -1582,11 +1582,30 @@
   </div>
 
   <script>
-    // Initialize
+    // ── localStorage persistence helpers ──────────────────────────────────────
+    const LS = {
+      get(key, fallback = null) {
+        try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; }
+      },
+      set(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) { console.warn('localStorage write failed', e); }
+      }
+    };
+
+    // ── Initialize ────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
       const firstName = localStorage.getItem('pharmacistFirstName') || 'Ahmed';
       const lastName = localStorage.getItem('pharmacistLastName') || 'Hassan';
       updatePharmacistName(firstName, lastName);
+
+      // Restore persisted data before rendering
+      window._suppliers     = LS.get('erp_suppliers',     window._suppliers);
+      window._returns       = LS.get('erp_returns',       window._returns);
+      window._returnCounter = LS.get('erp_returnCounter', window._returnCounter);
+      window._categories    = LS.get('erp_categories',    null);
+      const savedProducts   = LS.get('erp_products',      null);
+      if (savedProducts) window._products = savedProducts;
+
       loadDashboardData();
       renderTrendChart();
       renderSuppliers();
@@ -1796,6 +1815,7 @@
         status:  document.getElementById('newSupplierStatus').value
       };
       window._suppliers.push(supplier);
+      LS.set('erp_suppliers', window._suppliers);
       renderSuppliers();
       event.target.reset();
       closeModal('addSupplierModal');
@@ -1828,6 +1848,7 @@
         city:    document.getElementById('editSupplierCity').value.trim(),
         status:  document.getElementById('editSupplierStatus').value
       };
+      LS.set('erp_suppliers', window._suppliers);
       renderSuppliers();
       closeModal('editSupplierModal');
     }
@@ -1838,6 +1859,7 @@
       if (!s) return;
       if (!confirm('Delete supplier "' + s.name + '"?')) return;
       window._suppliers.splice(idx, 1);
+      LS.set('erp_suppliers', window._suppliers);
       renderSuppliers();
       closeModal('editSupplierModal');
     }
@@ -1887,9 +1909,11 @@
           renderTransactions(statsData.transactions);
         }
         if (productData.success) {
-          renderInventory(productData.products);
+          // Use locally-saved products (with user additions) if present, else use backend
+          const saved = LS.get('erp_products', null);
+          renderInventory(saved || productData.products);
         } else {
-          renderInventory(_demoProducts);
+          renderInventory(window._products || _demoProducts);
         }
         if (salesData.success) {
           renderSales(salesData.sales);
@@ -1897,9 +1921,9 @@
       } catch (error) {
         console.error('Dashboard load failed:', error);
         // Seed demo products so inventory + near expiry work offline
-        renderInventory(_demoProducts);
+        renderInventory(window._products || _demoProducts);
       }
-      // After products are loaded, sync near expiry from inventory
+      // Sync near-expiry AFTER window._products is fully populated
       refreshNearExpiryFromInventory();
     }
 
@@ -1989,7 +2013,7 @@
         const statusText = product._statusOverride || computedStatus;
         const statusClass = statusText === 'In Stock' ? 'status-in-stock' : statusText === 'Low Stock' ? 'status-low' : 'status-out';
         const expiryDisplay = product.expiry_date
-          ? new Date(product.expiry_date).toLocaleDateString('en-GB')
+          ? parseLocalDate(product.expiry_date).toLocaleDateString('en-GB')
           : '<span style="color:#d1d5db;">—</span>';
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -2013,6 +2037,8 @@
 
       // Sync inventory to localStorage so POS page always has latest stock
       try { localStorage.setItem('pharmacy_inventory', JSON.stringify(window._products)); } catch(e) {}
+      LS.set('erp_products',   window._products);
+      LS.set('erp_categories', window._categories);
     }
 
     function filterInventory(query) {
@@ -2151,6 +2177,7 @@
       if (!confirm('Are you sure you want to delete this item?')) return;
       if (!window._products) return;
       window._products = window._products.filter(p => p.code !== itemCode);
+      LS.set('erp_products', window._products);
       renderInventory(window._products);
       alert('Item deleted: ' + itemCode);
     }
@@ -2219,6 +2246,8 @@
         status:  'Pending'
       });
       window._returnCounter++;
+      LS.set('erp_returns',       window._returns);
+      LS.set('erp_returnCounter', window._returnCounter);
 
       renderReturns();
       document.getElementById('addReturnForm').reset();
@@ -2252,6 +2281,7 @@
     function approveReturn() {
       const idx = parseInt(document.getElementById('vrApproveBtn').dataset.idx);
       window._returns[idx].status = 'Approved';
+      LS.set('erp_returns', window._returns);
       renderReturns();
       closeModal('viewReturnModal');
     }
@@ -2260,6 +2290,7 @@
       const idx = parseInt(document.getElementById('vrRejectBtn').dataset.idx);
       if (!confirm('Reject this return?')) return;
       window._returns[idx].status = 'Rejected';
+      LS.set('erp_returns', window._returns);
       renderReturns();
       closeModal('viewReturnModal');
     }
@@ -2916,6 +2947,14 @@
       refreshNearExpiryFromInventory();
     }
 
+    // Parse a yyyy-mm-dd string as LOCAL midnight (avoids UTC timezone shift)
+    function parseLocalDate(str) {
+      if (!str) return null;
+      const parts = str.split('-');
+      if (parts.length !== 3) return new Date(str); // fallback
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+
     // Derives near-expiry list directly from window._products (inventory).
     // Called after any change to inventory (add, edit, delete) and on page load.
     function refreshNearExpiryFromInventory() {
@@ -2927,8 +2966,7 @@
       const nearExpiry = products
         .filter(p => {
           if (!p.expiry_date) return false;
-          const exp = new Date(p.expiry_date);
-          exp.setHours(0,0,0,0);
+          const exp = parseLocalDate(p.expiry_date);
           const days = Math.ceil((exp - today) / 86400000);
           return days <= THRESHOLD_DAYS;
         })
@@ -2940,8 +2978,8 @@
           expiry_date: p.expiry_date
         }));
 
-      // If inventory has no expiry data at all, try backend as fallback
-      if (nearExpiry.length === 0 && products.length === 0) {
+      // If inventory is completely empty, try backend as fallback
+      if (products.length === 0) {
         fetch('../Back%20End/ERP_Pharmacy_System.php?action=near_expiry_medicines')
           .then(res => res.json())
           .then(data => {
@@ -2952,6 +2990,7 @@
         return;
       }
 
+      // Products exist – render whatever is near-expiry (may be empty list)
       renderNearExpiry(nearExpiry);
     }
 
@@ -2976,7 +3015,7 @@
       if (section) section.style.display = 'block';
       tbody.innerHTML = '';
       medicines.forEach(med => {
-        const expiryDate = new Date(med.expiry_date);
+        const expiryDate = parseLocalDate(med.expiry_date);
         const daysLeft = Math.ceil((expiryDate - today) / 86400000);
         let urgencyClass, urgencyLabel;
         if (daysLeft <= 7)       { urgencyClass = 'status-out';     urgencyLabel = '🔴 Critical'; }

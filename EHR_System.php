@@ -94,6 +94,7 @@ function initDB() {
         spo2        VARCHAR(10)  NULL,
         rr          VARCHAR(10)  NULL,
         bmi         VARCHAR(10)  NULL,
+        pain        VARCHAR(10)  NULL,
         note        TEXT         NULL,
         created_at  TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
@@ -178,6 +179,7 @@ switch ($action) {
     // Vitals
     case 'get_vitals':      getVitals();          break;
     case 'save_vitals':     saveVitals($body);    break;
+    case 'update_vitals':   updateVitals($body);  break;
     // Medications
     case 'get_meds':        getMeds();            break;
     case 'add_med':         addMed($body);        break;
@@ -432,13 +434,38 @@ function saveVitals($b) {
     $pid=$b['patient_id']??'';
     if (!$pid) { echo json_encode(['success'=>false,'message'=>'patient_id required']); return; }
     $conn=getConn();
+    $conn->query("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS pain VARCHAR(10) NULL");
     $ra=$b['recorded_at']??date('d M Y, h:i A');
     $nu=$b['nurse']??'—';$bp=$b['bp']??'—';$bs=$b['bp_status']??'ok';
     $hr=$b['hr']??'—';$tp=$b['temp']??'—';$sp=$b['spo2']??'—';
     $rr=$b['rr']??'—';$bm=$b['bmi']??'—';$nt=$b['note']??'';
-    $stmt=$conn->prepare("INSERT INTO vitals (patient_id,recorded_at,nurse,bp,bp_status,hr,temp,spo2,rr,bmi,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
-    $stmt->bind_param('sssssssssss',$pid,$ra,$nu,$bp,$bs,$hr,$tp,$sp,$rr,$bm,$nt);
+    $pn=isset($b['pain'])&&$b['pain']!==null&&$b['pain']!=='' ? strval($b['pain']) : null;
+    $stmt=$conn->prepare("INSERT INTO vitals (patient_id,recorded_at,nurse,bp,bp_status,hr,temp,spo2,rr,bmi,pain,note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+    $stmt->bind_param('ssssssssssss',$pid,$ra,$nu,$bp,$bs,$hr,$tp,$sp,$rr,$bm,$pn,$nt);
     $ok=$stmt->execute();$stmt->close();$conn->close();
+    echo json_encode(['success'=>$ok]);
+}
+
+function updateVitals($b) {
+    $pid=$b['patient_id']??'';
+    if (!$pid) { echo json_encode(['success'=>false,'message'=>'patient_id required']); return; }
+    $conn=getConn();
+    $conn->query("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS pain VARCHAR(10) NULL");
+    $ra=date('d M Y, h:i A');
+    $nu=$b['nurse']??'—';$bp=$b['bp']??'—';$bs=$b['bp_status']??'ok';
+    $hr=$b['hr']??'—';$tp=$b['temp']??'—';$sp=$b['spo2']??'—';
+    $rr=$b['rr']??'—';$bm=$b['bmi']??'—';$nt=$b['note']??'';
+    $pn=isset($b['pain'])&&$b['pain']!==null&&$b['pain']!=='' ? strval($b['pain']) : null;
+    $stmt=$conn->prepare("UPDATE vitals SET recorded_at=?,nurse=?,bp=?,bp_status=?,hr=?,temp=?,spo2=?,rr=?,bmi=?,pain=?,note=? WHERE patient_id=? ORDER BY id DESC LIMIT 1");
+    $stmt->bind_param('ssssssssssss',$ra,$nu,$bp,$bs,$hr,$tp,$sp,$rr,$bm,$pn,$nt,$pid);
+    $ok=$stmt->execute();
+    if ($conn->affected_rows === 0) {
+        $stmt->close();
+        $stmt=$conn->prepare("INSERT INTO vitals (patient_id,recorded_at,nurse,bp,bp_status,hr,temp,spo2,rr,bmi,pain,note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param('ssssssssssss',$pid,$ra,$nu,$bp,$bs,$hr,$tp,$sp,$rr,$bm,$pn,$nt);
+        $ok=$stmt->execute();
+    }
+    $stmt->close();$conn->close();
     echo json_encode(['success'=>$ok]);
 }
 
