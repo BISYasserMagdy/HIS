@@ -317,7 +317,7 @@ class CdssEngine
                 (?, ?, ?, 'active', ?,
                  ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? HOUR))
         ");
-        $stmt->bind_param('siiiissi',
+        $stmt->bind_param('siiissi',
             $patientId,
             $rule['id'],
             $trigObsId,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Online Consultations — HealthCare Hub</title>
+  <title>Online Consultations — Pharos HIS</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
   <style>
     /* ── Design tokens ─────────────────────────────────────────────────── */
@@ -875,9 +875,9 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon">🩺</div>
+      
       <h2>Doctor Portal</h2>
-      <p>Online Consultation Dashboard — HealthCare Hub</p>
+      <p>Online Consultation Dashboard — Pharos HIS</p>
     </div>
 
     <div id="login-error"></div>
@@ -914,7 +914,7 @@
   <a class="header-brand" href="Home_Page.html">
     <div class="brand-icon">🏥</div>
     <div>
-      <span class="brand-name">HealthCare Hub</span>
+      
       <span class="brand-sub">Online Consultations</span>
     </div>
   </a>
@@ -1048,7 +1048,7 @@
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <script>
   // ── Config ─────────────────────────────────────────────────────────────────
-  const API = 'Online_Consultation_API.php';
+  const API = '../Back End/Online_Consultation_API.php';
 
   // Avatar colour palette
   const PALETTE = [
@@ -1074,6 +1074,35 @@
   // ── Boot ───────────────────────────────────────────────────────────────────
   if (authToken && doctorInfo) {
     showApp();
+  } else {
+    // ── EHR SSO ────────────────────────────────────────────────────────────
+    // If the user is already signed in to the main EHR system as a doctor
+    // (PHP session set by EHR_System.php), authenticate here automatically
+    // via the shared session — no separate Doctor ID/password needed.
+    trySessionLogin();
+  }
+
+  async function trySessionLogin() {
+    try {
+      const ehrUser = JSON.parse(localStorage.getItem('ehr_user') || 'null');
+      if (!ehrUser || ehrUser.role !== 'doctor') return;
+
+      const res = await fetch(`${API}?action=session_login`, {
+        method: 'POST',
+        credentials: 'include' // sends the EHR PHP session cookie
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        authToken  = data.token;
+        doctorInfo = data.doctor;
+        localStorage.setItem('oc_token',  authToken);
+        localStorage.setItem('oc_doctor', JSON.stringify(doctorInfo));
+        showApp();
+      }
+      // If it fails (session expired, role changed, etc.), just fall back
+      // to showing the normal login screen.
+    } catch (e) { /* fall back to manual login */ }
   }
 
   // ── Login ──────────────────────────────────────────────────────────────────

@@ -1,9 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- ── EHR SESSION GUARD ──────────────────────────────────────────────
+       Must run before anything else. If the user has no local session
+       record, bounce them back to the landing page / login modal. -->
+  <script>
+    (function () {
+      var raw = localStorage.getItem('ehr_user');
+      if (!raw) {
+        window.location.replace('Home_Page.html');
+        throw new Error('Not authenticated — redirecting to login.');
+      }
+      try {
+        var u = JSON.parse(raw);
+        if (!u || !u.role) throw new Error('bad session');
+      } catch (e) {
+        localStorage.removeItem('ehr_user');
+        window.location.replace('Home_Page.html');
+        throw new Error('Invalid session — redirecting to login.');
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Electronic Health Records – HealthCare Hub</title>
+  <title>Electronic Health Records – Pharos HIS</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -28,7 +48,8 @@
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #fff; padding: 1.5rem 2rem;
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
-    }
+      overflow:visible;
+}
     .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
     nav { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
     nav a {
@@ -242,6 +263,7 @@
       animation: alertSlideIn 0.35s ease; transition: opacity 0.3s, transform 0.3s;
     }
     .alert-row:last-child { border-bottom: none; }
+    .alert-row[style*='cursor: pointer']:hover { background: var(--primary-light); border-radius: 8px; }
     .alert-row.dismissing { opacity: 0; transform: translateX(20px); pointer-events: none; }
     @keyframes alertSlideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
     .alert-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
@@ -395,7 +417,7 @@
 
 <!-- HEADER -->
 <header>
-  <h1 class="logo">HealthCare Hub</h1>
+  <a href="Home_Page.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="../Brand Identity/Pharos HIS Icon2.png" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
   <nav>
     <a href="Home_Page.html">Home</a>
     <a href="Online_Consultation_Page.html">Review Appointments</a>
@@ -404,6 +426,7 @@
     <a href="Health_Chatbot.html">Chatbot</a>
     <button class="lang-btn active">English</button>
     <button class="lang-btn">العربية</button>
+    <button class="lang-btn" onclick="ehrLogout()" title="Sign out">🚪 Logout</button>
   </nav>
 </header>
 
@@ -513,6 +536,9 @@
           <button class="btn-refresh" id="refreshAlertsBtn" onclick="refreshAlerts()">
             <span id="refreshIcon">⟳</span> Refresh
           </button>
+          <button class="btn-refresh" id="reseedRulesBtn" onclick="reseedAndRefresh()" title="Re-seed CDSS rules and clear stale suppression windows" style="background:#6366f1;border-color:#4f46e5;">
+            🔧 Fix Rules
+          </button>
         </div>
       </div>
 
@@ -545,13 +571,13 @@
   <section>
     <div class="section-header">
       <h3>🔗 Linked System Modules</h3>
-      <p>The EHR connects seamlessly with every other module in HealthCare Hub.</p>
+      <p>The EHR connects seamlessly with every other module in Pharos HIS.</p>
     </div>
     <div class="integration-grid">
       <a href="Appointments_Page.html" class="int-tile"><div class="int-tile-icon">📅</div><div><strong>Appointments</strong><span>Schedule & manage visits</span></div></a>
       <a href="ERP_Pharmacy_Sign_in_Page.html" class="int-tile"><div class="int-tile-icon">💊</div><div><strong>ERP Pharmacy</strong><span>Prescriptions & dispensing</span></div></a>
       <a href="Health_Chatbot.html" class="int-tile"><div class="int-tile-icon">🤖</div><div><strong>Health Chatbot</strong><span>Symptom & nutrition advice</span></div></a>
-      <a href="Home_Page.html" class="int-tile"><div class="int-tile-icon">🏠</div><div><strong>Home</strong><span>HealthCare Hub portal</span></div></a>
+      <a href="Home_Page.html" class="int-tile"><div class="int-tile-icon">🏠</div><div><strong>Home</strong><span>Pharos HIS portal</span></div></a>
     </div>
   </section>
 
@@ -576,7 +602,7 @@
 </section>
 
 <footer>
-  <p>© 2026 HealthCare Hub · Electronic Health Records Module · Empowering Healthy Living</p>
+  <p>© 2026 Pharos HIS · Electronic Health Records Module · Empowering Healthy Living</p>
 </footer>
 
 <!-- NEW PATIENT MODAL -->
@@ -790,7 +816,7 @@
         <select id="rf-med"><option value="">— Select medication —</option></select>
       </div>
       <div class="form-group"><label>Quantity / Days Supply</label><input type="text" id="rf-qty" placeholder="e.g. 30 days" /></div>
-      <div class="form-group"><label>Send To Pharmacy</label><input type="text" id="rf-pharmacy" placeholder="e.g. HealthCare Hub Pharmacy" /></div>
+      <div class="form-group"><label>Send To Pharmacy</label><input type="text" id="rf-pharmacy" placeholder="e.g. Pharos HIS Pharmacy" /></div>
       <div class="form-group full"><label>Refill Notes</label><textarea id="rf-notes" rows="2" placeholder="Additional notes for the pharmacist…" style="resize:vertical;"></textarea></div>
     </div>
     <div class="modal-footer">
@@ -1025,24 +1051,51 @@ let editingLabId = null;
 // ─── API HELPER ──────────────────────────────────────────────────────
 async function api(params, method = 'GET', body = null) {
   const url = API + '?' + new URLSearchParams(params);
-  const opts = { method };
+  const opts = { method, credentials: 'include' };
   if (body) {
     opts.headers = { 'Content-Type': 'application/json' };
     opts.body = JSON.stringify(body);
   }
   try {
     const r = await fetch(url, opts);
-    return await r.json();
+
+    if (r.status === 401 || r.status === 403) {
+      handleUnauthorized();
+      return { success: false };
+    }
+
+    const data = await r.json();
+    if (data && data.status === 'Unauthorized access') {
+      handleUnauthorized();
+      return { success: false };
+    }
+    return data;
   } catch(e) {
     showToast('⚠ Network error: ' + e.message, false);
     return { success: false };
   }
 }
 
+// ─── Wipe local session and bounce to login on any auth failure ────────
+function handleUnauthorized() {
+  localStorage.removeItem('ehr_user');
+  showToast('⚠ Session expired or unauthorized — please sign in again.', false);
+  setTimeout(() => { window.location.replace('Home_Page.html'); }, 1200);
+}
+
+// ─── Manual logout (button click) ───────────────────────────────────────
+async function ehrLogout() {
+  try {
+    await fetch(API + '?action=logout', { method: 'POST', credentials: 'include' });
+  } catch (e) { /* ignore network errors on logout */ }
+  localStorage.removeItem('ehr_user');
+  window.location.replace('Home_Page.html');
+}
+
 // ─── INIT (ping backend first so path errors show a clear message) ────
 async function init() {
   try {
-    const ping = await fetch(API + '?action=ping');
+    const ping = await fetch(API + '?action=ping', { credentials: 'include' });
     const ct = ping.headers.get('content-type') || '';
     if (!ct.includes('json')) {
       showToast('⚠ Cannot reach EHR_System.php — check folder path & XAMPP is running.', false);
@@ -1058,6 +1111,8 @@ async function init() {
     }
     const data = await ping.json();
     if (!data.success) { showToast('⚠ DB error: ' + data.message, false); return; }
+    // Silently seed CDSS rules on every page load (INSERT IGNORE — idempotent)
+    fetch(API + '?action=reseed_cdss_rules', { credentials: 'include' }).catch(() => {});
   } catch(e) {
     showToast('⚠ Network error — is XAMPP running? ' + e.message, false); return;
   }
@@ -1134,6 +1189,9 @@ async function selectPatient(id) {
   document.getElementById('tab-overview').classList.add('active');
 
   setTimeout(() => document.getElementById('recordPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+  // ── CDSS: reload alerts scoped to the newly selected patient ──────────
+  refreshAlerts();
 }
 
 // ─── SWITCH TAB (lazy-load from DB) ──────────────────────────────────
@@ -1231,7 +1289,9 @@ function renderVitals(v) {
   const rrColor = flags.some(f => f.id==='rr') ? 'var(--accent2)' : 'var(--primary)';
 
   const bmiNum = parseFloat(v.bmi);
-  const bmiCategory = bmiNum < 18.5 ? {label:'Underweight', cls:'badge-warning'} :
+  const bmiValid = !isNaN(bmiNum) && bmiNum > 0;
+  const bmiCategory = !bmiValid ? {label:'', cls:''} :
+    bmiNum < 18.5 ? {label:'Underweight', cls:'badge-warning'} :
     bmiNum < 25 ? {label:'Normal', cls:'badge-active'} :
     bmiNum < 30 ? {label:'Overweight', cls:'badge-warning'} :
     {label:'Obese', cls:'badge-danger'};
@@ -1281,7 +1341,7 @@ function renderVitals(v) {
       </div>
       <div class="vital-card">
         <div class="vital-val">${v.bmi}</div>
-        <div class="vital-label">BMI <span class="badge ${bmiCategory.cls}" style="font-size:0.65rem;">${bmiCategory.label}</span><br><span class="vital-unit">kg/m²</span></div>
+        <div class="vital-label">BMI ${bmiValid ? `<span class="badge ${bmiCategory.cls}" style="font-size:0.65rem;">${bmiCategory.label}</span>` : ''}<br><span class="vital-unit">kg/m²</span></div>
       </div>
       ${painHtml}
     </div>
@@ -1509,6 +1569,7 @@ async function saveVitals() {
     const freshVitals = await api({ action: 'get_vitals', patient_id: activePatientId });
     renderVitals(freshVitals.data);
     showToast('✅ Vitals saved successfully!', true);
+    refreshAlerts(); // ── CDSS: re-poll for any new alerts triggered by these vitals
   } else {
     showToast('⚠ Failed to save vitals. Check backend.', false);
   }
@@ -1688,7 +1749,7 @@ function closeRefillModal() {
 async function saveRefill() {
   const medName = document.getElementById('rf-med').value;
   if (!medName) { showToast('⚠ Please select a medication.', false); return; }
-  const pharmacy = document.getElementById('rf-pharmacy').value.trim() || 'HealthCare Hub Pharmacy';
+  const pharmacy = document.getElementById('rf-pharmacy').value.trim() || 'Pharos HIS Pharmacy';
   const qty = document.getElementById('rf-qty').value.trim() || '30 days';
   const res = await api({ action: 'request_refill' }, 'POST', {
     patient_id: activePatientId, med_name: medName, pharmacy, qty
@@ -2054,6 +2115,7 @@ async function saveLabResult() {
     const p = patients.find(x => x.id === activePatientId);
     await loadAndRenderLabs(p);
     showToast(editingLabId ? '✓ Lab result updated.' : `✓ Lab result for ${name} added.`, true);
+    refreshAlerts(); // ── CDSS: re-poll for any new alerts triggered by this lab result
   } else {
     showToast('⚠ Failed to save lab result.', false);
   }
@@ -2310,17 +2372,60 @@ async function deletePatientRecord() {
 init();
 
 // ═══════════════════════════════════════════════════════════════════════
-// DYNAMIC CLINICAL ALERTS  –  AI-powered via Anthropic API
+// ACTIVE CLINICAL ALERTS  —  Database-driven via CDSS engine
+//
+// Primary path  (patient selected):
+//   GET ?action=get_clinical_alerts&patient_id=P-XXXXX
+//   Reads patient_alert_states JOIN clinical_rules — real rows written by
+//   CdssEngine::onNewObservation() every time a lab or vital is saved.
+//
+// Fallback path (no patient selected):
+//   Calls the Anthropic API to generate ambient contextual alerts so the
+//   panel is never empty when browsing the page without a patient open.
+//
+// Auto-triggers:
+//   selectPatient()  → refreshAlerts() when switching patient
+//   saveVitals()     → refreshAlerts() after vitals saved
+//   saveLabResult()  → refreshAlerts() after lab result saved
 // ═══════════════════════════════════════════════════════════════════════
 
-const ALERT_REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 min
+const ALERT_REFRESH_MS = 60 * 1000; // auto-refresh every 60 s while a patient is open
 
-let alertData        = [];   // full list returned by AI
+let alertData        = [];
 let dismissedAlerts  = new Set();
 let activeFilter     = 'all';
 let alertRefreshTimer = null;
+let alertTimeTicker  = null;   // setInterval handle for live relative-time updates
 
-/* ── severity helpers ── */
+/* ── Convert a stored timestamp to a human-readable relative string ── */
+function relativeTime(ts) {
+  if (!ts) return 'Just now';
+  const diff = Math.floor((Date.now() - ts) / 1000); // seconds elapsed
+  if (diff < 5)   return 'Just now';
+  if (diff < 60)  return diff + 's ago';
+  const mins = Math.floor(diff / 60);
+  if (mins < 60)  return mins + ' min' + (mins === 1 ? '' : 's') + ' ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs  < 24)  return hrs  + ' hr'  + (hrs  === 1 ? '' : 's')  + ' ago';
+  const days = Math.floor(hrs / 24);
+  return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+}
+
+/* ── Tick: update every visible alert-time span without re-rendering ── */
+function tickAlertTimes() {
+  document.querySelectorAll('#alertsList .alert-time-rel').forEach(el => {
+    const ts = Number(el.dataset.ts);
+    if (ts) el.textContent = relativeTime(ts);
+  });
+}
+
+/* ── Start/restart the 1-second ticker ── */
+function startAlertTimeTicker() {
+  if (alertTimeTicker) clearInterval(alertTimeTicker);
+  alertTimeTicker = setInterval(tickAlertTimes, 1000);
+}
+
+/* ── severity display metadata ── */
 const SEVERITY_META = {
   critical: { icon: '🔴', label: 'Critical' },
   warning:  { icon: '🟡', label: 'Warning'  },
@@ -2328,28 +2433,92 @@ const SEVERITY_META = {
   resolved: { icon: '🟢', label: 'Resolved'  },
 };
 
-function severityFromType(type = '') {
-  const t = type.toLowerCase();
-  if (t.includes('critical') || t.includes('danger') || t.includes('drug interaction') || t.includes('emergency')) return 'critical';
-  if (t.includes('warning')  || t.includes('overdue') || t.includes('abnormal'))  return 'warning';
-  if (t.includes('resolved') || t.includes('ready')   || t.includes('completed')) return 'resolved';
-  return 'info';
-}
-
-/* ── main fetch from Claude ── */
-async function fetchAIAlerts() {
-  const btn = document.getElementById('refreshAlertsBtn');
-  const icon = document.getElementById('refreshIcon');
+/* ─────────────────────────────────────────────────────────────────────
+   fetchDbAlerts()
+   PRIMARY path: queries patient_alert_states for the active patient.
+   Falls back to fetchAIAlerts() when no patient is selected or if the
+   CDSS endpoint is unreachable.
+───────────────────────────────────────────────────────────────────── */
+async function fetchDbAlerts() {
+  const btn       = document.getElementById('refreshAlertsBtn');
+  const icon      = document.getElementById('refreshIcon');
   const loadingEl = document.getElementById('alertsLoading');
   const listEl    = document.getElementById('alertsList');
 
-  // UI: loading state
   btn.disabled = true;
   icon.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;vertical-align:middle;"></span>';
   loadingEl.style.display = 'flex';
   listEl.style.opacity = '0.35';
 
-  // Build a dynamic context from live patient data if available
+  // No patient open → fall back to AI ambient alerts
+  if (!activePatientId) {
+    await fetchAIAlerts();
+    btn.disabled = false;
+    icon.textContent = '⟳';
+    loadingEl.style.display = 'none';
+    listEl.style.opacity = '1';
+    return;
+  }
+
+  try {
+    // Call the CDSS alerts endpoint — same api() helper used everywhere
+    const res = await api({ action: 'get_clinical_alerts', patient_id: activePatientId });
+
+    if (!res.success) throw new Error(res.message || 'get_clinical_alerts failed');
+
+    // Clock-drift correction: if the server clock differs from the browser clock,
+    // all relative times would be off by that delta. We compensate by computing
+    // how far the server's "now" is from the browser's "now" and baking that in.
+    const serverNowMs  = (res.server_time || 0) * 1000;  // PHP time() → ms
+    const clientNowMs  = Date.now();
+    const clockDriftMs = serverNowMs ? (clientNowMs - serverNowMs) : 0;
+    // triggered_at is a Unix epoch integer (seconds) from UNIX_TIMESTAMP() in MySQL.
+    // Multiply by 1000 for ms, then add drift so the browser clock is the reference.
+
+    // Map DB rows to the shape renderAlerts() expects.
+    // res.data comes from getClinicalAlerts() in EHR_System.php.
+    alertData = res.data.map(a => ({
+      id:              a.id,                        // "ALT-47" or "ALT-NOMINAL"
+      type:            a.rule_name || a.type,       // human-readable rule name
+      severity:        a.severity,                  // 'critical'|'warning'|'info'|'resolved'
+      patient_id:      a.patient_id || null,        // patient this alert belongs to
+      message:         a.message,                   // description from clinical_rules
+      // triggered_at is a Unix epoch (seconds) from the DB — unambiguous, no timezone issues.
+      // Adding clockDriftMs corrects for server/browser clock skew.
+      fetchedAt:       a.triggered_at ? (a.triggered_at * 1000 + clockDriftMs) : Date.now(),
+      trigger_detail:  a.trigger_detail || '',      // "Serum Potassium: 5.9 mEq/L (threshold: > 5.5)"
+      alert_state_id:  a.alert_state_id,
+      severity_tier:   a.severity_tier,
+      rule_code:       a.rule_code,
+      requires_acknowledgment: a.requires_acknowledgment,
+    }));
+
+    // Clear in-memory dismissals — the DB is now the source of truth
+    dismissedAlerts.clear();
+    renderAlerts();
+    startAlertTimeTicker();
+    scheduleAutoRefresh();
+
+  } catch (err) {
+    console.warn('[CDSS] DB alert fetch failed, falling back to AI:', err);
+    // Graceful degradation: if the CDSS tables don't exist yet or the
+    // PHP returns an error, show AI-generated alerts instead of a blank panel.
+    await fetchAIAlerts();
+  } finally {
+    btn.disabled = false;
+    icon.textContent = '⟳';
+    loadingEl.style.display = 'none';
+    listEl.style.opacity = '1';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   fetchAIAlerts()
+   FALLBACK path: used when no patient is selected, or when the CDSS
+   endpoint is unavailable. Generates contextual ambient alerts via the
+   Anthropic API. Kept fully intact from the original.
+───────────────────────────────────────────────────────────────────── */
+async function fetchAIAlerts() {
   let patientContext = '';
   if (typeof patients !== 'undefined' && patients.length) {
     const sample = patients.slice(0, 6).map(p =>
@@ -2371,7 +2540,7 @@ Generate 5–7 varied, realistic alerts covering different categories:
 drug interactions, overdue labs, critical vitals, appointment reminders,
 lab results, prescription refills, infection control notices.`;
 
-  const userPrompt = `Generate today's active clinical alerts for the HealthCare Hub EHR.${patientContext}
+  const userPrompt = `Generate today's active clinical alerts for the Pharos HIS EHR.${patientContext}
 Make them realistic and varied. Return JSON array only.`;
 
   try {
@@ -2386,84 +2555,129 @@ Make them realistic and varied. Return JSON array only.`;
       })
     });
 
-    const data = await res.json();
-    const text = (data.content || []).map(b => b.text || '').join('');
+    const data    = await res.json();
+    const text    = (data.content || []).map(b => b.text || '').join('');
     const cleaned = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed  = JSON.parse(cleaned);
 
-    // Normalise severity in case AI used different casing
+    /* Convert the AI's relative-time string to a real timestamp so the
+       live ticker works the same way for AI-generated alerts.           */
+    function parseAiTime(str = '') {
+      const s = str.toLowerCase().trim();
+      if (!s || s === 'just now' || s === 'now') return Date.now();
+      let m;
+      if ((m = s.match(/(\d+)\s*s(?:ec)?/)))   return Date.now() - m[1]*1000;
+      if ((m = s.match(/(\d+)\s*min/)))         return Date.now() - m[1]*60000;
+      if ((m = s.match(/(\d+)\s*hr/)))          return Date.now() - m[1]*3600000;
+      if ((m = s.match(/(\d+)\s*day/)))         return Date.now() - m[1]*86400000;
+      return Date.now();
+    }
+
     alertData = parsed.map(a => ({
       ...a,
-      severity: a.severity
-        ? a.severity.toLowerCase()
-        : severityFromType(a.type)
+      // Prefer a real triggered_at from the server if present; fall back to parsing the text string
+      fetchedAt: a.triggered_at
+        ? new Date(a.triggered_at).getTime()
+        : parseAiTime(a.time),
+      severity: a.severity ? a.severity.toLowerCase() : severityFromType(a.type)
     }));
 
     dismissedAlerts.clear();
     renderAlerts();
+    startAlertTimeTicker();
     scheduleAutoRefresh();
 
   } catch (err) {
-    console.warn('AI alert fetch failed, using fallback:', err);
+    console.warn('AI alert fetch failed, using static fallback:', err);
     alertData = getFallbackAlerts();
     renderAlerts();
-  } finally {
-    btn.disabled = false;
-    icon.textContent = '⟳';
-    loadingEl.style.display = 'none';
-    listEl.style.opacity = '1';
+    startAlertTimeTicker();
   }
 }
 
-/* ── fallback static alerts ── */
+function severityFromType(type = '') {
+  const t = type.toLowerCase();
+  if (t.includes('critical') || t.includes('danger') || t.includes('drug interaction') || t.includes('emergency')) return 'critical';
+  if (t.includes('warning')  || t.includes('overdue') || t.includes('abnormal'))  return 'warning';
+  if (t.includes('resolved') || t.includes('ready')   || t.includes('completed')) return 'resolved';
+  return 'info';
+}
+
+/* ── static last-resort fallback ── */
 function getFallbackAlerts() {
+  const now = Date.now();
   return [
-    { id:'ALT-F1', type:'Drug Interaction Warning',  severity:'critical', message:'Potential interaction between Losartan and Ibuprofen for Patient P-00412. Review required.',          time:'Just now'   },
-    { id:'ALT-F2', type:'Overdue Lab Follow-up',     severity:'warning',  message:'Patient P-00389 – Thyroid panel ordered 14 days ago with no result yet.',                           time:'2 hrs ago'  },
-    { id:'ALT-F3', type:'Appointment Reminder',      severity:'info',     message:'12 patients have appointments tomorrow. 3 have outstanding pre-visit forms.',                       time:'3 hrs ago'  },
-    { id:'ALT-F4', type:'Lab Results Ready',         severity:'resolved', message:'Lipid panel and CBC results for Patient P-00401 are now available for review.',                    time:'5 hrs ago'  },
-    { id:'ALT-F5', type:'Critical Vitals Flagged',   severity:'critical', message:'Patient P-00376 BP reading 185/112 mmHg recorded 30 min ago – immediate review recommended.',       time:'30 mins ago'},
+    { id:'ALT-F1', type:'Drug Interaction Warning', severity:'critical', message:'Potential interaction between Losartan and Ibuprofen for Patient P-00412. Review required.',       fetchedAt: now                  },
+    { id:'ALT-F2', type:'Overdue Lab Follow-up',    severity:'warning',  message:'Patient P-00389 – Thyroid panel ordered 14 days ago with no result yet.',                        fetchedAt: now - 2*3600000      },
+    { id:'ALT-F3', type:'Appointment Reminder',     severity:'info',     message:'12 patients have appointments tomorrow. 3 have outstanding pre-visit forms.',                    fetchedAt: now - 3*3600000      },
+    { id:'ALT-F4', type:'Lab Results Ready',        severity:'resolved', message:'Lipid panel and CBC results for Patient P-00401 are now available for review.',                 fetchedAt: now - 5*3600000      },
+    { id:'ALT-F5', type:'Critical Vitals Flagged',  severity:'critical', message:'Patient P-00376 BP reading 185/112 mmHg recorded 30 min ago – immediate review recommended.',  fetchedAt: now - 30*60000       },
   ];
 }
 
-/* ── render ── */
+/* ─────────────────────────────────────────────────────────────────────
+   renderAlerts() — renders both DB-sourced and AI-sourced alert arrays.
+   DB alerts show an extra trigger_detail line with the exact value that
+   fired the rule (e.g. "Serum Potassium: 5.9 mEq/L (threshold: > 5.5)").
+───────────────────────────────────────────────────────────────────── */
 function renderAlerts() {
-  const listEl  = document.getElementById('alertsList');
-  const emptyEl = document.getElementById('alertsEmpty');
+  const listEl   = document.getElementById('alertsList');
+  const emptyEl  = document.getElementById('alertsEmpty');
   const footerEl = document.getElementById('alertsFooter');
-  const countEl = document.getElementById('alertsCount');
-  const tsEl    = document.getElementById('alertsLastUpdated');
+  const countEl  = document.getElementById('alertsCount');
+  const tsEl     = document.getElementById('alertsLastUpdated');
 
   const visible = alertData.filter(a => {
     if (dismissedAlerts.has(a.id)) return false;
-    if (activeFilter === 'all')    return true;
+    if (activeFilter === 'all') return true;
     return a.severity === activeFilter;
   });
 
   listEl.innerHTML = '';
 
   if (visible.length === 0) {
-    emptyEl.style.display = 'block';
+    emptyEl.style.display  = 'block';
     footerEl.style.display = 'none';
   } else {
-    emptyEl.style.display = 'none';
+    emptyEl.style.display  = 'none';
     footerEl.style.display = 'flex';
     countEl.textContent = visible.length;
-    tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     visible.forEach(alert => {
       const meta = SEVERITY_META[alert.severity] || SEVERITY_META.info;
-      const row = document.createElement('div');
-      row.className = 'alert-row';
+      const row  = document.createElement('div');
+      row.className  = 'alert-row';
       row.dataset.id = alert.id;
+      if (alert.patient_id && alert.id !== 'ALT-NOMINAL') {
+        row.style.cursor = 'pointer';
+        row.title = 'Click to open patient record';
+        row.addEventListener('click', (e) => {
+          if (e.target.classList.contains('alert-dismiss')) return;
+          navigateToAlertPatient(alert.patient_id);
+        });
+      }
+
+      // Show the exact triggering value for DB-sourced alerts
+      const detailLine = alert.trigger_detail
+        ? `<span style="display:block;font-size:0.76rem;color:var(--muted);margin-top:3px;font-style:italic;">${escapeHtml(alert.trigger_detail)}</span>`
+        : '';
+
+      const navHint = (alert.patient_id && alert.id !== 'ALT-NOMINAL')
+        ? `<span style="font-size:0.72rem;color:var(--primary);font-weight:600;margin-top:4px;display:block;">↗ View Patient ${escapeHtml(alert.patient_id)}</span>`
+        : '';
+
       row.innerHTML = `
         <div class="alert-icon">${meta.icon}</div>
         <div class="alert-body">
           <strong>${escapeHtml(alert.type)}</strong>
           <span>${escapeHtml(alert.message)}</span>
+          ${detailLine}
+          ${navHint}
         </div>
-        <div class="alert-time">${escapeHtml(alert.time)}</div>
-        <button class="alert-dismiss" title="Dismiss alert" onclick="dismissAlert('${alert.id}', this.closest('.alert-row'))">✕</button>
+        <div class="alert-time"><span class="alert-time-rel" data-ts="${alert.fetchedAt || ''}">${relativeTime(alert.fetchedAt)}</span></div>
+        <button class="alert-dismiss" title="Dismiss alert"
+          onclick="dismissAlert('${alert.id}', this.closest('.alert-row'))">✕</button>
       `;
       listEl.appendChild(row);
     });
@@ -2474,7 +2688,7 @@ function escapeHtml(s = '') {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/* ── dismiss single ── */
+/* ── dismiss single alert (UI only) ── */
 function dismissAlert(id, rowEl) {
   rowEl.classList.add('dismissing');
   setTimeout(() => {
@@ -2483,22 +2697,21 @@ function dismissAlert(id, rowEl) {
   }, 300);
 }
 
-/* ── clear all ── */
+/* ── clear all visible alerts ── */
 function clearAllAlerts() {
   const visible = alertData.filter(a => {
     if (dismissedAlerts.has(a.id)) return false;
     if (activeFilter === 'all') return true;
     return a.severity === activeFilter;
   });
-  const rows = document.querySelectorAll('#alertsList .alert-row');
-  rows.forEach(r => r.classList.add('dismissing'));
+  document.querySelectorAll('#alertsList .alert-row').forEach(r => r.classList.add('dismissing'));
   setTimeout(() => {
     visible.forEach(a => dismissedAlerts.add(a.id));
     renderAlerts();
   }, 320);
 }
 
-/* ── filter ── */
+/* ── filter chips ── */
 function setAlertFilter(filter, btn) {
   activeFilter = filter;
   document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -2506,21 +2719,71 @@ function setAlertFilter(filter, btn) {
   renderAlerts();
 }
 
-/* ── manual refresh ── */
+/* ── manual Refresh button ── */
 function refreshAlerts() {
   if (alertRefreshTimer) { clearTimeout(alertRefreshTimer); alertRefreshTimer = null; }
-  fetchAIAlerts();
+  fetchDbAlerts();
 }
 
-/* ── auto-refresh ── */
+/* ── Fix Rules: reseed CDSS rules + clear stale suppression, then refresh ── */
+async function reseedAndRefresh() {
+  const btn = document.getElementById('reseedRulesBtn');
+  btn.disabled = true; btn.textContent = '⏳ Fixing…';
+  try {
+    await fetch(API + '?action=reseed_cdss_rules', { credentials: 'include' });
+    showToast('✅ CDSS rules reseeded. Re-evaluating alerts…', true);
+  } catch(e) {}
+  btn.disabled = false; btn.innerHTML = '🔧 Fix Rules';
+  await new Promise(r => setTimeout(r, 500));
+  refreshAlerts();
+}
+
+/* ── auto-refresh timer ── */
 function scheduleAutoRefresh() {
   if (alertRefreshTimer) clearTimeout(alertRefreshTimer);
-  alertRefreshTimer = setTimeout(fetchAIAlerts, ALERT_REFRESH_MS);
+  alertRefreshTimer = setTimeout(fetchDbAlerts, ALERT_REFRESH_MS);
 }
 
-/* ── boot alerts on page load ── */
+/* ── navigate to patient from alert click ── */
+async function navigateToAlertPatient(patientId) {
+  // Ensure patients list is loaded
+  if (!patients || !patients.length) await loadPatients();
+
+  // Find patient by patient_id string (e.g. "P-00001") or internal id
+  let target = patients.find(p => p.patient_id === patientId || p.id === patientId);
+
+  if (!target) {
+    // Try searching if not in current list
+    await loadPatients(patientId);
+    target = patients.find(p => p.patient_id === patientId || p.id === patientId);
+  }
+
+  if (!target) {
+    showToast('⚠ Patient ' + patientId + ' not found.', false);
+    return;
+  }
+
+  // Select the patient (highlights card, shows record panel)
+  await selectPatient(target.id);
+
+  // Navigate to Lab Results tab
+  await new Promise(r => setTimeout(r, 300)); // allow DOM to settle
+  const labTab = [...document.querySelectorAll('.demo-tab')].find(t => t.textContent.includes('Lab'));
+  if (labTab) {
+    const tabId = labTab.getAttribute('onclick')?.match(/switchTab\(this,'([^']+)'\)/)?.[1];
+    if (tabId) {
+      await switchTab(labTab, tabId);
+      labTab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Scroll record panel into view
+  document.getElementById('recordPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── boot on page load ── */
 document.addEventListener('DOMContentLoaded', () => {
-  fetchAIAlerts();
+  fetchDbAlerts();
 });
 </script>
 </body>

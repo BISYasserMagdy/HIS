@@ -1,4 +1,7 @@
 <?php
+// ── Shared EHR session (PHP session_start + requireRole), same as EHR_System.php ──
+require_once __DIR__ . '/auth.php';
+
 // ══════════════════════════════════════════════════════════════════════════════
 // Online_Consultation_API.php
 // Backend for the Doctor Online Consultation Review Page
@@ -13,7 +16,8 @@
 set_exception_handler(function ($e) {
     if (!headers_sent()) {
         header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+        header('Access-Control-Allow-Credentials: true');
     }
     echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
     exit;
@@ -23,7 +27,8 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 }, E_ALL & ~E_NOTICE & ~E_WARNING);
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -224,11 +229,83 @@ foreach ($_POST as $k => $v) $body[$k] = $v;
 
 switch ($action) {
     case 'login':              handleLogin($body);                     break;
+    case 'session_login':      handleSessionLogin();                   break;
     case 'get_appointments':   getAppointments();                      break;
     case 'get_consultation':   getConsultation();                      break;
     case 'logout':             handleLogout();                         break;
     default:
         echo json_encode(['success' => false, 'message' => 'Unknown action']);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ACTION: session_login
+// Uses the existing EHR PHP session (set by EHR_System.php's loginUser()) to
+// authenticate the doctor here too — no separate Doctor ID/password needed.
+// Requires the logged-in EHR user to have role = 'doctor'.
+// Finds (or creates) a matching row in `doctors` keyed by the EHR username,
+// then issues the same kind of token handleLogin() returns.
+// Returns: { success, token, doctor: {...} }  — same shape as action=login
+// ══════════════════════════════════════════════════════════════════════════════
+function handleSessionLogin(): void {
+    // requireRole() exits with a 401 JSON "Unauthorized access" response
+    // if there's no active session or the role doesn't match.
+    requireRole(['doctor']);
+
+    $username = $_SESSION['username']  ?? '';
+    $fullName = $_SESSION['full_name'] ?? $username;
+
+    if ($username === '') {
+        echo json_encode(['success' => false, 'message' => 'No EHR session found.']);
+        return;
+    }
+
+    $conn = getConn(APT_DB);
+
+    // Use the EHR username as the doctor_id in this system too.
+    $stmt = $conn->prepare("SELECT * FROM doctors WHERE doctor_id = ? LIMIT 1");
+    $stmt->bind_param('s', $username);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$row) {
+        // First time this EHR doctor uses the consultation portal — create a
+        // matching record automatically. password_hash is unused for SSO
+        // logins but the column is NOT NULL, so store a random unusable hash.
+        $randomHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+        $colors = ['#0b3c7a', '#1a73e8', '#00b4a6', '#7c3aed', '#c2410c'];
+        $color  = $colors[array_rand($colors)];
+
+        $insert = $conn->prepare(
+            "INSERT INTO doctors (doctor_id, password_hash, full_name, specialty, email, avatar_color)
+             VALUES (?, ?, ?, NULL, NULL, ?)"
+        );
+        $insert->bind_param('ssss', $username, $randomHash, $fullName, $color);
+        $insert->execute();
+        $insert->close();
+
+        $stmt = $conn->prepare("SELECT * FROM doctors WHERE doctor_id = ? LIMIT 1");
+        $stmt->bind_param('s', $username);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
+
+    $conn->close();
+
+    $token = base64_encode($row['doctor_id'] . ':' . time() . ':' . bin2hex(random_bytes(8)));
+
+    echo json_encode([
+        'success' => true,
+        'token'   => $token,
+        'doctor'  => [
+            'doctor_id'    => $row['doctor_id'],
+            'full_name'    => $row['full_name'],
+            'specialty'    => $row['specialty'],
+            'email'        => $row['email'],
+            'avatar_color' => $row['avatar_color'],
+        ]
+    ]);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

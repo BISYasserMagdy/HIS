@@ -260,3 +260,96 @@ INSERT INTO `rule_criteria` (`rule_id`, `data_domain`, `parameter_key`, `operato
 SELECT id, 'vital', 'systolic_bp', 'gt', 180, 'mmHg', 'OR', 1 FROM `clinical_rules` WHERE `rule_code` = 'HYPERTENSION-001';
 INSERT INTO `rule_criteria` (`rule_id`, `data_domain`, `parameter_key`, `operator`, `threshold_value`, `threshold_unit`, `logic_join`, `sort_order`)
 SELECT id, 'vital', 'diastolic_bp', 'gt', 120, 'mmHg', 'AND', 2 FROM `clinical_rules` WHERE `rule_code` = 'HYPERTENSION-001';
+
+-- =============================================================================
+-- EXTENDED SEED DATA: Lab + Vital rules for glucose, haemoglobin, cholesterol,
+-- SpO2, HR, temperature, electrolytes, and renal/haematology panels.
+-- All inserts use INSERT IGNORE to be idempotent on re-run.
+-- =============================================================================
+
+-- ── Additional clinical rules ─────────────────────────────────────────────────
+INSERT IGNORE INTO `clinical_rules`
+    (`rule_code`, `rule_name`, `domain`, `severity`, `severity_tier`,
+     `suppression_window_hrs`, `cooldown_hrs`, `requires_acknowledgment`, `description`)
+VALUES
+    ('TACHYCARDIA-001',       'Critical Tachycardia',              'vital_sign',  'critical', 1, 12,  4, 1, 'Heart rate > 150 bpm — evaluate for arrhythmia or haemodynamic instability.'),
+    ('BRADYCARDIA-001',       'Critical Bradycardia',              'vital_sign',  'critical', 1, 12,  4, 1, 'Heart rate < 40 bpm — risk of haemodynamic compromise.'),
+    ('HYPOXIA-001',           'Critical Hypoxia',                  'vital_sign',  'critical', 1, 12,  4, 1, 'SpO₂ < 90% — supplemental O₂ urgently required.'),
+    ('HYPERTHERMIA-001',      'Hyperthermia / Fever',              'vital_sign',  'warning',  2, 24,  8, 0, 'Temperature > 38.5 °C — evaluate for infection or sepsis.'),
+    ('HYPOTHERMIA-001',       'Hypothermia',                       'vital_sign',  'warning',  2, 24,  8, 0, 'Temperature < 35 °C — active warming and monitoring required.'),
+    ('GLUCOSE-CRITICAL-LOW',  'Severe Hypoglycaemia',              'lab_result',  'critical', 1, 24, 12, 1, 'Glucose < 54 mg/dL — administer glucose immediately.'),
+    ('GLUCOSE-LOW-001',       'Hypoglycaemia',                     'lab_result',  'warning',  2, 24,  8, 1, 'Glucose < 70 mg/dL — monitor closely and consider carbohydrate supplementation.'),
+    ('GLUCOSE-HIGH-001',      'Hyperglycaemia',                    'lab_result',  'warning',  2, 24,  8, 0, 'Glucose > 200 mg/dL — review diabetic management plan.'),
+    ('GLUCOSE-CRITICAL-HIGH', 'Critical Hyperglycaemia',           'lab_result',  'critical', 1, 24, 12, 1, 'Glucose > 500 mg/dL — risk of DKA. Urgent review required.'),
+    ('HGB-CRITICAL-LOW',      'Critical Anaemia',                  'lab_result',  'critical', 1, 24, 12, 1, 'Haemoglobin < 7 g/dL — consider urgent transfusion.'),
+    ('HGB-LOW-001',           'Anaemia',                           'lab_result',  'warning',  2, 24,  8, 0, 'Haemoglobin < 12 g/dL — evaluate for cause of anaemia.'),
+    ('CHOL-HIGH-001',         'High Total Cholesterol',            'lab_result',  'warning',  2, 48, 24, 0, 'Total Cholesterol > 200 mg/dL — review cardiovascular risk and lipid therapy.'),
+    ('CHOL-CRITICAL-001',     'Critically High Cholesterol',       'lab_result',  'critical', 1, 48, 24, 1, 'Total Cholesterol > 300 mg/dL — significantly elevated cardiovascular risk.'),
+    ('HYPO-K-001',            'Hypokalaemia',                      'lab_result',  'warning',  2, 24,  8, 1, 'Serum Potassium < 3.5 mEq/L — arrhythmia risk; potassium replacement indicated.'),
+    ('SODIUM-HIGH-001',       'Hypernatraemia',                    'lab_result',  'warning',  2, 24,  8, 0, 'Serum Sodium > 150 mEq/L — evaluate for dehydration.'),
+    ('SODIUM-LOW-001',        'Hyponatraemia',                     'lab_result',  'warning',  2, 24,  8, 0, 'Serum Sodium < 130 mEq/L — monitor for neurological symptoms.'),
+    ('CREATININE-HIGH-001',   'Elevated Creatinine',               'lab_result',  'warning',  2, 24,  8, 0, 'Creatinine > 1.5 mg/dL — evaluate renal function.'),
+    ('WBC-HIGH-001',          'Leukocytosis',                      'lab_result',  'warning',  2, 24,  8, 0, 'WBC > 11 × 10³/µL — evaluate for infection or inflammation.'),
+    ('WBC-LOW-001',           'Leukopenia',                        'lab_result',  'warning',  2, 24,  8, 0, 'WBC < 4 × 10³/µL — evaluate for immunosuppression or haematological disorder.'),
+    ('PLATELETS-LOW-001',     'Thrombocytopenia',                  'lab_result',  'critical', 1, 24, 12, 1, 'Platelets < 50 × 10³/µL — bleeding risk; review medications.');
+
+-- ── Criteria for new rules ────────────────────────────────────────────────────
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'vital','heart_rate','gt',150,'bpm','AND',1 FROM `clinical_rules` WHERE `rule_code`='TACHYCARDIA-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'vital','heart_rate','lt',40,'bpm','AND',1 FROM `clinical_rules` WHERE `rule_code`='BRADYCARDIA-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'vital','spo2','lt',90,'%','AND',1 FROM `clinical_rules` WHERE `rule_code`='HYPOXIA-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'vital','body_temperature','gt',38.5,'C','AND',1 FROM `clinical_rules` WHERE `rule_code`='HYPERTHERMIA-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'vital','body_temperature','lt',35,'C','AND',1 FROM `clinical_rules` WHERE `rule_code`='HYPOTHERMIA-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','glucose','lt',54,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='GLUCOSE-CRITICAL-LOW';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','glucose','lt',70,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='GLUCOSE-LOW-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','glucose','gt',200,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='GLUCOSE-HIGH-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','glucose','gt',500,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='GLUCOSE-CRITICAL-HIGH';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','hemoglobin','lt',7,'g/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='HGB-CRITICAL-LOW';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','hemoglobin','lt',12,'g/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='HGB-LOW-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','total_cholesterol','gt',200,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='CHOL-HIGH-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','total_cholesterol','gt',300,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='CHOL-CRITICAL-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','serum_potassium','lt',3.5,'mEq/L','AND',1 FROM `clinical_rules` WHERE `rule_code`='HYPO-K-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','serum_sodium','gt',150,'mEq/L','AND',1 FROM `clinical_rules` WHERE `rule_code`='SODIUM-HIGH-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','serum_sodium','lt',130,'mEq/L','AND',1 FROM `clinical_rules` WHERE `rule_code`='SODIUM-LOW-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','creatinine','gt',1.5,'mg/dL','AND',1 FROM `clinical_rules` WHERE `rule_code`='CREATININE-HIGH-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','wbc','gt',11,'x10³/µL','AND',1 FROM `clinical_rules` WHERE `rule_code`='WBC-HIGH-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','wbc','lt',4,'x10³/µL','AND',1 FROM `clinical_rules` WHERE `rule_code`='WBC-LOW-001';
+
+INSERT IGNORE INTO `rule_criteria` (`rule_id`,`data_domain`,`parameter_key`,`operator`,`threshold_value`,`threshold_unit`,`logic_join`,`sort_order`)
+SELECT id,'lab','platelets','lt',50,'x10³/µL','AND',1 FROM `clinical_rules` WHERE `rule_code`='PLATELETS-LOW-001';

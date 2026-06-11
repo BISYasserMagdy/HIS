@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HealthCare Hub</title>
+  <title>Pharos HIS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -172,7 +172,8 @@
       backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--header-border);
       transition: padding 0.3s, background 0.4s, border-color 0.4s;
-    }
+      overflow:visible;
+}
 
     .logo-wrap { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; }
     .logo-icon {
@@ -488,16 +489,95 @@
       .footer-links { justify-content: center; }
       .theme-toggle span.toggle-label { display: none; }
     }
+    /* ══════════════════════════════════════════
+       EHR LOGIN MODAL
+    ══════════════════════════════════════════ */
+    .ehr-login-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      align-items: center; justify-content: center;
+      background: rgba(10,22,40,0.55); backdrop-filter: blur(6px);
+      padding: 1.5rem;
+    }
+    .ehr-login-overlay.open { display: flex; }
+    .ehr-login-card {
+      background: var(--surface); border: 1px solid var(--card-border);
+      border-radius: 22px; padding: 2.5rem; width: 100%; max-width: 400px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.3); position: relative;
+      animation: fadeUp 0.35s ease both;
+      transition: background 0.4s, border-color 0.4s;
+    }
+    .ehr-login-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none; font-size: 1.4rem; line-height: 1;
+      color: var(--muted); cursor: pointer; padding: 0.25rem;
+      transition: color 0.2s;
+    }
+    .ehr-login-close:hover { color: var(--teal); }
+    .ehr-login-card h2 {
+      font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700;
+      color: var(--section-h2); margin-bottom: 0.4rem; transition: color 0.4s;
+    }
+    .ehr-login-card .ehr-sub {
+      color: var(--section-sub); font-size: 0.9rem; margin-bottom: 1.6rem; transition: color 0.4s;
+    }
+    .ehr-field { margin-bottom: 1.2rem; }
+    .ehr-field label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--text2); margin-bottom: 0.4rem; transition: color 0.4s;
+    }
+    .ehr-field input {
+      width: 100%; padding: 0.8rem 1rem; border-radius: 10px;
+      border: 1.5px solid var(--border); background: var(--surface2);
+      color: var(--text); font-family: 'Outfit', sans-serif; font-size: 0.95rem;
+      transition: border-color 0.2s, background 0.4s, color 0.4s;
+    }
+    .ehr-field input:focus {
+      outline: none; border-color: var(--teal);
+    }
+    .ehr-login-btn {
+      width: 100%; padding: 0.85rem; border: none; border-radius: 10px;
+      background: var(--teal); color: #0a1628; font-weight: 700; font-size: 1rem;
+      font-family: 'Outfit', sans-serif; cursor: pointer; margin-top: 0.4rem;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .ehr-login-btn:hover { background: var(--teal2); transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,194,179,0.32); }
+    .ehr-login-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .ehr-login-error {
+      display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);
+      color: #ef4444; font-size: 0.85rem; padding: 0.7rem 1rem; border-radius: 10px;
+      margin-bottom: 1.2rem;
+    }
   </style>
 </head>
 <body>
 
+  <!-- EHR LOGIN MODAL -->
+  <div class="ehr-login-overlay" id="ehrLoginOverlay">
+    <div class="ehr-login-card">
+      <button class="ehr-login-close" onclick="closeEhrLogin()" aria-label="Close">×</button>
+      <h2>Sign in to EHR</h2>
+      <p class="ehr-sub">Enter your staff credentials to access the Electronic Health Records system.</p>
+
+      <div class="ehr-login-error" id="ehrLoginError"></div>
+
+      <form id="ehrLoginForm">
+        <div class="ehr-field">
+          <label for="ehrUsername">Username</label>
+          <input type="text" id="ehrUsername" autocomplete="username" required>
+        </div>
+        <div class="ehr-field">
+          <label for="ehrPassword">Password</label>
+          <input type="password" id="ehrPassword" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="ehr-login-btn" id="ehrLoginBtn">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+
   <!-- HEADER -->
   <header>
-    <a href="#" class="logo-wrap">
-      <div class="logo-icon">🏥</div>
-      <div class="logo-text">HealthCare<span>Hub</span></div>
-    </a>
+    <a href="Home_Page.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="../Brand Identity/Pharos HIS Icon2.png" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
     <nav>
       <a href="#services">Services</a>
       <a href="#about">About</a>
@@ -524,10 +604,10 @@
     <div class="hero-inner">
       <div class="hero-pill">
         <span class="pill-dot"></span>
-        Trusted Healthcare · Est. 2020
+        Trusted Healthcare · Est. 2026
       </div>
       <h1>Better Health Starts<br>With <em>Trusted Care</em></h1>
-      <p>HealthCare Hub connects you with preventive health resources, wellness programs, and expert guidance so you can feel your best every day.</p>
+      <p>Pharos HIS connects you with preventive health resources, wellness programs, and expert guidance so you can feel your best every day.</p>
       <div class="hero-buttons">
         <a href="#services" class="btn-hero-primary">Explore Services ↓</a>
         <a href="#about" class="btn-hero-outline">Learn About Us</a>
@@ -563,7 +643,7 @@
           <span class="section-label reveal">Our Services</span>
           <h2 class="reveal reveal-delay-1">Everything You Need,<br>In One Platform</h2>
         </div>
-        <p class="section-sub reveal reveal-delay-2">From preventive screenings to AI-powered health tools — HealthCare Hub covers every step of your health journey.</p>
+        <p class="section-sub reveal reveal-delay-2">From preventive screenings to AI-powered health tools — Pharos HIS covers every step of your health journey.</p>
       </div>
       <div class="card-grid">
         <div class="card reveal">
@@ -593,7 +673,7 @@
           <div class="card-icon">🗂️</div>
           <h3>Electronic Health Records</h3>
           <p>Complete patient records, lab results, medications, vitals, and history in one secure, centralised clinical platform.</p>
-          <a class="card-link" href="EHR_Page.html">Open EHR System <span class="arrow">→</span></a>
+          <a class="card-link" href="#" onclick="openEhrLogin(event)">Open EHR System <span class="arrow">→</span></a>
         </div>
         <div class="card reveal reveal-delay-2">
           <div class="card-icon">📊</div>
@@ -648,7 +728,7 @@
 
   <!-- FOOTER -->
   <footer>
-    <p>© 2026 HealthCare Hub · Empowering Healthy Living</p>
+    <p>© 2026 Pharos HIS · Empowering Healthy Living</p>
     <div class="footer-links">
       <a href="#services">Services</a>
       <a href="#about">About</a>
@@ -711,6 +791,75 @@
         ? (window.innerWidth > 900 ? '0.75rem 3rem' : '0.75rem 1.5rem')
         : (window.innerWidth > 900 ? '1.1rem 3rem'  : '1rem 1.5rem');
     }, { passive: true });
+    /* ── EHR LOGIN MODAL ── */
+    const EHR_API = '../Back End/EHR_System.php'; // matches the path used in EHR_Page.html
+
+    const ehrOverlay  = document.getElementById('ehrLoginOverlay');
+    const ehrForm     = document.getElementById('ehrLoginForm');
+    const ehrError    = document.getElementById('ehrLoginError');
+    const ehrBtn      = document.getElementById('ehrLoginBtn');
+    const ehrUsername = document.getElementById('ehrUsername');
+
+    function openEhrLogin(e) {
+      if (e) e.preventDefault();
+      ehrError.style.display = 'none';
+      ehrForm.reset();
+      ehrOverlay.classList.add('open');
+      setTimeout(() => ehrUsername.focus(), 50);
+    }
+
+    function closeEhrLogin() {
+      ehrOverlay.classList.remove('open');
+    }
+
+    // Close on backdrop click or Escape
+    ehrOverlay.addEventListener('click', (e) => {
+      if (e.target === ehrOverlay) closeEhrLogin();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && ehrOverlay.classList.contains('open')) closeEhrLogin();
+    });
+
+    ehrForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      ehrError.style.display = 'none';
+
+      const username = ehrUsername.value.trim();
+      const password = document.getElementById('ehrPassword').value;
+
+      ehrBtn.disabled = true;
+      ehrBtn.textContent = 'Signing in…';
+
+      try {
+        const res = await fetch(EHR_API + '?action=login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // required so the PHP session cookie is set/sent
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('ehr_user', JSON.stringify({
+            name: data.name,
+            role: data.role
+          }));
+          ehrBtn.textContent = 'Success — redirecting…';
+          window.location.href = 'EHR_Page.html';
+        } else {
+          ehrError.textContent = data.message || 'Invalid username or password.';
+          ehrError.style.display = 'block';
+          ehrBtn.disabled = false;
+          ehrBtn.textContent = 'Sign In';
+        }
+      } catch (err) {
+        ehrError.textContent = 'Connection error — please try again.';
+        ehrError.style.display = 'block';
+        ehrBtn.disabled = false;
+        ehrBtn.textContent = 'Sign In';
+      }
+    });
   </script>
 </body>
 </html>
