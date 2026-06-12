@@ -74,7 +74,7 @@ function loginUser($body) {
     $conn = getConn();
 
     $stmt = $conn->prepare(
-        "SELECT id, username, password_hash, role, full_name, is_active
+        "SELECT id, username, password_hash, role, full_name, hospital, is_active
          FROM users WHERE username = ? LIMIT 1"
     );
     $stmt->bind_param('s', $username);
@@ -102,6 +102,7 @@ function loginUser($body) {
     $_SESSION['username']  = $user['username'];
     $_SESSION['role']      = $user['role'];
     $_SESSION['full_name'] = $user['full_name'];
+    $_SESSION['hospital']  = $user['hospital'];
 
     // ── Audit log: record login event ──
     $token = hash('sha256', session_id());
@@ -117,9 +118,10 @@ function loginUser($body) {
     $conn->close();
 
     echo json_encode([
-        'success' => true,
-        'name'    => $user['full_name'] ?: $user['username'],
-        'role'    => $user['role'],
+        'success'  => true,
+        'name'     => $user['full_name'] ?: $user['username'],
+        'role'     => $user['role'],
+        'hospital' => $user['hospital'],
     ]);
 }
 

@@ -249,7 +249,7 @@ switch ($action) {
 function handleSessionLogin(): void {
     // requireRole() exits with a 401 JSON "Unauthorized access" response
     // if there's no active session or the role doesn't match.
-    requireRole(['doctor']);
+    requireRole(['admin', 'doctor']);
 
     $username = $_SESSION['username']  ?? '';
     $fullName = $_SESSION['full_name'] ?? $username;

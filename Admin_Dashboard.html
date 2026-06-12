@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Pharos HIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f6ff;
+    --surface: #ffffff;
+    --primary: #1a73e8;
+    --primary-dark: #0b3c7a;
+    --primary-light: #e8f0fe;
+    --accent: #00b4a6;
+    --accent2: #f59e0b;
+    --text: #1f2937;
+    --muted: #5b6b7b;
+    --border: #dbe4f0;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: 'DM Sans', Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; padding: 1.5rem 2rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
+  nav { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  nav a {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+    padding: 0.4rem 0.9rem; border-radius: 8px; transition: background 0.15s;
+  }
+  nav a:hover { background: rgba(255,255,255,0.15); }
+  .lang-btn {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.85rem;
+    font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--primary-light), #fff);
+    padding: 2.5rem 2rem; text-align: center;
+  }
+  .hero-badge {
+    display: inline-block; background: #fef3c7; color: #92400e;
+    padding: 0.35rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+    margin-bottom: 0.75rem; letter-spacing: 0.03em;
+  }
+  .hero h2 {
+    font-family: 'Sora', sans-serif; font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin: 0 0 0.5rem; color: var(--primary-dark);
+  }
+  .hero p { color: var(--muted); margin: 0; font-size: 0.98rem; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .hospital-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--primary-light); color: var(--primary-dark);
+    padding: 0.4rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem;
+    border: 1px solid var(--border);
+  }
+  .filter-tabs { display: flex; gap: 0.4rem; }
+  .filter-tab {
+    padding: 0.45rem 1rem; border-radius: 20px; border: 1px solid var(--border);
+    background: #fff; color: var(--muted); font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .btn-primary {
+    background: var(--primary); color: #fff; border: none; padding: 0.65rem 1.4rem;
+    border-radius: 10px; font-weight: 700; font-size: 0.92rem; cursor: pointer;
+    font-family: inherit; transition: background 0.15s; display: inline-flex;
+    align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  /* STAFF GRID */
+  .staff-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .staff-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem;
+    transition: box-shadow 0.15s; position: relative;
+  }
+  .staff-card:hover { box-shadow: 0 4px 16px rgba(26,115,232,0.08); }
+  .staff-card.inactive { opacity: 1; }
+  .staff-card.inactive .staff-top,
+  .staff-card.inactive .staff-meta,
+  .staff-card.inactive .role-badge { opacity: 0.55; }
+  .staff-top { display: flex; align-items: center; gap: 0.8rem; }
+  .staff-avatar {
+    width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-family: 'Sora', sans-serif; font-weight: 700;
+    font-size: 1.05rem; flex-shrink: 0; color: #fff;
+  }
+  .staff-avatar.doctor { background: linear-gradient(135deg, #3b82f6, #1e3a8a); }
+  .staff-avatar.nurse  { background: linear-gradient(135deg, #10b981, #065f46); }
+  .staff-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; margin: 0; }
+  .staff-username { color: var(--muted); font-size: 0.8rem; margin: 0; }
+  .staff-meta { font-size: 0.82rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+  .role-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.68rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; width: fit-content;
+  }
+  .role-badge.doctor { background: #dbeafe; color: #1e3a8a; }
+  .role-badge.nurse  { background: #d1fae5; color: #065f46; }
+  .status-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.68rem;
+    font-weight: 700; width: fit-content;
+  }
+  .status-badge.active   { background: #d1fae5; color: #065f46; }
+  .status-badge.inactive { background: #fee2e2; color: #991b1b; }
+  .staff-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+  .icon-btn {
+    flex: 1; border: 1px solid var(--border); background: #fff; border-radius: 8px;
+    padding: 0.45rem 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: inherit; color: var(--text);
+  }
+  .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
+  .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state {
+    text-align: center; padding: 3rem 1rem; color: var(--muted);
+    background: var(--surface); border-radius: 14px; border: 1px dashed var(--border);
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,34,68,0.45);
+    align-items: center; justify-content: center; z-index: 999; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 440px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { font-family: 'Sora', sans-serif; margin: 0 0 0.3rem; color: var(--primary-dark); }
+  .modal .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 1.25rem; }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text); }
+  .field input, .field select {
+    width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.92rem; font-family: inherit; background: #f8fbff; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--primary); }
+  .field-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+  .modal-actions { display: flex; gap: 0.6rem; margin-top: 1.5rem; }
+  .btn-secondary {
+    flex: 1; background: #f1f5f9; color: var(--text); border: none; padding: 0.7rem;
+    border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  }
+  .btn-submit {
+    flex: 1; background: var(--primary); color: #fff; border: none; padding: 0.7rem;
+    border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  }
+  .btn-submit:hover { background: var(--primary-dark); }
+  .modal-error {
+    display: none; background: #fee2e2; color: #991b1b; padding: 0.6rem 1rem;
+    border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--primary-dark);
+    color: #fff; padding: 0.85rem 1.4rem; border-radius: 10px; font-size: 0.9rem;
+    font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.18); z-index: 1100;
+    opacity: 0; transform: translateY(20px); transition: all 0.25s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.err { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="Home_Page.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="../Brand Identity/Pharos HIS Icon2.png" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
+  <nav>
+    <a href="Home_Page.html">Home</a>
+    <a href="EHR_Page.html">EHR System</a>
+    <a href="Admin_Dashboard.html" style="background:rgba(255,255,255,0.18);">Admin Dashboard</a>
+    <span id="navUserBadge" style="
+        display:inline-flex;align-items:center;gap:6px;
+        padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:600;
+        background:var(--primary-light);color:var(--primary-dark);border:1px solid var(--border);
+        white-space:nowrap;cursor:default;user-select:none;">
+      <span id="navRoleIcon">🔐</span>
+      <span id="navUserName">…</span>
+      <span id="navRoleBadge" style="
+          padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;
+          text-transform:uppercase;letter-spacing:0.04em;background:#fef3c7;color:#92400e;">
+        …
+      </span>
+    </span>
+    <button class="lang-btn" onclick="adminLogout()" title="Sign out" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;">🚪 Logout</button>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🔐 ADMIN CONTROL PANEL</div>
+  <h2>Staff Directory &amp; Access Management</h2>
+  <p id="heroSub">Manage doctor and nurse accounts for your hospital.</p>
+</section>
+
+<main>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="hospital-pill">🏥 <span id="hospitalName">Loading…</span></span>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">All Staff</button>
+        <button class="filter-tab" data-filter="doctor" onclick="setFilter('doctor')">🩺 Doctors</button>
+        <button class="filter-tab" data-filter="nurse" onclick="setFilter('nurse')">💉 Nurses</button>
+        <button class="filter-tab" data-filter="logs" onclick="setFilter('logs')">📜 Audit Logs</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="openAddModal()">+ Add Staff Member</button>
+  </div>
+
+  <div id="staffGrid" class="staff-grid"></div>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="icon">👥</div>
+    <div style="font-weight:700; margin-bottom:0.25rem;">No staff members found</div>
+    <div style="font-size:0.85rem;">Add a doctor or nurse to get started.</div>
+  </div>
+
+  <!-- AUDIT LOG PANEL -->
+  <div id="auditLogPanel" style="display:none;">
+    <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <thead>
+        <tr style="background:#f1f5f9; text-align:left; font-size:0.8rem; color:#475569;">
+          <th style="padding:10px 14px;">User</th>
+          <th style="padding:10px 14px;">Role</th>
+          <th style="padding:10px 14px;">Action</th>
+          <th style="padding:10px 14px;">IP Address</th>
+          <th style="padding:10px 14px;">Date</th>
+        </tr>
+      </thead>
+      <tbody id="auditLogBody">
+        <tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- ADD STAFF MODAL -->
+<div class="modal-overlay" id="addModalOverlay">
+  <div class="modal">
+    <h3>Add Staff Member</h3>
+    <p class="sub" id="addModalHospitalHint">This account will be created at your hospital.</p>
+    <div class="modal-error" id="addModalError"></div>
+    <form id="addStaffForm">
+      <div class="field">
+        <label>Role</label>
+        <select id="newRole" required>
+          <option value="doctor">🩺 Doctor</option>
+          <option value="nurse">💉 Nurse</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="newFullName" placeholder="Dr. Jane Doe" required>
+      </div>
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="newUsername" placeholder="jane_doe" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="newEmail" placeholder="jane.doe@hospital.com" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Temporary Password</label>
+        <input type="password" id="newPassword" placeholder="Min. 8 characters" required minlength="8" autocomplete="new-password">
+        <div class="field-hint">Share this with the staff member — they should change it after first login.</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+        <button type="submit" class="btn-submit" id="addStaffBtn">Create Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM DEACTIVATE MODAL -->
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="confirmTitle">Deactivate account?</h3>
+    <p class="sub" id="confirmBody">This will prevent them from logging in. You can reactivate later.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn-submit" id="confirmActionBtn" style="background:var(--danger);">Deactivate</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- SUPERVISED PATIENTS MODAL -->
+<div class="modal-overlay" id="patientsModalOverlay">
+  <div class="modal" style="max-width:560px;">
+    <h3 id="patientsModalTitle">Patients</h3>
+    <p class="sub" id="patientsModalSub"></p>
+    <div id="patientsModalBody" style="max-height:50vh; overflow-y:auto; margin-top:0.75rem;"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closePatientsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '../Back End/EHR_System.php';
+
+let allStaff   = [];
+let currentFilter = 'all';
+let pendingDeactivateId = null;
+
+// ─── TOAST ──────────────────────────────────────────────────────────────
+function showToast(msg, ok = true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = ok ? 'show' : 'show err';
+  setTimeout(() => { t.className = ''; }, 2600);
+}
+
+// ─── API HELPER ─────────────────────────────────────────────────────────
+async function api(params, method = 'GET', body = null) {
+  let url = API + '?' + new URLSearchParams(params).toString();
+  const opts = { method, credentials: 'include' };
+  if (body) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const data = await res.json().catch(() => ({ success: false, message: 'Invalid server response' }));
+  if (res.status === 401) { handleUnauthorized(); throw new Error('unauthorized'); }
+  return data;
+}
+
+function handleUnauthorized() {
+  showToast('⚠ Session expired — please sign in again.', false);
+  setTimeout(() => { window.location.replace('Home_Page.html'); }, 1200);
+}
+
+async function adminLogout() {
+  try { await fetch(API + '?action=logout', { method: 'POST', credentials: 'include' }); }
+  catch (e) {}
+  localStorage.removeItem('ehr_user');
+  window.location.replace('Home_Page.html');
+}
+
+// ─── INIT ───────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const who = await api({ action: 'whoami' });
+    if (!who.success || !who.logged_in) { handleUnauthorized(); return; }
+
+    // ── Role gate: only admins may view this page ──
+    if (who.role !== 'admin') {
+      showToast('⛔ Admin access only — redirecting to EHR System…', false);
+      setTimeout(() => { window.location.replace('EHR_Page.html'); }, 1200);
+      return;
+    }
+
+    window.EHR_USER = { name: who.name, role: who.role, hospital: who.hospital };
+    localStorage.setItem('ehr_user', JSON.stringify(window.EHR_USER));
+    setupNavBadge();
+
+    document.getElementById('hospitalName').textContent = who.hospital || 'Unknown Hospital';
+    document.getElementById('heroSub').textContent =
+      `Manage doctor and nurse accounts for ${who.hospital || 'your hospital'}.`;
+    document.getElementById('addModalHospitalHint').textContent =
+      `This account will be created at ${who.hospital || 'your hospital'}.`;
+
+  } catch (e) {
+    showToast('⚠ Network error: ' + e.message, false);
+    return;
+  }
+  await loadStaff();
+}
+
+function setupNavBadge() {
+  const u = window.EHR_USER || {};
+  document.getElementById('navUserName').textContent = u.name || 'Admin';
+}
+
+// ─── LOAD STAFF ─────────────────────────────────────────────────────────
+async function loadStaff() {
+  const res = await api({ action: 'get_users' });
+  if (!res.success) { showToast('⚠ Could not load staff: ' + (res.message || ''), false); return; }
+  allStaff = res.data || [];
+  renderStaff();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+
+  const grid  = document.getElementById('staffGrid');
+  const empty = document.getElementById('emptyState');
+  const logs  = document.getElementById('auditLogPanel');
+  const addBtn = document.querySelector('.toolbar button.btn-primary');
+
+  if (f === 'logs') {
+    grid.style.display = 'none';
+    empty.style.display = 'none';
+    if (addBtn) addBtn.style.display = 'none';
+    logs.style.display = 'block';
+    loadAuditLog();
+    return;
+  }
+
+  grid.style.display = '';
+  if (addBtn) addBtn.style.display = '';
+  logs.style.display = 'none';
+  renderStaff();
+}
+
+async function loadAuditLog() {
+  const tbody = document.getElementById('auditLogBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">Loading…</td></tr>';
+  try {
+    const res = await fetch(API + '?action=get_audit_log&limit=100', { credentials: 'include' });
+    const data = await res.json();
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:14px; text-align:center; color:#ef4444;">${escapeHtml(data.message || 'Failed to load logs.')}</td></tr>`;
+      return;
+    }
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">No audit events found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(row => {
+      const actionColor = row.action === 'login' ? '#16a34a' : '#dc2626';
+      const date = new Date(row.created_at).toLocaleString();
+      return `
+        <tr style="border-top:1px solid #f1f5f9; font-size:0.85rem;">
+          <td style="padding:10px 14px;">${escapeHtml(row.full_name || row.username)}</td>
+          <td style="padding:10px 14px; text-transform:capitalize;">${escapeHtml(row.role)}</td>
+          <td style="padding:10px 14px; color:${actionColor}; font-weight:600; text-transform:uppercase; font-size:0.75rem;">${escapeHtml(row.action)}</td>
+          <td style="padding:10px 14px; color:#64748b;">${escapeHtml(row.ip_address || '—')}</td>
+          <td style="padding:10px 14px; color:#64748b;">${date}</td>
+        </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:14px; text-align:center; color:#ef4444;">Error loading audit log.</td></tr>';
+  }
+}
+
+function renderStaff() {
+  const grid  = document.getElementById('staffGrid');
+  const empty = document.getElementById('emptyState');
+
+  let list = allStaff;
+  if (currentFilter !== 'all') list = list.filter(u => u.role === currentFilter);
+
+  if (list.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = list.map(u => {
+    const initials = (u.full_name || u.username).split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+    const active = Number(u.is_active) === 1;
+    const roleIcon = u.role === 'doctor' ? '🩺' : '💉';
+    return `
+      <div class="staff-card ${active ? '' : 'inactive'}">
+        <div class="staff-top">
+          <div class="staff-avatar ${u.role}">${initials}</div>
+          <div>
+            <p class="staff-name">${escapeHtml(u.full_name || u.username)}</p>
+            <p class="staff-username">@${escapeHtml(u.username)}</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.4rem;">
+          <span class="role-badge ${u.role}">${roleIcon} ${u.role}</span>
+          <span class="status-badge ${active ? 'active' : 'inactive'}">${active ? '● Active' : '○ Inactive'}</span>
+        </div>
+        <div class="staff-meta">
+          <span>✉️ ${escapeHtml(u.email)}</span>
+          <span>📅 Joined ${formatDate(u.created_at)}</span>
+        </div>
+        <div class="staff-actions">
+          <button class="icon-btn" onclick="openPatientsModal(${u.id}, '${escapeHtml((u.full_name || u.username).replace(/'/g, "\\'"))}')">
+            🩺 Patients
+          </button>
+          ${active
+            ? `<button class="icon-btn danger" onclick="confirmDeactivate(${u.id}, '${escapeHtml(u.full_name || u.username)}')">
+                 🚫 Deactivate
+               </button>`
+            : `<button class="icon-btn" style="color:#fff; background:#16a34a; border-color:#16a34a;" onclick="reactivateUser(${u.id})">
+                 ✅ Reactivate
+               </button>`
+          }
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(s) {
+  if (!s) return '—';
+  const d = new Date(s.replace(' ', 'T'));
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ─── ADD STAFF MODAL ────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('addStaffForm').reset();
+  document.getElementById('addModalError').style.display = 'none';
+  document.getElementById('addModalOverlay').classList.add('open');
+}
+function closeAddModal() {
+  document.getElementById('addModalOverlay').classList.remove('open');
+}
+document.getElementById('addModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'addModalOverlay') closeAddModal();
+});
+
+document.getElementById('addStaffForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl = document.getElementById('addModalError');
+  errEl.style.display = 'none';
+
+  const body = {
+    role:      document.getElementById('newRole').value,
+    full_name: document.getElementById('newFullName').value.trim(),
+    username:  document.getElementById('newUsername').value.trim(),
+    email:     document.getElementById('newEmail').value.trim(),
+    password:  document.getElementById('newPassword').value,
+  };
+
+  const btn = document.getElementById('addStaffBtn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+
+  try {
+    const res = await api({ action: 'create_user' }, 'POST', body);
+    if (res.success) {
+      showToast(`✅ ${body.role === 'doctor' ? 'Doctor' : 'Nurse'} account created.`);
+      closeAddModal();
+      await loadStaff();
+    } else {
+      errEl.textContent = res.message || 'Could not create account.';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+});
+
+// ─── DEACTIVATE ─────────────────────────────────────────────────────────
+function confirmDeactivate(id, name) {
+  pendingDeactivateId = id;
+  document.getElementById('confirmBody').textContent =
+    `${name} will no longer be able to log in. This can be reversed by an admin later.`;
+  document.getElementById('confirmModalOverlay').classList.add('open');
+}
+function closeConfirmModal() {
+  document.getElementById('confirmModalOverlay').classList.remove('open');
+  pendingDeactivateId = null;
+}
+document.getElementById('confirmModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'confirmModalOverlay') closeConfirmModal();
+});
+document.getElementById('confirmActionBtn').addEventListener('click', async () => {
+  if (!pendingDeactivateId) return;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.disabled = true; btn.textContent = 'Deactivating…';
+  try {
+    const res = await api({ action: 'deactivate_user' }, 'POST', { id: pendingDeactivateId });
+    if (res.success) {
+      showToast('✅ Account deactivated.');
+      closeConfirmModal();
+      await loadStaff();
+    } else {
+      showToast('⚠ ' + (res.message || 'Could not deactivate.'), false);
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Deactivate';
+  }
+});
+
+// ─── REACTIVATE ─────────────────────────────────────────────────────────
+async function reactivateUser(id) {
+  const res = await api({ action: 'update_user' }, 'POST', { id, is_active: 1 });
+  if (res.success) {
+    showToast('✅ Account reactivated.');
+    await loadStaff();
+  } else {
+    showToast('⚠ ' + (res.message || 'Could not reactivate.'), false);
+  }
+}
+
+// ─── SUPERVISED PATIENTS ────────────────────────────────────────────────
+async function openPatientsModal(staffId, fullName) {
+  const overlay = document.getElementById('patientsModalOverlay');
+  const title   = document.getElementById('patientsModalTitle');
+  const sub     = document.getElementById('patientsModalSub');
+  const body    = document.getElementById('patientsModalBody');
+
+  title.textContent = `Patients supervised by ${fullName}`;
+  sub.textContent = 'Loading…';
+  body.innerHTML = '';
+  overlay.classList.add('open');
+
+  try {
+    const res = await fetch(API + '?action=get_staff_patients&staff_id=' + encodeURIComponent(staffId), { credentials: 'include' });
+    const data = await res.json();
+    if (!data.success) {
+      sub.textContent = data.message || 'Could not load patients.';
+      return;
+    }
+    if (!data.data || data.data.length === 0) {
+      sub.textContent = 'No patients currently assigned.';
+      return;
+    }
+    sub.textContent = `${data.count} patient${data.count === 1 ? '' : 's'} assigned.`;
+    body.innerHTML = data.data.map(p => `
+      <div style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:0.85rem;">
+        <div style="font-weight:600;">${escapeHtml(p.first_name + ' ' + p.last_name)}
+          <span style="font-size:0.7rem; color:#64748b; font-weight:400;">(${escapeHtml(p.patient_id)})</span>
+        </div>
+        <div style="color:#64748b; font-size:0.8rem;">
+          ${escapeHtml(p.gender || '—')} · DOB ${formatDate(p.dob)}
+          ${p.status ? ' · ' + escapeHtml(p.status) : ''}
+          ${p.next_appt ? ' · Next: ' + escapeHtml(p.next_appt) : ''}
+        </div>
+        ${p.conditions ? `<div style="color:#94a3b8; font-size:0.78rem; margin-top:2px;">${escapeHtml(p.conditions)}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    sub.textContent = 'Error loading patients.';
+  }
+}
+function closePatientsModal() {
+  document.getElementById('patientsModalOverlay').classList.remove('open');
+}
+document.getElementById('patientsModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'patientsModalOverlay') closePatientsModal();
+});
+
+init();
+</script>
+</body>
+</html>

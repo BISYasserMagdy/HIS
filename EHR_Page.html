@@ -5,6 +5,10 @@
        Must run before anything else. If the user has no local session
        record, bounce them back to the landing page / login modal. -->
   <script>
+    // ── RBAC SESSION GUARD ──────────────────────────────────────────────────
+    // Runs synchronously before any render. Bounces to login if no local
+    // session. Also exposes window.EHR_USER so the rest of the page can
+    // gate UI elements by role without an extra async round-trip.
     (function () {
       var raw = localStorage.getItem('ehr_user');
       if (!raw) {
@@ -14,6 +18,7 @@
       try {
         var u = JSON.parse(raw);
         if (!u || !u.role) throw new Error('bad session');
+        window.EHR_USER = u;   // { name, role }
       } catch (e) {
         localStorage.removeItem('ehr_user');
         window.location.replace('Home_Page.html');
@@ -51,7 +56,7 @@
       overflow:visible;
 }
     .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
-    nav { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    nav { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; flex: 1; }
     nav a {
       color: #fff; text-decoration: none; padding: 8px 14px;
       border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
@@ -426,7 +431,23 @@
     <a href="Health_Chatbot.html">Chatbot</a>
     <button class="lang-btn active">English</button>
     <button class="lang-btn">العربية</button>
-    <button class="lang-btn" onclick="ehrLogout()" title="Sign out">🚪 Logout</button>
+    <span style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <span id="navUserBadge" style="
+          display:inline-flex;align-items:center;gap:6px;
+          padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:600;
+          background:var(--primary-light);color:var(--primary-dark);border:1px solid var(--border);
+          white-space:nowrap;cursor:default;user-select:none;">
+        <span id="navRoleIcon">👤</span>
+        <span id="navUserName" style="display:inline-block;min-width:130px;">…</span>
+        <span id="navRoleBadge" style="
+            padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.04em;background:#e0e7ff;color:#3730a3;
+            display:inline-block;min-width:48px;text-align:center;">
+          …
+        </span>
+      </span>
+      <button class="lang-btn" onclick="ehrLogout()" title="Sign out" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;width:100%;">🚪 Logout</button>
+    </span>
   </nav>
 </header>
 
@@ -567,19 +588,6 @@
     </div>
   </section>
 
-  <!-- INTEGRATIONS -->
-  <section>
-    <div class="section-header">
-      <h3>🔗 Linked System Modules</h3>
-      <p>The EHR connects seamlessly with every other module in Pharos HIS.</p>
-    </div>
-    <div class="integration-grid">
-      <a href="Appointments_Page.html" class="int-tile"><div class="int-tile-icon">📅</div><div><strong>Appointments</strong><span>Schedule & manage visits</span></div></a>
-      <a href="ERP_Pharmacy_Sign_in_Page.html" class="int-tile"><div class="int-tile-icon">💊</div><div><strong>ERP Pharmacy</strong><span>Prescriptions & dispensing</span></div></a>
-      <a href="Health_Chatbot.html" class="int-tile"><div class="int-tile-icon">🤖</div><div><strong>Health Chatbot</strong><span>Symptom & nutrition advice</span></div></a>
-      <a href="Home_Page.html" class="int-tile"><div class="int-tile-icon">🏠</div><div><strong>Home</strong><span>Pharos HIS portal</span></div></a>
-    </div>
-  </section>
 
 </main>
 
@@ -1092,7 +1100,7 @@ async function ehrLogout() {
   window.location.replace('Home_Page.html');
 }
 
-// ─── INIT (ping backend first so path errors show a clear message) ────
+// ─── INIT (ping + verify PHP session, then load data) ────────────────
 async function init() {
   try {
     const ping = await fetch(API + '?action=ping', { credentials: 'include' });
@@ -1111,12 +1119,248 @@ async function init() {
     }
     const data = await ping.json();
     if (!data.success) { showToast('⚠ DB error: ' + data.message, false); return; }
-    // Silently seed CDSS rules on every page load (INSERT IGNORE — idempotent)
+
+    // ── Verify PHP session is still alive & sync role from server ──────────
+    const whoRes = await fetch(API + '?action=whoami', { credentials: 'include' });
+    const whoData = await whoRes.json().catch(() => ({ success: false }));
+    if (!whoData.success || !whoData.logged_in) {
+      handleUnauthorized(); return;
+    }
+
+    // Admins can also access the clinical EHR view (e.g. to use the
+    // Hospital Staff panel). No forced redirect.
+
+    // Sync server-authoritative role back into EHR_USER (guards against
+    // a tampered localStorage value)
+    window.EHR_USER = { name: whoData.name, role: whoData.role };
+    localStorage.setItem('ehr_user', JSON.stringify(window.EHR_USER));
+
+    // Silently seed CDSS rules (INSERT IGNORE — idempotent, admin will get 200, others 403 which is caught)
     fetch(API + '?action=reseed_cdss_rules', { credentials: 'include' }).catch(() => {});
   } catch(e) {
     showToast('⚠ Network error — is XAMPP running? ' + e.message, false); return;
   }
   await loadPatients();
+  applyRbacUi();        // hide/show elements based on role
+  setupNavBadge();      // show user name + role in header
+}
+
+// ─── RBAC UI ENFORCEMENT ─────────────────────────────────────────────
+// Called once on init. Uses EHR_USER.role (from localStorage, set at login)
+// to hide or show UI controls that the current role is not permitted to use.
+// Server-side requireRole() is the real security gate; this is UX only.
+function applyRbacUi() {
+  const role = (window.EHR_USER || {}).role || 'nurse';
+
+  // Helper: hide all elements matching a CSS selector
+  function hide(sel) {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.display = 'none';
+      el.dataset.rbacHidden = '1';
+    });
+  }
+  // Helper: disable all matching buttons/inputs with a tooltip
+  function disable(sel, tip) {
+    document.querySelectorAll(sel).forEach(el => {
+      el.disabled    = true;
+      el.title       = tip || 'Not permitted for your role';
+      el.style.opacity = '0.4';
+      el.style.cursor  = 'not-allowed';
+      el.dataset.rbacDisabled = '1';
+    });
+  }
+
+  // ── Delete patient: admin only ─────────────────────────────────────
+  if (role !== 'admin') {
+    hide('[onclick="deletePatientRecord()"]');
+  }
+
+  // ── Prescribe & remove medications: admin + doctor only ───────────
+  if (role === 'nurse') {
+    hide('[onclick="openEPrescribeModal()"]');
+    // deleteMed buttons are rendered dynamically — handled in renderMeds()
+    window._rbacCanPrescribe = false;
+  } else {
+    window._rbacCanPrescribe = true;
+  }
+
+  // ── Delete lab results: admin + doctor only ────────────────────────
+  // deleteLab buttons are rendered dynamically — handled in renderLabs()
+  window._rbacCanDeleteLab = (role === 'admin' || role === 'doctor');
+
+  // ── Override / dismiss alerts: admin + doctor only ─────────────────
+  window._rbacCanDismissAlert = (role === 'admin' || role === 'doctor');
+
+  // ── Reseed CDSS rules (Fix Rules button): admin only ───────────────
+  if (role !== 'admin') {
+    hide('#reseedRulesBtn');
+  }
+
+  // ── Review Appointments nav link: admin + doctor only ─────────────
+  if (role === 'nurse') {
+    document.querySelectorAll('a[href="Online_Consultation_Page.html"]').forEach(el => {
+      el.style.opacity = '0.4';
+      el.style.pointerEvents = 'none';
+      el.title = 'Online consultation review is restricted to Doctors and Admins';
+    });
+  }
+
+  // ── Floating "Hospital Staff" button: admin only ───────────────────
+  if (role === 'admin') {
+    createAdminStaffButton();
+  }
+
+  // Store role globally for dynamic renders
+  window._ehrRole = role;
+}
+
+// ─── ADMIN-ONLY FLOATING STAFF BUTTON ──────────────────────────────────
+// Sticky/floating button visible only to admins. Stays on screen while
+// scrolling. Opens a panel listing doctors/nurses from the admin's own
+// hospital (server enforces hospital scoping via action=get_users).
+function createAdminStaffButton() {
+  if (document.getElementById('adminStaffBtn')) return; // avoid duplicates
+
+  const btn = document.createElement('button');
+  btn.id = 'adminStaffBtn';
+  btn.textContent = '🏥 Hospital Staff';
+  btn.title = 'View doctors & nurses at your hospital';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    padding: 12px 18px;
+    background: #92400e;
+    color: #fef3c7;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    cursor: pointer;
+  `;
+  btn.onclick = openAdminStaffPanel;
+  document.body.appendChild(btn);
+
+  const dashBtn = document.createElement('button');
+  dashBtn.id = 'adminDashboardBtn';
+  dashBtn.textContent = '📊 Access Admin Control Panel';
+  dashBtn.title = 'Go to Admin Dashboard';
+  dashBtn.style.cssText = `
+    position: fixed;
+    bottom: 76px;
+    right: 24px;
+    z-index: 9999;
+    padding: 12px 18px;
+    background: #92400e;
+    color: #fef3c7;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    cursor: pointer;
+  `;
+  dashBtn.onclick = () => { window.location.href = 'Admin_Dashboard.html'; };
+  document.body.appendChild(dashBtn);
+
+  // Panel (hidden by default)
+  const panel = document.createElement('div');
+  panel.id = 'adminStaffPanel';
+  panel.style.cssText = `
+    position: fixed;
+    bottom: 132px;
+    right: 24px;
+    z-index: 9999;
+    width: 340px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    padding: 14px;
+    display: none;
+  `;
+  panel.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <strong style="font-size:15px;">Hospital Staff</strong>
+      <button onclick="document.getElementById('adminStaffPanel').style.display='none'"
+              style="border:none; background:none; cursor:pointer; font-size:16px;">✕</button>
+    </div>
+    <div id="adminStaffList" style="font-size:13px; color:#374151;">Loading…</div>
+  `;
+  document.body.appendChild(panel);
+}
+
+async function openAdminStaffPanel() {
+  const panel = document.getElementById('adminStaffPanel');
+  const list  = document.getElementById('adminStaffList');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if (!isHidden) return;
+
+  list.textContent = 'Loading…';
+  try {
+    const res  = await fetch(API + '?action=get_users', { credentials: 'include' });
+    const data = await res.json();
+    if (!data.success) {
+      list.textContent = data.message || 'Failed to load staff.';
+      return;
+    }
+    if (!data.data || data.data.length === 0) {
+      list.textContent = 'No staff found for ' + (data.hospital || 'your hospital') + '.';
+      return;
+    }
+    list.innerHTML = '<div style="margin-bottom:6px; color:#6b7280;">' +
+      (data.hospital || '') + '</div>' +
+      data.data.map(u => `
+        <div style="padding:6px 0; border-bottom:1px solid #f3f4f6;">
+          <div style="font-weight:600;">${escapeHtml(u.full_name || u.username)}
+            <span style="font-size:11px; color:${u.role === 'doctor' ? '#1d4ed8' : '#047857'}; text-transform:uppercase;">
+              ${escapeHtml(u.role)}
+            </span>
+          </div>
+          <div style="font-size:12px; color:#6b7280;">${escapeHtml(u.email || '')}
+            ${u.is_active ? '' : ' · <span style="color:#b91c1c;">inactive</span>'}
+          </div>
+        </div>
+      `).join('');
+  } catch (e) {
+    list.textContent = 'Error loading staff list.';
+  }
+}
+
+// Small helper to avoid XSS when injecting user-controlled text into innerHTML
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ─── NAV BADGE ────────────────────────────────────────────────────────
+function setupNavBadge() {
+  const u = window.EHR_USER || {};
+  const roleColors = {
+    admin:  { bg: '#fef3c7', color: '#92400e', icon: '🔐' },
+    doctor: { bg: '#dbeafe', color: '#1e3a8a', icon: '🩺' },
+    nurse:  { bg: '#d1fae5', color: '#065f46', icon: '💉' },
+  };
+  const meta  = roleColors[u.role] || roleColors.nurse;
+  const badge = document.getElementById('navRoleBadge');
+  const name  = document.getElementById('navUserName');
+  const icon  = document.getElementById('navRoleIcon');
+  if (badge) {
+    badge.textContent     = u.role || '—';
+    badge.style.background = meta.bg;
+    badge.style.color      = meta.color;
+  }
+  if (name)  name.textContent  = u.name  || 'User';
+  if (icon)  icon.textContent  = meta.icon;
 }
 
 // ─── PATIENT LIST ────────────────────────────────────────────────────
@@ -1667,7 +1911,7 @@ async function loadAndRenderMeds(p) {
       <td>${m.prescribed_by}</td>
       <td>${m.start_date}</td>
       <td>${badgeHtml(m.status)}</td>
-      <td><button onclick="deleteMed(${m.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;" title="Remove">🗑</button></td>
+      <td>${window._rbacCanPrescribe !== false ? `<button onclick="deleteMed(${m.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;" title="Remove">🗑</button>` : ''}</td>
     </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem;">No medications on record.</td></tr>`;
   document.getElementById('tab-meds').innerHTML = `
     <table class="med-table">
@@ -1701,6 +1945,9 @@ function closeEPrescribeModal() {
   document.getElementById('ep-route').value = 'Oral';
 }
 async function saveEPrescription() {
+  if (window._rbacCanPrescribe === false) {
+    showToast('⚠ Prescribing medications requires Doctor or Admin role.', false); return;
+  }
   const name = document.getElementById('ep-name').value.trim();
   const dose = document.getElementById('ep-dose').value.trim();
   const freq = document.getElementById('ep-freq').value.trim();
@@ -1781,9 +2028,9 @@ async function loadAndRenderLabs(p) {
         <button onclick="openEditLabModal(${r.id},'${r.test_name}','${r.test_value}','${r.ref_range}','${r.label}',${r.pct},'${r.cls}','${r.panel_date}')"
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:2px 6px;border-radius:6px;transition:background 0.15s;"
           onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">✏️</button>
-        <button onclick="deleteLab(${r.id})"
+        ${window._rbacCanDeleteLab !== false ? `<button onclick="deleteLab(${r.id})"
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:2px 6px;border-radius:6px;transition:background 0.15s;"
-          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">🗑</button>
+          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">🗑</button>` : ''}
       </div>
     </div>`;
   }).join('') : `<div style="text-align:center;color:var(--muted);padding:2rem;font-size:0.9rem;">No lab results on record.</div>`;
@@ -2350,6 +2597,9 @@ async function saveEditedPatient() {
 }
 
 async function deletePatientRecord() {
+  if ((window._ehrRole || '') !== 'admin') {
+    showToast('⚠ Deleting patient records requires Admin role.', false); return;
+  }
   if (!activePatientId) return;
   const p = patients.find(x => x.id === activePatientId);
   const name = p ? p.name : activePatientId;
@@ -2676,8 +2926,8 @@ function renderAlerts() {
           ${navHint}
         </div>
         <div class="alert-time"><span class="alert-time-rel" data-ts="${alert.fetchedAt || ''}">${relativeTime(alert.fetchedAt)}</span></div>
-        <button class="alert-dismiss" title="Dismiss alert"
-          onclick="dismissAlert('${alert.id}', this.closest('.alert-row'))">✕</button>
+        ${window._rbacCanDismissAlert !== false ? `<button class="alert-dismiss" title="Dismiss alert"
+          onclick="dismissAlert('${alert.id}', this.closest('.alert-row'))">✕</button>` : ''}
       `;
       listEl.appendChild(row);
     });

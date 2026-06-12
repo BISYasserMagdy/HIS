@@ -1,40 +1,47 @@
 <?php
 // ════════════════════════════════════════════════════════════════════════════
 // EHR_System.php  —  Med-Alex Health Information System  |  Primary API Router
-//
-// CDSS Integration Points (3 additions from the architectural blueprint):
-//   1. getClinicalAlerts()  — Action: get_clinical_alerts
-//      Queries patient_alert_states JOIN clinical_rules, maps severity tiers
-//      to UI-friendly triage icons, returns nominal baseline if no active alerts.
-//
-//   2. saveVitals() — Event-Driven CDSS Ingestion Trigger
-//      After successful INSERT into `vitals`, parses and normalises each vital
-//      sign into individual `patient_observations` rows, then fires
-//      CdssEngine::onNewObservation() for immediate rule evaluation.
-//
-//   3. addLab() — Event-Driven CDSS Ingestion Trigger
-//      After successful INSERT into `lab_results`, maps the lab result into a
-//      `patient_observations` row and fires the synchronous evaluation pipeline.
-//
-// DEPENDENCY: CdssEngine.php and CdssCrossDomainAndFatigue.php must be
-//             present in the same directory as this file.
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Load CDSS class files before anything else ───────────────────────────────
-require_once __DIR__ . '/CdssEngine.php';
-require_once __DIR__ . '/CdssCrossDomainAndFatigue.php';
+// ── STEP 1: session_start() — must be FIRST, before any output or headers ────
+// Correct cookie params ensure the session cookie is shared across all
+// PHP scripts regardless of subdirectory depth.
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => false,   // change to true when serving over HTTPS
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
 
-// ── RBAC: session_start() + requireRole() helper ─────────────────────────────
-// auth.php calls session_start() internally (guarded by session_status check).
-// Must be included BEFORE any header() calls below.
-require_once __DIR__ . '/auth.php';
+// ── STEP 2: CORS + output headers — before any echo or require_once ──────────
+// When credentials: 'include' is used in fetch(), CORS requires an explicit
+// origin — the wildcard '*' is rejected by the browser for credentialed requests.
+// We reflect the incoming Origin header; fall back to '*' for direct/same-origin.
+$allowedOrigin = (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] !== '')
+    ? $_SERVER['HTTP_ORIGIN']
+    : '*';
 
-// ── Always output JSON, even on fatal errors ─────────────────────────────────
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS, DELETE, PUT');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
+
+// ── STEP 3: Global JSON error handler — catches any crash in require_once ────
+// By registering this BEFORE the require_once calls below, any fatal error
+// inside CdssEngine.php, auth.php etc. returns clean JSON instead of an HTML
+// error page that would cause res.json() in the browser to throw and show
+// "Connection error — please try again."
 set_exception_handler(function ($e) {
     if (!headers_sent()) {
         header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
-        header('Access-Control-Allow-Credentials: true');
     }
     echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
     exit;
@@ -43,16 +50,10 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
     throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
 }, E_ALL & ~E_NOTICE & ~E_WARNING);
 
-header('Content-Type: application/json');
-// NOTE: Access-Control-Allow-Origin can't be '*' when using session cookies
-// (Access-Control-Allow-Credentials requires an explicit origin).
-$allowedOrigin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-header('Access-Control-Allow-Origin: ' . $allowedOrigin);
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS, DELETE, PUT');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
+// ── STEP 4: Load dependencies — AFTER headers and error handlers ──────────────
+require_once __DIR__ . '/CdssEngine.php';
+require_once __DIR__ . '/CdssCrossDomainAndFatigue.php';
+require_once __DIR__ . '/auth.php';  // calls session_start() only if not already started
 
 // ─── DB CONFIG ───────────────────────────────────────────────────────────────
 define('DB_HOST', 'localhost');
@@ -97,6 +98,7 @@ function initDB() {
         email        VARCHAR(120) NULL,
         insurance    VARCHAR(100) NULL,
         physician    VARCHAR(100) NULL,
+        physician_id INT          NULL,
         allergies    TEXT         NULL,
         conditions   TEXT         NULL,
         smoking      VARCHAR(80)  NULL,
@@ -110,8 +112,27 @@ function initDB() {
         last_visit   VARCHAR(60)  NULL,
         next_appt    VARCHAR(100) NULL,
         created_at   TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_patient_id (patient_id)
+        UNIQUE KEY uq_patient_id (patient_id),
+        KEY idx_physician_id (physician_id),
+        CONSTRAINT fk_patients_physician
+            FOREIGN KEY (physician_id) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB");
+
+    // ── Migration: add physician_id to pre-existing installs that lack it ──
+    $colCheck = $conn->query("SHOW COLUMNS FROM patients LIKE 'physician_id'");
+    if ($colCheck && $colCheck->num_rows === 0) {
+        $conn->query("ALTER TABLE patients ADD COLUMN physician_id INT NULL AFTER physician");
+        $conn->query("ALTER TABLE patients ADD KEY idx_physician_id (physician_id)");
+        $conn->query("ALTER TABLE patients ADD CONSTRAINT fk_patients_physician
+                       FOREIGN KEY (physician_id) REFERENCES users(id) ON DELETE SET NULL");
+    }
+    // ── Backfill: match existing free-text `physician` names to users.id ──
+    $conn->query(
+        "UPDATE patients p
+         JOIN users u ON u.full_name = p.physician AND u.role IN ('doctor','nurse')
+         SET p.physician_id = u.id
+         WHERE p.physician_id IS NULL AND p.physician IS NOT NULL AND p.physician <> ''"
+    );
 
     $conn->query("CREATE TABLE IF NOT EXISTS vitals (
         id          INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -174,6 +195,7 @@ function initDB() {
         email         VARCHAR(120)    NOT NULL,
         password_hash VARCHAR(255)    NOT NULL,
         role          ENUM('admin','doctor','nurse') NOT NULL DEFAULT 'nurse',
+        hospital      VARCHAR(120)    NOT NULL DEFAULT 'General Hospital',
         full_name     VARCHAR(160)    NULL,
         is_active     TINYINT(1)      NOT NULL DEFAULT 1,
         created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -181,7 +203,8 @@ function initDB() {
         PRIMARY KEY (id),
         UNIQUE KEY uq_username (username),
         UNIQUE KEY uq_email    (email),
-        KEY idx_role (role)
+        KEY idx_role (role),
+        KEY idx_hospital (hospital)
     ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
     $conn->query("CREATE TABLE IF NOT EXISTS `user_sessions` (
@@ -197,6 +220,35 @@ function initDB() {
         KEY idx_token   (session_token),
         CONSTRAINT fk_us_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+    // ── SEED DEFAULT STAFF ACCOUNTS ───────────────────────────────────────────
+    // Generates REAL bcrypt hashes at runtime — no manual SQL editing needed.
+    // INSERT IGNORE means this runs on every request but only inserts once per
+    // username, making it completely idempotent.
+    //
+    // Default login credentials (change passwords after first login):
+    //   Username: admin_user   Password: AdminPass123!   Role: admin
+    //   Username: dr_smith      Password: DoctorPass123!  Role: doctor
+    //   Username: nurse_jones   Password: NursePass123!   Role: nurse
+    //
+    $defaultUsers = [
+        ['admin_user',  'admin@medalex.local',      'AdminPass123!',  'admin',  'System Administrator'],
+        ['dr_smith',    'dr.smith@medalex.local',    'DoctorPass123!', 'doctor', 'Dr. Sarah Smith'     ],
+        ['nurse_jones', 'nurse.jones@medalex.local', 'NursePass123!',  'nurse',  'Nurse Emily Jones'   ],
+    ];
+
+    $seedStmt = $conn->prepare(
+        "INSERT IGNORE INTO users (username, email, password_hash, role, full_name)
+         VALUES (?, ?, ?, ?, ?)"
+    );
+    foreach ($defaultUsers as [$uname, $uemail, $plainPass, $urole, $uname_full]) {
+        // password_hash() with BCRYPT — takes ~250 ms per call, but only runs
+        // the very first time (INSERT IGNORE skips all subsequent attempts).
+        $hash = password_hash($plainPass, PASSWORD_BCRYPT, ['cost' => 12]);
+        $seedStmt->bind_param('sssss', $uname, $uemail, $hash, $urole, $uname_full);
+        $seedStmt->execute();
+    }
+    $seedStmt->close();
 
     // ── CDSS support tables ──────────────────────────────────────────────────
     $conn->query("CREATE TABLE IF NOT EXISTS clinical_rules (
@@ -489,33 +541,55 @@ switch ($action) {
     // ── Auth ──────────────────────────────────────────────────────────────────
     case 'login':           loginUser($body);            break;
     case 'logout':          logoutUser();                break;
-    // Patients
-    case 'get_patients':        getPatients();               break;
-    case 'get_patient':         getPatient();                break;
-    case 'add_patient':         addPatient($body);           break;
-    case 'update_patient':      updatePatient($body);        break;
-    case 'delete_patient':      deletePatient($body);        break;
-    case 'next_patient_id':     nextPatientId();             break;
-    // Timeline
-    case 'get_timeline':        getTimeline();               break;
-    case 'add_timeline':        addTimeline($body);          break;
-    case 'delete_timeline':     deleteTimeline($body);       break;
-    // Vitals
-    case 'get_vitals':          getVitals();                 break;
-    case 'save_vitals':         saveVitals($body);           break;
-    case 'update_vitals':       updateVitals($body);         break;
-    // Medications
-    case 'get_meds':            getMeds();                   break;
-    case 'add_med':             addMed($body);               break;
-    case 'delete_med':          deleteMed($body);            break;
-    case 'request_refill':      requestRefill($body);        break;
-    // Labs
-    case 'get_labs':            getLabs();                   break;
-    case 'add_lab':             addLab($body);               break;
-    case 'update_lab':          updateLab($body);            break;
-    case 'delete_lab':          deleteLab($body);            break;
-    // ── CDSS Section 1: Clinical Alerts Dispatcher ────────────────────────────
-    case 'get_clinical_alerts': getClinicalAlerts();         break;
+    case 'whoami':          whoAmI();                    break;  // any logged-in user
+
+    // ── Admin: user management (admin only) ───────────────────────────────────
+    case 'get_users':           requireRole(['admin']); getUsers();               break;
+    case 'create_user':         requireRole(['admin']); createUser($body);        break;
+    case 'update_user':         requireRole(['admin']); updateUser($body);        break;
+    case 'deactivate_user':     requireRole(['admin']); deactivateUser($body);    break;
+    case 'reset_password':      requireRole(['admin']); resetPassword($body);     break;
+    case 'get_audit_log':       requireRole(['admin']); getAuditLog();            break;
+    case 'get_staff_patients':   requireRole(['admin']); getStaffPatients();      break;
+
+    // ── Patients ───────────────────────────────────────────────────────────────
+    // View: all roles (no gate — session checked by requireRole inside whoAmI / or open)
+    case 'get_patients':        requireRole(['admin','doctor','nurse']); getPatients();        break;
+    case 'get_patient':         requireRole(['admin','doctor','nurse']); getPatient();         break;
+    case 'next_patient_id':     requireRole(['admin','doctor','nurse']); nextPatientId();      break;
+    // Register / Edit: all roles
+    case 'add_patient':         requireRole(['admin','doctor','nurse']); addPatient($body);    break;
+    case 'update_patient':      requireRole(['admin','doctor','nurse']); updatePatient($body); break;
+    // Delete: admin only
+    case 'delete_patient':      requireRole(['admin']);                  deletePatient($body); break;
+
+    // ── Timeline ──────────────────────────────────────────────────────────────
+    case 'get_timeline':        requireRole(['admin','doctor','nurse']); getTimeline();        break;
+    case 'add_timeline':        requireRole(['admin','doctor','nurse']); addTimeline($body);   break;
+    case 'delete_timeline':     requireRole(['admin','doctor','nurse']); deleteTimeline($body);break;
+
+    // ── Vitals: all roles ─────────────────────────────────────────────────────
+    case 'get_vitals':          requireRole(['admin','doctor','nurse']); getVitals();          break;
+    case 'save_vitals':         saveVitals($body);           break;  // requireRole inside fn
+    case 'update_vitals':       updateVitals($body);         break;  // requireRole inside fn
+
+    // ── Medications ───────────────────────────────────────────────────────────
+    case 'get_meds':            requireRole(['admin','doctor','nurse']); getMeds();            break;
+    case 'add_med':             requireRole(['admin','doctor']);         addMed($body);        break;  // prescribe: admin+doctor
+    case 'delete_med':          requireRole(['admin','doctor']);         deleteMed($body);     break;  // remove: admin+doctor
+    case 'request_refill':      requireRole(['admin','doctor','nurse']); requestRefill($body); break; // refill: all roles
+
+    // ── Labs ──────────────────────────────────────────────────────────────────
+    case 'get_labs':            requireRole(['admin','doctor','nurse']); getLabs();            break;
+    case 'add_lab':             addLab($body);               break;  // requireRole inside fn (admin+doctor+nurse)
+    case 'update_lab':          updateLab($body);            break;  // requireRole inside fn (admin+doctor)
+    case 'delete_lab':          deleteLab($body);            break;  // requireRole inside fn (admin+doctor)
+
+    // ── CDSS Alerts ───────────────────────────────────────────────────────────
+    // View: all roles
+    case 'get_clinical_alerts': requireRole(['admin','doctor','nurse']); getClinicalAlerts();  break;
+    // Dismiss: admin + doctor only
+    case 'dismiss_alert':       requireRole(['admin','doctor']); dismissAlert($body);         break;
     // CDSS rule seeding + clear stale/broken alert states (admin only)
     case 'reseed_cdss_rules':
         requireRole(['admin']);  // ── RBAC: admin only ──
@@ -719,6 +793,287 @@ function getClinicalAlerts() {
 
 
 // ═════════════════════════════════════════════════════════════════════════════
+// SESSION HELPER
+// ═════════════════════════════════════════════════════════════════════════════
+function whoAmI(): void {
+    if (empty($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'logged_in' => false]);
+        return;
+    }
+    echo json_encode([
+        'success'   => true,
+        'logged_in' => true,
+        'user_id'   => $_SESSION['user_id'],
+        'username'  => $_SESSION['username'],
+        'role'      => $_SESSION['role'],
+        'name'      => $_SESSION['full_name'] ?? $_SESSION['username'],
+        'hospital'  => $_SESSION['hospital'] ?? null,
+    ]);
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ADMIN: USER MANAGEMENT
+// All functions below require requireRole(['admin']) — called in the router.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** GET ?action=get_users  — list all staff accounts at the admin's hospital */
+function getUsers(): void {
+    // ── Hospital scoping: admins only see/manage staff at their own hospital ──
+    $hospital = $_SESSION['hospital'] ?? '';
+
+    $conn = getConn();
+    $stmt = $conn->prepare(
+        "SELECT id, username, email, role, full_name, hospital, is_active, created_at
+         FROM users
+         WHERE hospital = ?
+           AND role IN ('doctor','nurse')
+         ORDER BY role, full_name"
+    );
+    $stmt->bind_param('s', $hospital);
+    $stmt->execute();
+    $rows = []; $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $stmt->close();
+    $conn->close();
+    echo json_encode(['success' => true, 'hospital' => $hospital, 'data' => $rows]);
+}
+
+/** POST action=create_user  body: {username, email, password, role, full_name}
+ *  Admins may only create 'doctor' or 'nurse' accounts, and the new account
+ *  is automatically assigned to the admin's own hospital — an admin cannot
+ *  plant staff in a hospital they don't belong to.
+ */
+function createUser(array $b): void {
+    $username  = trim($b['username']  ?? '');
+    $email     = trim($b['email']     ?? '');
+    $password  = $b['password']  ?? '';
+    $role      = $b['role']      ?? 'nurse';
+    $fullName  = trim($b['full_name'] ?? '');
+    $hospital  = $_SESSION['hospital'] ?? '';   // ── inherited from the admin's own account ──
+
+    if (!$username || !$email || !$password) {
+        echo json_encode(['success' => false, 'message' => 'username, email, password are required']);
+        return;
+    }
+    // ── Admins may only create clinical staff — never other admins ──
+    if (!in_array($role, ['doctor','nurse'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid role. Admins may only create doctor or nurse accounts.']);
+        return;
+    }
+    if (strlen($password) < 8) {
+        echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters.']);
+        return;
+    }
+
+    $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    $conn = getConn();
+    $stmt = $conn->prepare(
+        "INSERT INTO users (username, email, password_hash, role, full_name, hospital)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    );
+    $stmt->bind_param('ssssss', $username, $email, $hash, $role, $fullName, $hospital);
+    $ok = $stmt->execute();
+    $newId = (int)$conn->insert_id;
+    $stmt->close();
+    $conn->close();
+
+    if (!$ok) {
+        echo json_encode(['success' => false, 'message' => 'Username or email already exists.']);
+        return;
+    }
+    echo json_encode(['success' => true, 'id' => $newId, 'message' => "User $username created."]);
+}
+
+/** POST action=update_user  body: {id, email?, role?, full_name?, is_active?}
+ *  Admins may only edit doctor/nurse accounts within their own hospital, and
+ *  may not change a user's role to/from 'admin' or move them to another hospital.
+ */
+function updateUser(array $b): void {
+    $id = (int)($b['id'] ?? 0);
+    if (!$id) { echo json_encode(['success' => false, 'message' => 'id required']); return; }
+
+    $hospital = $_SESSION['hospital'] ?? '';
+    $conn = getConn();
+
+    // ── Ownership check: target must be a doctor/nurse at this admin's hospital ──
+    $chk = $conn->prepare("SELECT role, hospital FROM users WHERE id = ?");
+    $chk->bind_param('i', $id);
+    $chk->execute();
+    $target = $chk->get_result()->fetch_assoc();
+    $chk->close();
+
+    if (!$target || $target['hospital'] !== $hospital || !in_array($target['role'], ['doctor','nurse'], true)) {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'User not found in your hospital.']);
+        return;
+    }
+
+    // ── Allowed fields. 'role' may only flip between doctor <-> nurse;
+    //    'hospital' is intentionally NOT editable here. ──
+    $allowed = ['email', 'role', 'full_name', 'is_active'];
+    $sets = []; $vals = []; $types = '';
+    foreach ($allowed as $f) {
+        if (!array_key_exists($f, $b)) continue;
+        if ($f === 'role' && !in_array($b[$f], ['doctor','nurse'], true)) continue;
+        $sets[]  = "$f = ?";
+        $vals[]  = $b[$f];
+        $types  .= ($f === 'is_active') ? 'i' : 's';
+    }
+    if (!$sets) { $conn->close(); echo json_encode(['success' => false, 'message' => 'Nothing to update']); return; }
+
+    $vals[]  = $id;
+    $types  .= 'i';
+    $stmt    = $conn->prepare("UPDATE users SET " . implode(', ', $sets) . " WHERE id = ?");
+    $stmt->bind_param($types, ...$vals);
+    $ok = $stmt->execute();
+    $stmt->close(); $conn->close();
+    echo json_encode(['success' => $ok]);
+}
+
+/** POST action=deactivate_user  body: {id}  (sets is_active = 0)
+ *  Admins may only deactivate doctor/nurse accounts within their own hospital.
+ */
+function deactivateUser(array $b): void {
+    $id = (int)($b['id'] ?? 0);
+    if (!$id) { echo json_encode(['success' => false, 'message' => 'id required']); return; }
+    // Prevent admin from deactivating their own account
+    if ((int)($_SESSION['user_id'] ?? 0) === $id) {
+        echo json_encode(['success' => false, 'message' => 'You cannot deactivate your own account.']);
+        return;
+    }
+
+    $hospital = $_SESSION['hospital'] ?? '';
+    $conn = getConn();
+
+    // ── Ownership check: target must be a doctor/nurse at this admin's hospital ──
+    $chk = $conn->prepare("SELECT role, hospital FROM users WHERE id = ?");
+    $chk->bind_param('i', $id);
+    $chk->execute();
+    $target = $chk->get_result()->fetch_assoc();
+    $chk->close();
+
+    if (!$target || $target['hospital'] !== $hospital || !in_array($target['role'], ['doctor','nurse'], true)) {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'User not found in your hospital.']);
+        return;
+    }
+
+    $stmt = $conn->prepare("UPDATE users SET is_active = 0 WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    $ok = $stmt->execute(); $stmt->close(); $conn->close();
+    echo json_encode(['success' => $ok]);
+}
+
+/** POST action=reset_password  body: {id, new_password} */
+function resetPassword(array $b): void {
+    $id  = (int)($b['id']           ?? 0);
+    $pwd = (string)($b['new_password'] ?? '');
+    if (!$id || strlen($pwd) < 8) {
+        echo json_encode(['success' => false, 'message' => 'id and new_password (min 8 chars) required']);
+        return;
+    }
+    $hash = password_hash($pwd, PASSWORD_BCRYPT, ['cost' => 12]);
+    $conn = getConn();
+    $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    $stmt->bind_param('si', $hash, $id);
+    $ok = $stmt->execute(); $stmt->close(); $conn->close();
+    echo json_encode(['success' => $ok]);
+}
+
+/** GET ?action=get_staff_patients&staff_id=...  — patients whose `physician_id`
+ *  FK matches the given staff member's user id. Used by the admin dashboard
+ *  to show which patients a doctor/nurse is supervising.
+ *  Restricted to admins; the target staff member must belong to the
+ *  admin's own hospital.
+ */
+function getStaffPatients(): void {
+    $staffId = (int)($_GET['staff_id'] ?? 0);
+    if (!$staffId) {
+        echo json_encode(['success' => false, 'message' => 'staff_id required']);
+        return;
+    }
+
+    $hospital = $_SESSION['hospital'] ?? '';
+    $conn = getConn();
+
+    // ── Ownership check: the staff member must exist in this admin's hospital ──
+    $chk = $conn->prepare(
+        "SELECT full_name FROM users WHERE id = ? AND hospital = ? AND role IN ('doctor','nurse') LIMIT 1"
+    );
+    $chk->bind_param('is', $staffId, $hospital);
+    $chk->execute();
+    $staff = $chk->get_result()->fetch_assoc();
+    $chk->close();
+
+    if (!$staff) {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'Staff member not found in your hospital.']);
+        return;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT patient_id, first_name, last_name, dob, gender, status, last_visit, next_appt, conditions
+         FROM patients
+         WHERE physician_id = ?
+         ORDER BY last_visit DESC"
+    );
+    $stmt->bind_param('i', $staffId);
+    $stmt->execute();
+    $rows = []; $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $stmt->close(); $conn->close();
+
+    echo json_encode(['success' => true, 'physician' => $staff['full_name'], 'count' => count($rows), 'data' => $rows]);
+}
+
+
+function getAuditLog(): void {
+    $limit    = min((int)($_GET['limit'] ?? 100), 500);
+    $hospital = $_SESSION['hospital'] ?? '';
+    $conn  = getConn();
+    $stmt  = $conn->prepare(
+        "SELECT us.id, u.username, u.full_name, u.role,
+                us.action, us.ip_address, us.user_agent, us.created_at
+         FROM user_sessions us
+         JOIN users u ON u.id = us.user_id
+         WHERE u.hospital = ?
+         ORDER BY us.created_at DESC
+         LIMIT ?"
+    );
+    $stmt->bind_param('si', $hospital, $limit);
+    $stmt->execute();
+    $rows = []; $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $stmt->close(); $conn->close();
+    echo json_encode(['success' => true, 'hospital' => $hospital, 'data' => $rows]);
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CDSS ALERT DISMISS
+// Admin and Doctor can dismiss/acknowledge active alerts.
+// ═════════════════════════════════════════════════════════════════════════════
+function dismissAlert(array $b): void {
+    $alertStateId = (int)($b['alert_state_id'] ?? 0);
+    if (!$alertStateId) {
+        echo json_encode(['success' => false, 'message' => 'alert_state_id required']);
+        return;
+    }
+    $conn = getConn();
+    $stmt = $conn->prepare(
+        "UPDATE patient_alert_states
+         SET state = 'dismissed', resolved_at = NOW()
+         WHERE id = ? AND state = 'active'"
+    );
+    $stmt->bind_param('i', $alertStateId);
+    $ok = $stmt->execute();
+    $stmt->close(); $conn->close();
+    echo json_encode(['success' => $ok]);
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
 // PATIENTS  (unchanged from original)
 // ═════════════════════════════════════════════════════════════════════════════
 function getPatients() {
@@ -813,8 +1168,23 @@ function addPatient($b) {
     $ins=$b['insurance']??'';$doc=$b['physician']??'';$alg=$b['allergies']??'';
     $cnd=$b['conditions']??'';$smk=$b['smoking']??'';$alc=$b['alcohol']??'';
     $pmh=$b['pmh']??'';$fmh=$b['fmh']??'';$surg=$b['surgical']??'';$vac=$b['vaccines']??'';
-    $stmt=$conn->prepare("INSERT INTO patients (patient_id,first_name,last_name,dob,gender,blood_type,phone,email,insurance,physician,allergies,conditions,smoking,alcohol,pmh,fmh,surgical,vaccines,avatar_color,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active')");
-    $stmt->bind_param('sssssssssssssssssss',$pid,$fn,$ln,$dob,$gen,$bld,$ph,$em,$ins,$doc,$alg,$cnd,$smk,$alc,$pmh,$fmh,$surg,$vac,$clr);
+
+    // ── Resolve physician_id: prefer explicit id, else look up by full_name ──
+    $docId = null;
+    if (!empty($b['physician_id'])) {
+        $docId = (int)$b['physician_id'];
+    } elseif ($doc !== '') {
+        $lk = $conn->prepare("SELECT id FROM users WHERE full_name = ? AND role IN ('doctor','nurse') LIMIT 1");
+        $lk->bind_param('s', $doc);
+        $lk->execute();
+        $row2 = $lk->get_result()->fetch_assoc();
+        $lk->close();
+        if ($row2) $docId = (int)$row2['id'];
+    }
+
+    $stmt=$conn->prepare("INSERT INTO patients (patient_id,first_name,last_name,dob,gender,blood_type,phone,email,insurance,physician,physician_id,allergies,conditions,smoking,alcohol,pmh,fmh,surgical,vaccines,avatar_color,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active')");
+    $stmt->bind_param('sssssssssissssssssss',$pid,$fn,$ln,$dob,$gen,$bld,$ph,$em,$ins,$doc,$docId,$alg,$cnd,$smk,$alc,$pmh,$fmh,$surg,$vac,$clr);
+    // NOTE: type string must have 20 chars matching 20 bound values above
     if(!$stmt->execute()){$err=$conn->error;$stmt->close();$conn->close();echo json_encode(['success'=>false,'message'=>$err]);return;}
     $stmt->close();
     $today=date('d M Y');$text='<strong>Patient Registration</strong> — New patient registered in the EHR system.';
@@ -830,9 +1200,27 @@ function updatePatient($b) {
     $allowed=['first_name','last_name','phone','email','insurance','physician','blood_type','allergies','conditions','smoking','alcohol','pmh','fmh','surgical','vaccines','last_visit','next_appt','status'];
     $sets=[];$vals=[];$types='';
     foreach($allowed as $f){if(array_key_exists($f,$b)){$sets[]="$f=?";$vals[]=$b[$f];$types.='s';}}
-    if(!$sets){echo json_encode(['success'=>false,'message'=>'Nothing to update']);return;}
-    $vals[]=$pid;$types.='s';
+
     $conn=getConn();
+
+    // ── Keep physician_id in sync whenever `physician` (name) is updated ──
+    if (array_key_exists('physician_id', $b)) {
+        $sets[] = "physician_id=?"; $vals[] = ($b['physician_id'] !== '' ? (int)$b['physician_id'] : null); $types .= 'i';
+    } elseif (array_key_exists('physician', $b)) {
+        $docId = null;
+        if ($b['physician'] !== '') {
+            $lk = $conn->prepare("SELECT id FROM users WHERE full_name = ? AND role IN ('doctor','nurse') LIMIT 1");
+            $lk->bind_param('s', $b['physician']);
+            $lk->execute();
+            $row2 = $lk->get_result()->fetch_assoc();
+            $lk->close();
+            if ($row2) $docId = (int)$row2['id'];
+        }
+        $sets[] = "physician_id=?"; $vals[] = $docId; $types .= 'i';
+    }
+
+    if(!$sets){$conn->close();echo json_encode(['success'=>false,'message'=>'Nothing to update']);return;}
+    $vals[]=$pid;$types.='s';
     $stmt=$conn->prepare("UPDATE patients SET ".implode(',',$sets)." WHERE patient_id=?");
     $stmt->bind_param($types,...$vals);$ok=$stmt->execute();$stmt->close();$conn->close();
     echo json_encode(['success'=>$ok]);
@@ -922,7 +1310,7 @@ function getVitals() {
 // ─────────────────────────────────────────────────────────────────────────────
 function saveVitals($b) {
     // ── RBAC: only nurses and doctors may record vitals ───────────────────────
-    requireRole(['nurse', 'doctor']);
+    requireRole(['admin', 'nurse', 'doctor']);
 
     $pid = $b['patient_id'] ?? '';
     if (!$pid) { echo json_encode(['success'=>false,'message'=>'patient_id required']); return; }
@@ -1044,8 +1432,8 @@ function saveVitals($b) {
 // Called by the frontend when currentVitalsData already exists (edit flow).
 // ═════════════════════════════════════════════════════════════════════════════
 function updateVitals($b) {
-    // ── RBAC: only nurses and doctors may update vitals ───────────────────────
-    requireRole(['nurse', 'doctor']);
+    // ── RBAC: admin, nurse, and doctors may update vitals ───────────────────────
+    requireRole(['admin', 'nurse', 'doctor']);
 
     $pid = $b["patient_id"] ?? "";
     if (!$pid) { echo json_encode(["success"=>false,"message"=>"patient_id required"]); return; }
@@ -1201,8 +1589,8 @@ function getLabs() {
 //   f) Wrapped in try/catch (Throwable) — engine errors never affect $ok/$nid.
 // ─────────────────────────────────────────────────────────────────────────────
 function addLab($b) {
-    // ── RBAC: only doctors may add lab results ────────────────────────────────
-    requireRole(['doctor']);
+    // ── RBAC: admin, doctors, and nurses may add lab results ─────────────────
+    requireRole(['admin', 'doctor', 'nurse']);
 
     $pid = trim($b['patient_id'] ?? '');
     $nm  = trim($b['test_name']  ?? '');
@@ -1351,8 +1739,8 @@ function addLab($b) {
 }
 
 function updateLab($b) {
-    // ── RBAC: only doctors may update lab results ─────────────────────────────
-    requireRole(['doctor']);
+    // ── RBAC: admin and doctors may edit lab results ──────────────────────────
+    requireRole(['admin', 'doctor']);
 
     $id=(int)($b['id']??0);
     if(!$id){echo json_encode(['success'=>false,'message'=>'id required']);return;}
@@ -1370,8 +1758,8 @@ function updateLab($b) {
 }
 
 function deleteLab($b) {
-    // ── RBAC: only doctors may delete lab results ─────────────────────────────
-    requireRole(['doctor']);
+    // ── RBAC: admin and doctors may delete lab results ───────────────────────
+    requireRole(['admin', 'doctor']);
 
     $id=(int)($b['id']??0);
     if(!$id){echo json_encode(['success'=>false,'message'=>'id required']);return;}

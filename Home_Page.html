@@ -547,6 +547,66 @@
       color: #ef4444; font-size: 0.85rem; padding: 0.7rem 1rem; border-radius: 10px;
       margin-bottom: 1.2rem;
     }
+
+    /* ══════════════════════════════════════════
+       ADMIN LOGIN MODAL
+       Identical structure to EHR login modal —
+       uses amber/gold accent to visually signal
+       "elevated access" vs the teal EHR modal.
+    ══════════════════════════════════════════ */
+    .admin-login-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      align-items: center; justify-content: center;
+      background: rgba(10,22,40,0.55); backdrop-filter: blur(6px);
+      padding: 1.5rem;
+    }
+    .admin-login-overlay.open { display: flex; }
+    .admin-login-card {
+      background: var(--surface); border: 1px solid var(--card-border);
+      border-radius: 22px; padding: 2.5rem; width: 100%; max-width: 400px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.3); position: relative;
+      animation: fadeUp 0.35s ease both;
+      transition: background 0.4s, border-color 0.4s;
+    }
+    /* Gold accent strip at top to distinguish from EHR modal */
+    .admin-login-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, #c9a84c, #f0c040);
+      border-radius: 22px 22px 0 0;
+    }
+    .admin-login-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none; font-size: 1.4rem; line-height: 1;
+      color: var(--muted); cursor: pointer; padding: 0.25rem;
+      transition: color 0.2s;
+    }
+    .admin-login-close:hover { color: #c9a84c; }
+    .admin-login-card h2 {
+      font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700;
+      color: var(--section-h2); margin-bottom: 0.4rem; transition: color 0.4s;
+    }
+    .admin-login-card .admin-sub {
+      color: var(--section-sub); font-size: 0.9rem; margin-bottom: 1.6rem; transition: color 0.4s;
+    }
+    .admin-login-btn {
+      width: 100%; padding: 0.85rem; border: none; border-radius: 10px;
+      background: #c9a84c; color: #0a1628; font-weight: 700; font-size: 1rem;
+      font-family: 'Outfit', sans-serif; cursor: pointer; margin-top: 0.4rem;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .admin-login-btn:hover { background: #b8943f; transform: translateY(-1px); box-shadow: 0 10px 28px rgba(201,168,76,0.35); }
+    .admin-login-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .admin-login-error {
+      display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);
+      color: #ef4444; font-size: 0.85rem; padding: 0.7rem 1rem; border-radius: 10px;
+      margin-bottom: 1.2rem;
+    }
+    .admin-role-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.35);
+      color: #c9a84c; font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.75rem;
+      border-radius: 999px; margin-bottom: 1.4rem; letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
@@ -575,7 +635,33 @@
   </div>
 
 
-  <!-- HEADER -->
+  <!-- ADMIN LOGIN MODAL -->
+  <!-- Triggered by the Health Analytics card (admin-only entry point).      -->
+  <!-- On success: role must be 'admin' — doctors/nurses are rejected here.  -->
+  <div class="admin-login-overlay" id="adminLoginOverlay">
+    <div class="admin-login-card">
+      <button class="admin-login-close" onclick="closeAdminLogin()" aria-label="Close">×</button>
+
+      <div class="admin-role-badge">🔐 Admin Access Only</div>
+
+      <h2>Sign in to Admin</h2>
+      <p class="admin-sub">This area is restricted to system administrators. Enter your admin credentials to continue.</p>
+
+      <div class="admin-login-error" id="adminLoginError"></div>
+
+      <form id="adminLoginForm">
+        <div class="ehr-field">
+          <label for="adminUsername">Username</label>
+          <input type="text" id="adminUsername" autocomplete="username" required>
+        </div>
+        <div class="ehr-field">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="admin-login-btn" id="adminLoginBtn">Sign In to Admin Panel</button>
+      </form>
+    </div>
+  </div>
   <header>
     <a href="Home_Page.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="../Brand Identity/Pharos HIS Icon2.png" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
     <nav>
@@ -679,6 +765,7 @@
           <div class="card-icon">📊</div>
           <h3>Health Analytics</h3>
           <p>Track population health trends, generate insights from patient data, and support evidence-based clinical decisions.</p>
+          <a class="card-link" href="#" onclick="openAdminLogin(event)">Admin Dashboard <span class="arrow">→</span></a>
         </div>
       </div>
     </div>
@@ -858,6 +945,104 @@
         ehrError.style.display = 'block';
         ehrBtn.disabled = false;
         ehrBtn.textContent = 'Sign In';
+      }
+    });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       ADMIN LOGIN MODAL
+       Identical flow to EHR login, with one extra check:
+       after a successful authentication, the returned role is verified.
+       If the role is not 'admin', the session is rejected client-side
+       and the user sees "Access denied — admin accounts only."
+       This is defence-in-depth: the server already enforces role on every
+       protected admin action, but this gives immediate feedback at login.
+    ═══════════════════════════════════════════════════════════════════ */
+    const adminOverlay  = document.getElementById('adminLoginOverlay');
+    const adminForm     = document.getElementById('adminLoginForm');
+    const adminError    = document.getElementById('adminLoginError');
+    const adminBtn      = document.getElementById('adminLoginBtn');
+    const adminUsername = document.getElementById('adminUsername');
+
+    function openAdminLogin(e) {
+      if (e) e.preventDefault();
+      adminError.style.display = 'none';
+      adminForm.reset();
+      adminOverlay.classList.add('open');
+      setTimeout(() => adminUsername.focus(), 50);
+    }
+
+    function closeAdminLogin() {
+      adminOverlay.classList.remove('open');
+    }
+
+    // Close on backdrop click
+    adminOverlay.addEventListener('click', (e) => {
+      if (e.target === adminOverlay) closeAdminLogin();
+    });
+
+    // Close on Escape key (shared handler also catches this)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && adminOverlay.classList.contains('open')) closeAdminLogin();
+    });
+
+    adminForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      adminError.style.display = 'none';
+
+      const username = adminUsername.value.trim();
+      const password = document.getElementById('adminPassword').value;
+
+      adminBtn.disabled = true;
+      adminBtn.textContent = 'Verifying…';
+
+      try {
+        const res = await fetch(EHR_API + '?action=login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          // ── Role gate: only 'admin' accounts may enter the admin panel ──
+          if (data.role !== 'admin') {
+            // Credentials are valid but the role is wrong.
+            // Log them out immediately so the session isn't left open.
+            fetch(EHR_API + '?action=logout', {
+              method: 'POST',
+              credentials: 'include'
+            }).catch(() => {});
+
+            adminError.textContent = '⛔ Access denied — admin accounts only. Doctors and nurses should use the EHR System instead.';
+            adminError.style.display = 'block';
+            adminBtn.disabled = false;
+            adminBtn.textContent = 'Sign In to Admin Panel';
+            return;
+          }
+
+          // ── Success: store user info and redirect to admin dashboard ──
+          localStorage.setItem('ehr_user', JSON.stringify({
+            name: data.name,
+            role: data.role
+          }));
+          adminBtn.textContent = 'Access granted — redirecting…';
+          // Redirects to the admin dashboard page.
+          // Change 'Admin_Dashboard.html' to whatever your admin page is named.
+          window.location.href = 'Admin_Dashboard.html';
+
+        } else {
+          adminError.textContent = data.message || 'Invalid username or password.';
+          adminError.style.display = 'block';
+          adminBtn.disabled = false;
+          adminBtn.textContent = 'Sign In to Admin Panel';
+        }
+      } catch (err) {
+        adminError.textContent = 'Connection error — please try again.';
+        adminError.style.display = 'block';
+        adminBtn.disabled = false;
+        adminBtn.textContent = 'Sign In to Admin Panel';
       }
     });
   </script>
