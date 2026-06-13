@@ -1170,6 +1170,29 @@ function applyRbacUi() {
     });
   }
 
+  // ── Manager: view-only access. Hide every action that creates, edits,
+  //    deletes, prescribes, or dismisses anything; leave all viewing/
+  //    navigation/reporting intact. ──────────────────────────────────────
+  if (role === 'manager') {
+    hide('[onclick="deletePatientRecord()"]');
+    hide('[onclick="openEPrescribeModal()"]');
+    hide('[onclick="openNewPatientModal()"]');
+    hide('[onclick="openEditPatientModal()"]');
+    hide('[onclick="openAddVitalsModal()"]');
+    hide('[onclick="openEditVitalsModal()"]');
+    hide('[onclick="openTimelineModal()"]');
+    hide('[onclick="openRefillModal()"]');
+    hide('[onclick="openAddLabModal()"]');
+    hide('#reseedRulesBtn');
+    window._rbacCanPrescribe     = false;
+    window._rbacCanDeleteLab     = false;
+    window._rbacCanDismissAlert  = false;
+    window._rbacReadOnly         = true;
+    window._ehrRole = role;
+    createAdminStaffButton();
+    return;
+  }
+
   // ── Delete patient: admin only ─────────────────────────────────────
   if (role !== 'admin') {
     hide('[onclick="deletePatientRecord()"]');
@@ -1205,8 +1228,8 @@ function applyRbacUi() {
     });
   }
 
-  // ── Floating "Hospital Staff" button: admin only ───────────────────
-  if (role === 'admin') {
+  // ── Floating "Hospital Staff" + dashboard buttons: admin & manager ──
+  if (role === 'admin' || role === 'manager') {
     createAdminStaffButton();
   }
 
@@ -1841,9 +1864,9 @@ async function loadAndRenderHistory(p) {
       <div class="tl-dot ${h.dot_type}"></div>
       <div class="tl-date">${h.entry_date}</div>
       <div class="tl-text">${h.entry_text}</div>
-      <button onclick="deleteTimelineEntry(${h.id})" title="Delete entry"
+      ${window._rbacReadOnly ? '' : `<button onclick="deleteTimelineEntry(${h.id})" title="Delete entry"
         style="position:absolute;right:0;top:0;background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.75rem;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;"
-        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✕</button>
+        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✕</button>`}
     </div>`).join('') : `<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.9rem;">No timeline entries yet.</div>`;
 
   document.getElementById('tab-history').innerHTML = `

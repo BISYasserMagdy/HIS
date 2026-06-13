@@ -286,6 +286,10 @@
         <input type="text" id="newUsername" placeholder="jane_doe" required autocomplete="off">
       </div>
       <div class="field">
+        <label>Specialty <span style="color:#94a3b8; font-weight:400;">(optional)</span></label>
+        <input type="text" id="newSpecialty" placeholder="e.g. Cardiology, ICU, Pediatrics" autocomplete="off">
+      </div>
+      <div class="field">
         <label>Email</label>
         <input type="email" id="newEmail" placeholder="jane.doe@hospital.com" required autocomplete="off">
       </div>
@@ -375,8 +379,8 @@ async function init() {
     const who = await api({ action: 'whoami' });
     if (!who.success || !who.logged_in) { handleUnauthorized(); return; }
 
-    // ── Role gate: only admins may view this page ──
-    if (who.role !== 'admin') {
+    // ── Role gate: admins (full access) and managers (view-only) ──────
+    if (who.role !== 'admin' && who.role !== 'manager') {
       showToast('⛔ Admin access only — redirecting to EHR System…', false);
       setTimeout(() => { window.location.replace('EHR_Page.html'); }, 1200);
       return;
@@ -391,6 +395,14 @@ async function init() {
       `Manage doctor and nurse accounts for ${who.hospital || 'your hospital'}.`;
     document.getElementById('addModalHospitalHint').textContent =
       `This account will be created at ${who.hospital || 'your hospital'}.`;
+
+    // ── Manager: view-only — hide Add Staff and any mutation controls ──
+    if (who.role === 'manager') {
+      window._dashReadOnly = true;
+      const addBtn = document.querySelector('.toolbar button.btn-primary');
+      if (addBtn) addBtn.style.display = 'none';
+      document.querySelector('.hero-badge').textContent = '👁️ VIEW-ONLY ACCESS';
+    }
 
   } catch (e) {
     showToast('⚠ Network error: ' + e.message, false);
@@ -494,9 +506,10 @@ function renderStaff() {
             <p class="staff-username">@${escapeHtml(u.username)}</p>
           </div>
         </div>
-        <div style="display:flex; gap:0.4rem;">
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
           <span class="role-badge ${u.role}">${roleIcon} ${u.role}</span>
           <span class="status-badge ${active ? 'active' : 'inactive'}">${active ? '● Active' : '○ Inactive'}</span>
+          ${u.specialty ? `<span class="role-badge" style="background:#fef3c7; color:#92400e;">🏷️ ${escapeHtml(u.specialty)}</span>` : ''}
         </div>
         <div class="staff-meta">
           <span>✉️ ${escapeHtml(u.email)}</span>
@@ -506,14 +519,17 @@ function renderStaff() {
           <button class="icon-btn" onclick="openPatientsModal(${u.id}, '${escapeHtml((u.full_name || u.username).replace(/'/g, "\\'"))}')">
             🩺 Patients
           </button>
-          ${active
+          ${window._dashReadOnly ? '' : `<button class="icon-btn" onclick="editSpecialty(${u.id}, '${escapeHtml((u.specialty || '').replace(/'/g, "\\'"))}')">
+                 🏷️ Specialty
+               </button>`}
+          ${window._dashReadOnly ? '' : (active
             ? `<button class="icon-btn danger" onclick="confirmDeactivate(${u.id}, '${escapeHtml(u.full_name || u.username)}')">
                  🚫 Deactivate
                </button>`
             : `<button class="icon-btn" style="color:#fff; background:#16a34a; border-color:#16a34a;" onclick="reactivateUser(${u.id})">
                  ✅ Reactivate
                </button>`
-          }
+          )}
         </div>
       </div>`;
   }).join('');
@@ -552,6 +568,7 @@ document.getElementById('addStaffForm').addEventListener('submit', async e => {
     full_name: document.getElementById('newFullName').value.trim(),
     username:  document.getElementById('newUsername').value.trim(),
     email:     document.getElementById('newEmail').value.trim(),
+    specialty: document.getElementById('newSpecialty').value.trim(),
     password:  document.getElementById('newPassword').value,
   };
 
@@ -608,7 +625,20 @@ document.getElementById('confirmActionBtn').addEventListener('click', async () =
   }
 });
 
-// ─── REACTIVATE ─────────────────────────────────────────────────────────
+// ─── EDIT SPECIALTY ─────────────────────────────────────────────────────
+async function editSpecialty(id, current) {
+  const value = prompt('Specialty (e.g. Cardiology, ICU, Pediatrics):', current || '');
+  if (value === null) return; // cancelled
+  const res = await api({ action: 'update_user' }, 'POST', { id, specialty: value.trim() });
+  if (res.success) {
+    showToast('✅ Specialty updated.');
+    await loadStaff();
+  } else {
+    showToast('⚠ ' + (res.message || 'Could not update specialty.'), false);
+  }
+}
+
+
 async function reactivateUser(id) {
   const res = await api({ action: 'update_user' }, 'POST', { id, is_active: 1 });
   if (res.success) {

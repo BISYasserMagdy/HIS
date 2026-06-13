@@ -86,6 +86,20 @@ function initDB() {
     if (!$conn->select_db(DB_NAME)) { $conn->close(); return; }
     $conn->set_charset('utf8mb4');
 
+    // ── Hospitals: created on subscription, holds branding (logo/name) ──────
+    $conn->query("CREATE TABLE IF NOT EXISTS `hospitals` (
+        id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        name        VARCHAR(160) NOT NULL,
+        logo_url    VARCHAR(255) NULL,
+        email       VARCHAR(150) NULL,
+        plan        VARCHAR(50)  NULL,
+        status      ENUM('active','cancelled') NOT NULL DEFAULT 'active',
+        created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_hospital_name (name)
+    ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+
     $conn->query("CREATE TABLE IF NOT EXISTS patients (
         id           INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
         patient_id   VARCHAR(20)  NOT NULL,
@@ -194,9 +208,10 @@ function initDB() {
         username      VARCHAR(80)     NOT NULL,
         email         VARCHAR(120)    NOT NULL,
         password_hash VARCHAR(255)    NOT NULL,
-        role          ENUM('admin','doctor','nurse') NOT NULL DEFAULT 'nurse',
+        role          ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse',
         hospital      VARCHAR(120)    NOT NULL DEFAULT 'General Hospital',
         full_name     VARCHAR(160)    NULL,
+        specialty     VARCHAR(100)    NULL,
         is_active     TINYINT(1)      NOT NULL DEFAULT 1,
         created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -205,6 +220,32 @@ function initDB() {
         UNIQUE KEY uq_email    (email),
         KEY idx_role (role),
         KEY idx_hospital (hospital)
+    ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+    // ── Migration: widen role ENUM to include 'manager' on pre-existing installs ──
+    $conn->query("ALTER TABLE users MODIFY role ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse'");
+
+    // ── Migration: add `specialty` column for pre-existing installs ──
+    $specCheck = $conn->query("SHOW COLUMNS FROM users LIKE 'specialty'");
+    if ($specCheck && $specCheck->num_rows === 0) {
+        $conn->query("ALTER TABLE users ADD COLUMN specialty VARCHAR(100) NULL AFTER full_name");
+    }
+
+    // ── Hospitals: one row per subscribed hospital. Stores branding (logo,
+    //    display name) and subscription/billing metadata. `name` matches
+    //    the free-text `users.hospital` value used for scoping. ──────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `hospitals` (
+        id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+        name            VARCHAR(120)    NOT NULL,
+        contact_email   VARCHAR(150)    NOT NULL,
+        plan            VARCHAR(50)     NOT NULL DEFAULT 'monthly',
+        payment_method  VARCHAR(50)     NULL,
+        logo_data       MEDIUMTEXT      NULL COMMENT 'Base64 data URL for hospital logo',
+        status          ENUM('active','cancelled') NOT NULL DEFAULT 'active',
+        subscribed_at   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_hospital_name  (name),
+        UNIQUE KEY uq_contact_email  (contact_email)
     ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
     $conn->query("CREATE TABLE IF NOT EXISTS `user_sessions` (
@@ -228,27 +269,49 @@ function initDB() {
     //
     // Default login credentials (change passwords after first login):
     //   Username: admin_user   Password: AdminPass123!   Role: admin
+    //   Username: manager_lee   Password: ManagerPass123! Role: manager
     //   Username: dr_smith      Password: DoctorPass123!  Role: doctor
     //   Username: nurse_jones   Password: NursePass123!   Role: nurse
     //
     $defaultUsers = [
-        ['admin_user',  'admin@medalex.local',      'AdminPass123!',  'admin',  'System Administrator'],
-        ['dr_smith',    'dr.smith@medalex.local',    'DoctorPass123!', 'doctor', 'Dr. Sarah Smith'     ],
-        ['nurse_jones', 'nurse.jones@medalex.local', 'NursePass123!',  'nurse',  'Nurse Emily Jones'   ],
+        ['admin_user',  'admin@medalex.local',      'AdminPass123!',  'admin',  'System Administrator', null],
+        ['manager_lee', 'manager.lee@medalex.local', 'ManagerPass123!','manager','Manager Daniel Lee'  , null],
+        ['dr_smith',    'dr.smith@medalex.local',    'DoctorPass123!', 'doctor', 'Dr. Sarah Smith'      , 'Nephrology'],
+        ['nurse_jones', 'nurse.jones@medalex.local', 'NursePass123!',  'nurse',  'Nurse Emily Jones'    , null],
     ];
 
     $seedStmt = $conn->prepare(
-        "INSERT IGNORE INTO users (username, email, password_hash, role, full_name)
-         VALUES (?, ?, ?, ?, ?)"
+        "INSERT IGNORE INTO users (username, email, password_hash, role, full_name, specialty)
+         VALUES (?, ?, ?, ?, ?, ?)"
     );
-    foreach ($defaultUsers as [$uname, $uemail, $plainPass, $urole, $uname_full]) {
+    foreach ($defaultUsers as [$uname, $uemail, $plainPass, $urole, $uname_full, $uspecialty]) {
         // password_hash() with BCRYPT — takes ~250 ms per call, but only runs
         // the very first time (INSERT IGNORE skips all subsequent attempts).
         $hash = password_hash($plainPass, PASSWORD_BCRYPT, ['cost' => 12]);
-        $seedStmt->bind_param('sssss', $uname, $uemail, $hash, $urole, $uname_full);
+        $seedStmt->bind_param('ssssss', $uname, $uemail, $hash, $urole, $uname_full, $uspecialty);
         $seedStmt->execute();
     }
     $seedStmt->close();
+
+
+    // ── Fix-up: if manager_lee was added to a DB that already had other
+    //    staff seeded under a different hospital name (e.g. 'Med-Alex
+    //    Central'), align its hospital so the manager sees the same
+    //    staff directory as the admin. Only runs if manager_lee still
+    //    has the column default 'General Hospital' but real staff exist
+    //    elsewhere. ──────────────────────────────────────────────────────
+    $hospRes = $conn->query(
+        "SELECT hospital, COUNT(*) AS n FROM users
+         WHERE role IN ('doctor','nurse') AND hospital <> 'General Hospital'
+         GROUP BY hospital ORDER BY n DESC LIMIT 1"
+    );
+    if ($hospRow = $hospRes->fetch_assoc()) {
+        $targetHospital = $hospRow['hospital'];
+        $conn->query(
+            "UPDATE users SET hospital = '" . $conn->real_escape_string($targetHospital) . "'
+             WHERE username = 'manager_lee' AND hospital = 'General Hospital'"
+        );
+    }
 
     // ── CDSS support tables ──────────────────────────────────────────────────
     $conn->query("CREATE TABLE IF NOT EXISTS clinical_rules (
@@ -544,18 +607,18 @@ switch ($action) {
     case 'whoami':          whoAmI();                    break;  // any logged-in user
 
     // ── Admin: user management (admin only) ───────────────────────────────────
-    case 'get_users':           requireRole(['admin']); getUsers();               break;
+    case 'get_users':           requireRole(['admin','manager']); getUsers();               break;
     case 'create_user':         requireRole(['admin']); createUser($body);        break;
     case 'update_user':         requireRole(['admin']); updateUser($body);        break;
     case 'deactivate_user':     requireRole(['admin']); deactivateUser($body);    break;
     case 'reset_password':      requireRole(['admin']); resetPassword($body);     break;
-    case 'get_audit_log':       requireRole(['admin']); getAuditLog();            break;
-    case 'get_staff_patients':   requireRole(['admin']); getStaffPatients();      break;
+    case 'get_audit_log':       requireRole(['admin','manager']); getAuditLog();            break;
+    case 'get_staff_patients':   requireRole(['admin','manager']); getStaffPatients();      break;
 
     // ── Patients ───────────────────────────────────────────────────────────────
     // View: all roles (no gate — session checked by requireRole inside whoAmI / or open)
-    case 'get_patients':        requireRole(['admin','doctor','nurse']); getPatients();        break;
-    case 'get_patient':         requireRole(['admin','doctor','nurse']); getPatient();         break;
+    case 'get_patients':        requireRole(['admin','manager','doctor','nurse']); getPatients();        break;
+    case 'get_patient':         requireRole(['admin','manager','doctor','nurse']); getPatient();         break;
     case 'next_patient_id':     requireRole(['admin','doctor','nurse']); nextPatientId();      break;
     // Register / Edit: all roles
     case 'add_patient':         requireRole(['admin','doctor','nurse']); addPatient($body);    break;
@@ -564,30 +627,30 @@ switch ($action) {
     case 'delete_patient':      requireRole(['admin']);                  deletePatient($body); break;
 
     // ── Timeline ──────────────────────────────────────────────────────────────
-    case 'get_timeline':        requireRole(['admin','doctor','nurse']); getTimeline();        break;
+    case 'get_timeline':        requireRole(['admin','manager','doctor','nurse']); getTimeline();        break;
     case 'add_timeline':        requireRole(['admin','doctor','nurse']); addTimeline($body);   break;
     case 'delete_timeline':     requireRole(['admin','doctor','nurse']); deleteTimeline($body);break;
 
     // ── Vitals: all roles ─────────────────────────────────────────────────────
-    case 'get_vitals':          requireRole(['admin','doctor','nurse']); getVitals();          break;
+    case 'get_vitals':          requireRole(['admin','manager','doctor','nurse']); getVitals();          break;
     case 'save_vitals':         saveVitals($body);           break;  // requireRole inside fn
     case 'update_vitals':       updateVitals($body);         break;  // requireRole inside fn
 
     // ── Medications ───────────────────────────────────────────────────────────
-    case 'get_meds':            requireRole(['admin','doctor','nurse']); getMeds();            break;
+    case 'get_meds':            requireRole(['admin','manager','doctor','nurse']); getMeds();            break;
     case 'add_med':             requireRole(['admin','doctor']);         addMed($body);        break;  // prescribe: admin+doctor
     case 'delete_med':          requireRole(['admin','doctor']);         deleteMed($body);     break;  // remove: admin+doctor
     case 'request_refill':      requireRole(['admin','doctor','nurse']); requestRefill($body); break; // refill: all roles
 
     // ── Labs ──────────────────────────────────────────────────────────────────
-    case 'get_labs':            requireRole(['admin','doctor','nurse']); getLabs();            break;
+    case 'get_labs':            requireRole(['admin','manager','doctor','nurse']); getLabs();            break;
     case 'add_lab':             addLab($body);               break;  // requireRole inside fn (admin+doctor+nurse)
     case 'update_lab':          updateLab($body);            break;  // requireRole inside fn (admin+doctor)
     case 'delete_lab':          deleteLab($body);            break;  // requireRole inside fn (admin+doctor)
 
     // ── CDSS Alerts ───────────────────────────────────────────────────────────
     // View: all roles
-    case 'get_clinical_alerts': requireRole(['admin','doctor','nurse']); getClinicalAlerts();  break;
+    case 'get_clinical_alerts': requireRole(['admin','manager','doctor','nurse']); getClinicalAlerts();  break;
     // Dismiss: admin + doctor only
     case 'dismiss_alert':       requireRole(['admin','doctor']); dismissAlert($body);         break;
     // CDSS rule seeding + clear stale/broken alert states (admin only)
@@ -824,7 +887,7 @@ function getUsers(): void {
 
     $conn = getConn();
     $stmt = $conn->prepare(
-        "SELECT id, username, email, role, full_name, hospital, is_active, created_at
+        "SELECT id, username, email, role, full_name, specialty, hospital, is_active, created_at
          FROM users
          WHERE hospital = ?
            AND role IN ('doctor','nurse')
@@ -850,6 +913,7 @@ function createUser(array $b): void {
     $password  = $b['password']  ?? '';
     $role      = $b['role']      ?? 'nurse';
     $fullName  = trim($b['full_name'] ?? '');
+    $specialty = trim($b['specialty'] ?? '');
     $hospital  = $_SESSION['hospital'] ?? '';   // ── inherited from the admin's own account ──
 
     if (!$username || !$email || !$password) {
@@ -867,12 +931,13 @@ function createUser(array $b): void {
     }
 
     $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    $specialtyVal = $specialty !== '' ? $specialty : null;
     $conn = getConn();
     $stmt = $conn->prepare(
-        "INSERT INTO users (username, email, password_hash, role, full_name, hospital)
-         VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO users (username, email, password_hash, role, full_name, specialty, hospital)
+         VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param('ssssss', $username, $email, $hash, $role, $fullName, $hospital);
+    $stmt->bind_param('sssssss', $username, $email, $hash, $role, $fullName, $specialtyVal, $hospital);
     $ok = $stmt->execute();
     $newId = (int)$conn->insert_id;
     $stmt->close();
@@ -911,7 +976,7 @@ function updateUser(array $b): void {
 
     // ── Allowed fields. 'role' may only flip between doctor <-> nurse;
     //    'hospital' is intentionally NOT editable here. ──
-    $allowed = ['email', 'role', 'full_name', 'is_active'];
+    $allowed = ['email', 'role', 'full_name', 'specialty', 'is_active'];
     $sets = []; $vals = []; $types = '';
     foreach ($allowed as $f) {
         if (!array_key_exists($f, $b)) continue;

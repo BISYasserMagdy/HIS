@@ -899,6 +899,11 @@
       ehrOverlay.classList.remove('open');
     }
 
+    // Auto-open EHR sign-in modal when arriving via #ehr-login (e.g. after subscribing)
+    if (window.location.hash === '#ehr-login') {
+      openEhrLogin();
+    }
+
     // Close on backdrop click or Escape
     ehrOverlay.addEventListener('click', (e) => {
       if (e.target === ehrOverlay) closeEhrLogin();

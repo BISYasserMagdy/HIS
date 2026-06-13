@@ -469,20 +469,28 @@
 
     <!-- EMAIL (always shown) -->
     <div class="email-section" id="emailSection" style="display:none;">
-      <h4>📧 Account Email Address</h4>
+      <h4>🏥 Hospital Details</h4>
+      <div class="form-group">
+        <label>Hospital Name <span class="req">*</span></label>
+        <input type="text" id="hospitalNameInput" placeholder="e.g. Med-Alex Central">
+        <div class="field-error" id="hospitalNameErr">Please enter your hospital's name.</div>
+      </div>
+      <h4 style="margin-top:1rem;">📧 Account Email Address</h4>
       <div class="form-group">
         <label>Gmail Address <span class="req">*</span></label>
         <input type="email" id="emailInput" placeholder="yourname@gmail.com">
         <div class="field-error" id="emailErr">Please enter a valid Gmail address.</div>
       </div>
-      <p style="font-size:0.85rem;color:#0369a1;margin-top:0.2rem;">Your generated Manager ID, Employee ID, and passwords will be sent to this address.</p>
+      <p style="font-size:0.85rem;color:#0369a1;margin-top:0.2rem;">Your generated Admin, Manager, Doctor &amp; Nurse login credentials will be sent to this address.</p>
     </div>
 
     <!-- NOTICE -->
     <div class="email-note" id="emailNote" style="display:none;">
       <span class="icon">📩</span>
-      <span>After completing your subscription, your <strong>Manager login credentials</strong> (ID + password) and <strong>Employee login credentials</strong> will be automatically generated and sent to the Gmail address you provided above. Please check your inbox — including spam — within a few minutes.</span>
+      <span>After completing your subscription, login credentials for <strong>Admin, Manager, Doctor, and Nurse</strong> accounts will be automatically generated for your hospital and sent to the Gmail address you provided above. Please check your inbox — including spam — within a few minutes.</span>
     </div>
+
+    <div class="field-error" id="submitErr" style="display:none;text-align:center;margin-top:0.8rem;"></div>
 
     <button class="submit-btn" id="submitBtn" onclick="processPayment()">Complete Subscription</button>
   </div>
@@ -502,13 +510,20 @@
 
 <!-- SUCCESS MODAL -->
 <div class="overlay" id="successOverlay">
-  <div class="modal">
+  <div class="modal" style="max-width:480px;">
     <div style="font-size:3rem;margin-bottom:0.8rem;">✅</div>
     <h3 style="color:var(--green);">Subscription Successful!</h3>
-    <p>Thank you for subscribing to Pharos HIS.<br><br>
-      Your <strong>Manager &amp; Employee credentials</strong> (IDs and passwords) have been generated and sent to <strong id="confirmedEmail"></strong>. Please check your inbox.</p>
+    <p>Thank you for subscribing to Pharos HIS — EHR module.<br>
+      Login credentials for <strong id="confirmedHospital"></strong> have been generated. They've also been sent to <strong id="confirmedEmail"></strong>.</p>
+
+    <div id="credsBox" style="text-align:left;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:10px;padding:1rem;margin-top:1rem;font-size:0.85rem;font-family:'DM Sans',monospace;line-height:1.6;"></div>
+
+    <p style="font-size:0.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:0.6rem 0.8rem;margin-top:0.8rem;">
+      ⚠️ Save these now — for security they won't be shown again. Please change all passwords after first login.
+    </p>
+
     <div class="modal-btns">
-      <button class="btn-close-success" onclick="closeSuccessModal()">Go to Home</button>
+      <button class="btn-close-success" onclick="closeSuccessModal()">Go to EHR Sign In</button>
     </div>
   </div>
 </div>
@@ -647,11 +662,19 @@
   }
 
   // ─── Process Payment ──────────────────────────────────────────
-  function processPayment() {
+  async function processPayment() {
     if (!selectedPlan) { alert('Please select a subscription plan first.'); return; }
     if (!selectedPayment) { alert('Please select a payment method.'); return; }
 
     let valid = true;
+
+    // Hospital name (always required)
+    const hospitalName = document.getElementById('hospitalNameInput').value.trim();
+    if (!hospitalName) {
+      showErr('hospitalNameErr', true); valid = false;
+    } else {
+      showErr('hospitalNameErr', false);
+    }
 
     // Email validation (always required)
     const email = document.getElementById('emailInput').value.trim();
@@ -696,11 +719,62 @@
 
     if (!valid) return;
 
-    // All valid → show success modal
-    document.getElementById('confirmedEmail').textContent = email;
-    document.getElementById('successOverlay').classList.add('show');
+    const submitErr = document.getElementById('submitErr');
+    submitErr.style.display = 'none';
 
-    // In a real app: POST to subscribe.php with email, plan, payment data
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Processing…';
+
+    try {
+      const res = await fetch('../Back End/subscribe_ehr.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          plan: selectedPlan.plan,
+          payment_method: selectedPayment,
+          hospital_name: hospitalName,
+        }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        submitErr.textContent = '⚠ ' + (data.message || 'Subscription failed. Please try again.');
+        submitErr.style.display = 'block';
+        return;
+      }
+
+      // Populate success modal
+      document.getElementById('confirmedHospital').textContent = data.hospital || hospitalName;
+      document.getElementById('confirmedEmail').textContent = email;
+
+      const a = data.accounts || {};
+      const rolesOrder = [
+        ['admin',   '🛡️ Admin'],
+        ['manager', '📊 Manager'],
+        ['doctor',  '🩺 Doctor'],
+        ['nurse',   '💉 Nurse'],
+      ];
+      const credsBox = document.getElementById('credsBox');
+      credsBox.innerHTML = rolesOrder.map(([key, label]) => {
+        const acct = a[key];
+        if (!acct) return '';
+        return `<div style="margin-bottom:0.6rem;"><strong>${label}</strong><br>
+          Username: <code>${acct.username}</code><br>
+          Password: <code>${acct.password}</code></div>`;
+      }).join('');
+
+      document.getElementById('successOverlay').classList.add('show');
+
+    } catch (err) {
+      submitErr.textContent = '⚠ Network error — could not reach the server. Please check your connection and try again.';
+      submitErr.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
 
   function isExpiryValid(val) {
@@ -714,7 +788,7 @@
   // ─── Modals ───────────────────────────────────────────────────
   function closeSuccessModal() {
     document.getElementById('successOverlay').classList.remove('show');
-    window.location.href = 'index.html';
+    window.location.href = 'Home_Page.html#ehr-login';
   }
 
   function openCancelModal() {
