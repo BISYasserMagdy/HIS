@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pharos HIS – Subscription</title>
+  <title>Pharos HIS – EHR Subscription</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -257,7 +257,7 @@
 
 <div class="container">
   <div class="page-title">
-    <h2>Subscription Plans</h2>
+    <h2>EHR Subscription Plans</h2>
     <p>Choose the plan that fits your needs. All prices shown in USD and EGP.</p>
   </div>
 
@@ -276,10 +276,10 @@
       </div>
       <ul class="plan-features">
         <li>Full system access</li>
-        <li>ERP Pharmacy module</li>
-        <li>Appointment booking</li>
+        <li>Electronic Health Records (EHR)</li>
+        <li>CDSS clinical alerts & safety checks</li>
         <li>Health chatbot support</li>
-        <li>Manager &amp; employee accounts</li>
+        <li>Admin, Manager, Doctor &amp; Nurse accounts</li>
         <li>Priority support</li>
         <li>Advanced analytics</li>
       </ul>
@@ -295,10 +295,10 @@
       </div>
       <ul class="plan-features">
         <li>Full system access</li>
-        <li>ERP Pharmacy module</li>
-        <li>Appointment booking</li>
+        <li>Electronic Health Records (EHR)</li>
+        <li>CDSS clinical alerts & safety checks</li>
         <li>Health chatbot support</li>
-        <li>Manager &amp; employee accounts</li>
+        <li>Admin, Manager, Doctor &amp; Nurse accounts</li>
         <li>Priority support</li>
         <li>Advanced analytics</li>
       </ul>
@@ -314,10 +314,10 @@
       </div>
       <ul class="plan-features">
         <li>Full system access</li>
-        <li>ERP Pharmacy module</li>
-        <li>Appointment booking</li>
+        <li>Electronic Health Records (EHR)</li>
+        <li>CDSS clinical alerts & safety checks</li>
         <li>Health chatbot support</li>
-        <li>Manager &amp; employee accounts</li>
+        <li>Admin, Manager, Doctor &amp; Nurse accounts</li>
         <li>Priority support</li>
         <li>Advanced analytics</li>
       </ul>
@@ -334,10 +334,10 @@
       </div>
       <ul class="plan-features">
         <li>Full system access</li>
-        <li>ERP Pharmacy module</li>
-        <li>Appointment booking</li>
+        <li>Electronic Health Records (EHR)</li>
+        <li>CDSS clinical alerts & safety checks</li>
         <li>Health chatbot support</li>
-        <li>Manager &amp; employee accounts</li>
+        <li>Admin, Manager, Doctor &amp; Nurse accounts</li>
         <li>Priority support</li>
         <li>Advanced analytics</li>
       </ul>
@@ -469,20 +469,28 @@
 
     <!-- EMAIL (always shown) -->
     <div class="email-section" id="emailSection" style="display:none;">
-      <h4>📧 Account Email Address</h4>
+      <h4>🏥 Hospital Details</h4>
+      <div class="form-group">
+        <label>Hospital Name <span class="req">*</span></label>
+        <input type="text" id="hospitalNameInput" placeholder="e.g. Med-Alex Central">
+        <div class="field-error" id="hospitalNameErr">Please enter your hospital's name.</div>
+      </div>
+      <h4 style="margin-top:1rem;">📧 Account Email Address</h4>
       <div class="form-group">
         <label>Gmail Address <span class="req">*</span></label>
         <input type="email" id="emailInput" placeholder="yourname@gmail.com">
         <div class="field-error" id="emailErr">Please enter a valid Gmail address.</div>
       </div>
-      <p style="font-size:0.85rem;color:#0369a1;margin-top:0.2rem;">Your generated Manager ID, Employee ID, and passwords will be sent to this address.</p>
+      <p style="font-size:0.85rem;color:#0369a1;margin-top:0.2rem;">Your generated Admin, Manager, Doctor &amp; Nurse login credentials will be sent to this address.</p>
     </div>
 
     <!-- NOTICE -->
     <div class="email-note" id="emailNote" style="display:none;">
       <span class="icon">📩</span>
-      <span>After completing your subscription, your <strong>Manager login credentials</strong> (ID + password) and <strong>Employee login credentials</strong> will be automatically generated and sent to the Gmail address you provided above. Please check your inbox — including spam — within a few minutes.</span>
+      <span>After completing your subscription, login credentials for <strong>Admin, Manager, Doctor, and Nurse</strong> accounts will be automatically generated for your hospital and sent to the Gmail address you provided above. Please check your inbox — including spam — within a few minutes.</span>
     </div>
+
+    <div class="field-error" id="submitErr" style="display:none;text-align:center;margin-top:0.8rem;"></div>
 
     <button class="submit-btn" id="submitBtn" onclick="processPayment()">Complete Subscription</button>
   </div>
@@ -490,7 +498,7 @@
   <!-- CANCEL SUBSCRIPTION -->
   <div class="cancel-section" id="cancelSection">
     <h3>⚠️ Cancel Your Subscription</h3>
-    <p>Already subscribed and wish to cancel? Enter your registered email to cancel your active subscription. This action cannot be undone.</p>
+    <p>Already subscribed and wish to cancel? Enter the email address your hospital used to subscribe. Cancelling will deactivate all Admin, Manager, Doctor &amp; Nurse accounts for that hospital. This action cannot be undone.</p>
     <div style="max-width:380px;margin:0 auto 1.2rem;">
       <input type="email" id="cancelEmail" placeholder="yourname@gmail.com"
         style="width:100%;padding:0.78rem 0.9rem;border:1.5px solid #fca5a5;border-radius:8px;font-size:0.97rem;font-family:'DM Sans',sans-serif;margin-bottom:0.5rem;">
@@ -502,13 +510,20 @@
 
 <!-- SUCCESS MODAL -->
 <div class="overlay" id="successOverlay">
-  <div class="modal">
+  <div class="modal" style="max-width:480px;">
     <div style="font-size:3rem;margin-bottom:0.8rem;">✅</div>
     <h3 style="color:var(--green);">Subscription Successful!</h3>
-    <p>Thank you for subscribing to Pharos HIS.<br><br>
-      Your <strong>Manager &amp; Employee credentials</strong> (IDs and passwords) have been generated and sent to <strong id="confirmedEmail"></strong>. Please check your inbox.</p>
+    <p>Thank you for subscribing to Pharos HIS — EHR module.<br>
+      Login credentials for <strong id="confirmedHospital"></strong> have been generated. They've also been sent to <strong id="confirmedEmail"></strong>.</p>
+
+    <div id="credsBox" style="text-align:left;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:10px;padding:1rem;margin-top:1rem;font-size:0.85rem;font-family:'DM Sans',monospace;line-height:1.6;"></div>
+
+    <p style="font-size:0.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:0.6rem 0.8rem;margin-top:0.8rem;">
+      ⚠️ Save these now — for security they won't be shown again. Please change all passwords after first login.
+    </p>
+
     <div class="modal-btns">
-      <button class="btn-close-success" onclick="closeSuccessModal()">Go to Home</button>
+      <button class="btn-close-success" onclick="closeSuccessModal()">Go to EHR Sign In</button>
     </div>
   </div>
 </div>
@@ -518,7 +533,7 @@
   <div class="modal">
     <div style="font-size:3rem;margin-bottom:0.8rem;">🗑️</div>
     <h3 style="color:#b91c1c;">Cancel Subscription?</h3>
-    <p>Are you sure you want to cancel the subscription for <strong id="cancelEmailConfirm"></strong>? Your access will be removed at the end of the current billing period.</p>
+    <p>Are you sure you want to cancel the EHR subscription for <strong id="cancelEmailConfirm"></strong>? All Admin, Manager, Doctor &amp; Nurse accounts for this hospital will be deactivated immediately. This cannot be undone.</p>
     <div class="modal-btns">
       <button class="btn-keep" onclick="closeCancelModal()">Keep Subscription</button>
       <button class="btn-confirm-cancel" onclick="confirmCancel()">Yes, Cancel</button>
@@ -530,8 +545,8 @@
 <div class="overlay" id="cancelSuccessOverlay">
   <div class="modal">
     <div style="font-size:3rem;margin-bottom:0.8rem;">📋</div>
-    <h3 style="color:#b91c1c;">Cancellation Requested</h3>
-    <p>Your cancellation request has been submitted. You will receive a confirmation email at <strong id="cancelConfirmedEmail"></strong>. Access remains active until the end of your billing period.</p>
+    <h3 style="color:#b91c1c;">Cancellation Confirmed</h3>
+    <p id="cancelSuccessMsg">Your EHR subscription has been cancelled. All staff accounts for <strong id="cancelConfirmedEmail"></strong> have been deactivated.</p>
     <div class="modal-btns">
       <button class="btn-close-success" onclick="closeCancelSuccessModal()">Close</button>
     </div>
@@ -653,6 +668,14 @@
 
     let valid = true;
 
+    // Hospital name (always required)
+    const hospitalName = document.getElementById('hospitalNameInput').value.trim();
+    if (!hospitalName) {
+      showErr('hospitalNameErr', true); valid = false;
+    } else {
+      showErr('hospitalNameErr', false);
+    }
+
     // Email validation (always required)
     const email = document.getElementById('emailInput').value.trim();
     if (!isValidEmail(email)) {
@@ -696,34 +719,58 @@
 
     if (!valid) return;
 
-    // All valid → POST to subscribe.php
+    const submitErr = document.getElementById('submitErr');
+    submitErr.style.display = 'none';
+
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
     const originalText = btn.textContent;
     btn.textContent = 'Processing…';
 
     try {
-      const res = await fetch('../Back End/subscribe.php', {
+      const res = await fetch('../Back End/subscribe_ehr.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email,
           plan: selectedPlan.plan,
           payment_method: selectedPayment,
+          hospital_name: hospitalName,
         }),
       });
       const data = await res.json();
 
       if (!data.success) {
-        alert('⚠ ' + (data.message || 'Subscription failed. Please try again.'));
+        submitErr.textContent = '⚠ ' + (data.message || 'Subscription failed. Please try again.');
+        submitErr.style.display = 'block';
         return;
       }
 
+      // Populate success modal
+      document.getElementById('confirmedHospital').textContent = data.hospital || hospitalName;
       document.getElementById('confirmedEmail').textContent = email;
+
+      const a = data.accounts || {};
+      const rolesOrder = [
+        ['admin',   '🛡️ Admin'],
+        ['manager', '📊 Manager'],
+        ['doctor',  '🩺 Doctor'],
+        ['nurse',   '💉 Nurse'],
+      ];
+      const credsBox = document.getElementById('credsBox');
+      credsBox.innerHTML = rolesOrder.map(([key, label]) => {
+        const acct = a[key];
+        if (!acct) return '';
+        return `<div style="margin-bottom:0.6rem;"><strong>${label}</strong><br>
+          Username: <code>${acct.username}</code><br>
+          Password: <code>${acct.password}</code></div>`;
+      }).join('');
+
       document.getElementById('successOverlay').classList.add('show');
 
     } catch (err) {
-      alert('⚠ Network error — could not reach the server. Please check your connection and try again.');
+      submitErr.textContent = '⚠ Network error — could not reach the server. Please check your connection and try again.';
+      submitErr.style.display = 'block';
     } finally {
       btn.disabled = false;
       btn.textContent = originalText;
@@ -741,7 +788,7 @@
   // ─── Modals ───────────────────────────────────────────────────
   function closeSuccessModal() {
     document.getElementById('successOverlay').classList.remove('show');
-    window.location.href = 'index.html';
+    window.location.href = 'Home_Page.html#ehr-login';
   }
 
   function openCancelModal() {
@@ -758,12 +805,39 @@
     document.getElementById('cancelOverlay').classList.remove('show');
   }
 
-  function confirmCancel() {
+  async function confirmCancel() {
     const email = document.getElementById('cancelEmail').value.trim();
-    document.getElementById('cancelConfirmedEmail').textContent = email;
-    document.getElementById('cancelOverlay').classList.remove('show');
-    document.getElementById('cancelSuccessOverlay').classList.add('show');
-    // In real app: POST to cancel_subscription.php
+    const overlay = document.getElementById('cancelOverlay');
+    const btn = overlay.querySelector('.btn-confirm-cancel');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Cancelling…';
+
+    try {
+      const res = await fetch('../Back End/cancel_subscription_ehr.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        alert('⚠ ' + (data.message || 'Could not cancel subscription.'));
+        return;
+      }
+
+      document.getElementById('cancelConfirmedEmail').textContent = data.hospital || email;
+      document.getElementById('cancelSuccessMsg').textContent = data.message ||
+        `Your EHR subscription has been cancelled. All staff accounts for ${data.hospital || email} have been deactivated.`;
+      overlay.classList.remove('show');
+      document.getElementById('cancelSuccessOverlay').classList.add('show');
+
+    } catch (err) {
+      alert('⚠ Network error — could not reach the server. Please check your connection and try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   }
 
   function closeCancelSuccessModal() {

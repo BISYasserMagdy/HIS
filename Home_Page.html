@@ -547,6 +547,18 @@
       color: #ef4444; font-size: 0.85rem; padding: 0.7rem 1rem; border-radius: 10px;
       margin-bottom: 1.2rem;
     }
+    .ehr-new-user-section {
+      margin-top: 1.2rem; padding-top: 1.2rem; border-top: 1px solid #e2e8f0; text-align: center;
+    }
+    .ehr-new-user-section p { color: #64748b; margin: 0 0 0.7rem; font-size: 0.9rem; }
+    .ehr-subscribe-btn {
+      display: inline-block; width: 100%; padding: 0.7rem 0.9rem;
+      border: 2px solid var(--teal); border-radius: 10px;
+      color: var(--teal); font-weight: 700; font-size: 0.95rem;
+      text-decoration: none; font-family: 'Outfit', sans-serif;
+      transition: background 0.2s, color 0.2s;
+    }
+    .ehr-subscribe-btn:hover { background: var(--teal); color: #0a1628; }
 
     /* ══════════════════════════════════════════
        ADMIN LOGIN MODAL
@@ -567,12 +579,12 @@
       box-shadow: 0 24px 70px rgba(0,0,0,0.3); position: relative;
       animation: fadeUp 0.35s ease both;
       transition: background 0.4s, border-color 0.4s;
+      overflow: hidden;
     }
     /* Gold accent strip at top to distinguish from EHR modal */
     .admin-login-card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
       background: linear-gradient(90deg, #c9a84c, #f0c040);
-      border-radius: 22px 22px 0 0;
     }
     .admin-login-close {
       position: absolute; top: 1rem; right: 1rem;
@@ -630,7 +642,15 @@
           <input type="password" id="ehrPassword" autocomplete="current-password" required>
         </div>
         <button type="submit" class="ehr-login-btn" id="ehrLoginBtn">Sign In</button>
+        <div style="text-align:center;margin-top:0.7rem;">
+          <a href="#" onclick="closeEhrLogin();openForgotPassword(event);" style="font-size:0.85rem;color:#0d9488;text-decoration:none;font-weight:600;">Forgot Password?</a>
+        </div>
       </form>
+
+      <div class="ehr-new-user-section">
+        <p>New hospital? Subscribe now to get your Admin, Manager, Doctor &amp; Nurse credentials.</p>
+        <a href="Subscription_EHR.html" class="ehr-subscribe-btn">Subscribe Now</a>
+      </div>
     </div>
   </div>
 
@@ -899,6 +919,12 @@
       ehrOverlay.classList.remove('open');
     }
 
+    // TODO: full password-reset flow (step 2) — placeholder for now.
+    function openForgotPassword(e) {
+      if (e) e.preventDefault();
+      alert('Password reset is coming soon. Please contact your hospital admin to reset your password for now.');
+    }
+
     // Auto-open EHR sign-in modal when arriving via #ehr-login (e.g. after subscribing)
     if (window.location.hash === '#ehr-login') {
       openEhrLogin();
@@ -922,15 +948,33 @@
       ehrBtn.disabled = true;
       ehrBtn.textContent = 'Signing in…';
 
+      // Safety net: never let the button get stuck on "Signing in…" —
+      // abort and reset after 10s if the server never responds.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+
       try {
         const res = await fetch(EHR_API + '?action=login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include', // required so the PHP session cookie is set/sent
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username, password }),
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
 
-        const data = await res.json();
+        const rawText = await res.text();
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (parseErr) {
+          console.error('EHR login: non-JSON response from server:', rawText);
+          ehrError.textContent = 'Server returned an unexpected response (check PHP error log / console for details).';
+          ehrError.style.display = 'block';
+          ehrBtn.disabled = false;
+          ehrBtn.textContent = 'Sign In';
+          return;
+        }
 
         if (data.success) {
           localStorage.setItem('ehr_user', JSON.stringify({
@@ -940,13 +984,18 @@
           ehrBtn.textContent = 'Success — redirecting…';
           window.location.href = 'EHR_Page.html';
         } else {
+          console.warn('EHR login failed:', data);
           ehrError.textContent = data.message || 'Invalid username or password.';
           ehrError.style.display = 'block';
           ehrBtn.disabled = false;
           ehrBtn.textContent = 'Sign In';
         }
       } catch (err) {
-        ehrError.textContent = 'Connection error — please try again.';
+        clearTimeout(timeout);
+        console.error('EHR login: network/abort error:', err);
+        ehrError.textContent = (err.name === 'AbortError')
+          ? 'Request timed out — please check that XAMPP (Apache & MySQL) is running and try again.'
+          : 'Connection error — please try again.';
         ehrError.style.display = 'block';
         ehrBtn.disabled = false;
         ehrBtn.textContent = 'Sign In';

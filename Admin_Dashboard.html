@@ -287,7 +287,34 @@
       </div>
       <div class="field">
         <label>Specialty <span style="color:#94a3b8; font-weight:400;">(optional)</span></label>
-        <input type="text" id="newSpecialty" placeholder="e.g. Cardiology, ICU, Pediatrics" autocomplete="off">
+        <select id="newSpecialty">
+          <option value="">— None —</option>
+          <option value="General Medicine">General Medicine</option>
+          <option value="Internal Medicine">Internal Medicine</option>
+          <option value="Pediatrics">Pediatrics</option>
+          <option value="Obstetrics &amp; Gynecology">Obstetrics &amp; Gynecology</option>
+          <option value="Cardiology">Cardiology</option>
+          <option value="Neurology">Neurology</option>
+          <option value="Nephrology">Nephrology</option>
+          <option value="Pulmonology">Pulmonology</option>
+          <option value="Gastroenterology">Gastroenterology</option>
+          <option value="Endocrinology">Endocrinology</option>
+          <option value="Oncology">Oncology</option>
+          <option value="Orthopedics">Orthopedics</option>
+          <option value="Dermatology">Dermatology</option>
+          <option value="Psychiatry">Psychiatry</option>
+          <option value="Radiology">Radiology</option>
+          <option value="Anesthesiology">Anesthesiology</option>
+          <option value="Emergency Medicine">Emergency Medicine</option>
+          <option value="ICU / Critical Care">ICU / Critical Care</option>
+          <option value="Surgery — General">Surgery — General</option>
+          <option value="Ophthalmology">Ophthalmology</option>
+          <option value="ENT (Otolaryngology)">ENT (Otolaryngology)</option>
+          <option value="Urology">Urology</option>
+          <option value="Other">Other (type below)</option>
+        </select>
+        <input type="text" id="newSpecialtyOther" placeholder="Enter specialty" autocomplete="off"
+               style="display:none; margin-top:0.5rem;">
       </div>
       <div class="field">
         <label>Email</label>
@@ -319,6 +346,49 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- EDIT SPECIALTY MODAL -->
+<div class="modal-overlay" id="specialtyModalOverlay">
+  <div class="modal" style="max-width:420px;">
+    <h3>Set Specialty</h3>
+    <p class="sub" id="specialtyModalSub">Choose the category that best describes this staff member's specialty.</p>
+    <div class="field">
+      <label>Specialty</label>
+      <select id="editSpecialtySelect">
+        <option value="">— None —</option>
+        <option value="General Medicine">General Medicine</option>
+        <option value="Internal Medicine">Internal Medicine</option>
+        <option value="Pediatrics">Pediatrics</option>
+        <option value="Obstetrics &amp; Gynecology">Obstetrics &amp; Gynecology</option>
+        <option value="Cardiology">Cardiology</option>
+        <option value="Neurology">Neurology</option>
+        <option value="Nephrology">Nephrology</option>
+        <option value="Pulmonology">Pulmonology</option>
+        <option value="Gastroenterology">Gastroenterology</option>
+        <option value="Endocrinology">Endocrinology</option>
+        <option value="Oncology">Oncology</option>
+        <option value="Orthopedics">Orthopedics</option>
+        <option value="Dermatology">Dermatology</option>
+        <option value="Psychiatry">Psychiatry</option>
+        <option value="Radiology">Radiology</option>
+        <option value="Anesthesiology">Anesthesiology</option>
+        <option value="Emergency Medicine">Emergency Medicine</option>
+        <option value="ICU / Critical Care">ICU / Critical Care</option>
+        <option value="Surgery — General">Surgery — General</option>
+        <option value="Ophthalmology">Ophthalmology</option>
+        <option value="ENT (Otolaryngology)">ENT (Otolaryngology)</option>
+        <option value="Urology">Urology</option>
+        <option value="Other">Other (type below)</option>
+      </select>
+      <input type="text" id="editSpecialtyOther" placeholder="Enter specialty" autocomplete="off"
+             style="display:none; margin-top:0.5rem;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeSpecialtyModal()">Cancel</button>
+      <button class="btn-submit" id="specialtySaveBtn">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- SUPERVISED PATIENTS MODAL -->
 <div class="modal-overlay" id="patientsModalOverlay">
@@ -549,6 +619,7 @@ function formatDate(s) {
 function openAddModal() {
   document.getElementById('addStaffForm').reset();
   document.getElementById('addModalError').style.display = 'none';
+  document.getElementById('newSpecialtyOther').style.display = 'none';
   document.getElementById('addModalOverlay').classList.add('open');
 }
 function closeAddModal() {
@@ -557,18 +628,26 @@ function closeAddModal() {
 document.getElementById('addModalOverlay').addEventListener('click', e => {
   if (e.target.id === 'addModalOverlay') closeAddModal();
 });
+document.getElementById('newSpecialty').addEventListener('change', e => {
+  document.getElementById('newSpecialtyOther').style.display = (e.target.value === 'Other') ? 'block' : 'none';
+});
 
 document.getElementById('addStaffForm').addEventListener('submit', async e => {
   e.preventDefault();
   const errEl = document.getElementById('addModalError');
   errEl.style.display = 'none';
 
+  const specialtySelect = document.getElementById('newSpecialty').value;
+  const specialty = (specialtySelect === 'Other')
+    ? document.getElementById('newSpecialtyOther').value.trim()
+    : specialtySelect;
+
   const body = {
     role:      document.getElementById('newRole').value,
     full_name: document.getElementById('newFullName').value.trim(),
     username:  document.getElementById('newUsername').value.trim(),
     email:     document.getElementById('newEmail').value.trim(),
-    specialty: document.getElementById('newSpecialty').value.trim(),
+    specialty: specialty,
     password:  document.getElementById('newPassword').value,
   };
 
@@ -626,17 +705,60 @@ document.getElementById('confirmActionBtn').addEventListener('click', async () =
 });
 
 // ─── EDIT SPECIALTY ─────────────────────────────────────────────────────
-async function editSpecialty(id, current) {
-  const value = prompt('Specialty (e.g. Cardiology, ICU, Pediatrics):', current || '');
-  if (value === null) return; // cancelled
-  const res = await api({ action: 'update_user' }, 'POST', { id, specialty: value.trim() });
-  if (res.success) {
-    showToast('✅ Specialty updated.');
-    await loadStaff();
+const SPECIALTY_OPTIONS = Array.from(document.querySelectorAll('#editSpecialtySelect option')).map(o => o.value);
+let pendingSpecialtyId = null;
+
+function editSpecialty(id, current) {
+  pendingSpecialtyId = id;
+  const select = document.getElementById('editSpecialtySelect');
+  const other  = document.getElementById('editSpecialtyOther');
+  if (current && SPECIALTY_OPTIONS.includes(current)) {
+    select.value = current;
+    other.style.display = 'none';
+    other.value = '';
+  } else if (current) {
+    select.value = 'Other';
+    other.style.display = 'block';
+    other.value = current;
   } else {
-    showToast('⚠ ' + (res.message || 'Could not update specialty.'), false);
+    select.value = '';
+    other.style.display = 'none';
+    other.value = '';
   }
+  document.getElementById('specialtyModalOverlay').classList.add('open');
 }
+function closeSpecialtyModal() {
+  document.getElementById('specialtyModalOverlay').classList.remove('open');
+  pendingSpecialtyId = null;
+}
+document.getElementById('specialtyModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'specialtyModalOverlay') closeSpecialtyModal();
+});
+document.getElementById('editSpecialtySelect').addEventListener('change', e => {
+  document.getElementById('editSpecialtyOther').style.display = (e.target.value === 'Other') ? 'block' : 'none';
+});
+document.getElementById('specialtySaveBtn').addEventListener('click', async () => {
+  if (!pendingSpecialtyId) return;
+  const select = document.getElementById('editSpecialtySelect').value;
+  const specialty = (select === 'Other')
+    ? document.getElementById('editSpecialtyOther').value.trim()
+    : select;
+
+  const btn = document.getElementById('specialtySaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await api({ action: 'update_user' }, 'POST', { id: pendingSpecialtyId, specialty });
+    if (res.success) {
+      showToast('✅ Specialty updated.');
+      closeSpecialtyModal();
+      await loadStaff();
+    } else {
+      showToast('⚠ ' + (res.message || 'Could not update specialty.'), false);
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
 
 
 async function reactivateUser(id) {
