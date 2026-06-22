@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard | Pharos HIS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f0f6ff;
     --surface: #ffffff;
-    --primary: #1a73e8;
-    --primary-dark: #0b3c7a;
-    --primary-light: #e8f0fe;
-    --accent: #00b4a6;
-    --accent2: #f59e0b;
+    --primary: #123a66;
+    --primary-dark: #0a2240;
+    --primary-light: #eaf1fb;
+    --accent: #c9a84c;
+    --accent2: #2bb8a8;
     --text: #1f2937;
     --muted: #5b6b7b;
     --border: #dbe4f0;
@@ -22,7 +22,7 @@
     --success: #10b981;
   }
   *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; font-family: 'DM Sans', Arial, sans-serif; background: var(--bg); color: var(--text); }
+  body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--text); }
 
   /* HEADER */
   header {
@@ -30,7 +30,7 @@
     color: #fff; padding: 1.5rem 2rem;
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
   }
-  .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
+  .logo { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
   nav { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
   nav a {
     color: #fff; text-decoration: none; font-weight: 600; font-size: 0.9rem;
@@ -40,7 +40,7 @@
   .lang-btn {
     background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
     color: #fff; padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.85rem;
-    font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
   }
 
   /* HERO */
@@ -54,7 +54,7 @@
     margin-bottom: 0.75rem; letter-spacing: 0.03em;
   }
   .hero h2 {
-    font-family: 'Sora', sans-serif; font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-family: 'Fraunces', serif; font-size: clamp(1.6rem, 4vw, 2.4rem);
     margin: 0 0 0.5rem; color: var(--primary-dark);
   }
   .hero p { color: var(--muted); margin: 0; font-size: 0.98rem; }
@@ -107,19 +107,19 @@
   .staff-top { display: flex; align-items: center; gap: 0.8rem; }
   .staff-avatar {
     width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; font-family: 'Sora', sans-serif; font-weight: 700;
+    justify-content: center; font-family: 'Fraunces', serif; font-weight: 700;
     font-size: 1.05rem; flex-shrink: 0; color: #fff;
   }
-  .staff-avatar.doctor { background: linear-gradient(135deg, #3b82f6, #1e3a8a); }
+  .staff-avatar.doctor { background: linear-gradient(135deg, #3b82f6, #0a2240); }
   .staff-avatar.nurse  { background: linear-gradient(135deg, #10b981, #065f46); }
-  .staff-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; margin: 0; }
+  .staff-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1rem; margin: 0; }
   .staff-username { color: var(--muted); font-size: 0.8rem; margin: 0; }
   .staff-meta { font-size: 0.82rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
   .role-badge {
     display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.68rem;
     font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; width: fit-content;
   }
-  .role-badge.doctor { background: #dbeafe; color: #1e3a8a; }
+  .role-badge.doctor { background: #dbeafe; color: #0a2240; }
   .role-badge.nurse  { background: #d1fae5; color: #065f46; }
   .status-badge {
     display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.68rem;
@@ -153,7 +153,7 @@
     background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 440px;
     max-height: 90vh; overflow-y: auto;
   }
-  .modal h3 { font-family: 'Sora', sans-serif; margin: 0 0 0.3rem; color: var(--primary-dark); }
+  .modal h3 { font-family: 'Fraunces', serif; margin: 0 0 0.3rem; color: var(--primary-dark); }
   .modal .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 1.25rem; }
   .field { margin-bottom: 1rem; }
   .field label { display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text); }
@@ -178,6 +178,37 @@
     display: none; background: #fee2e2; color: #991b1b; padding: 0.6rem 1rem;
     border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;
   }
+
+  /* RESET PASSWORD MODAL */
+  .cred-box {
+    background: #f0fdf4; border: 1.5px solid #6ee7b7; border-radius: 10px;
+    padding: 1rem 1.2rem; margin: 1rem 0; display: none;
+  }
+  .cred-box.show { display: block; }
+  .cred-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; margin-bottom: 0.5rem;
+  }
+  .cred-row:last-child { margin-bottom: 0; }
+  .cred-label { font-size: 0.75rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: .04em; min-width: 80px; }
+  .cred-val { font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #0a2240; flex: 1; word-break: break-all; }
+  .copy-inline-btn {
+    border: 1px solid #6ee7b7; background: #fff; border-radius: 6px;
+    padding: 3px 9px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+    color: #065f46; transition: all .15s; flex-shrink: 0;
+  }
+  .copy-inline-btn:hover { background: #d1fae5; }
+  .cred-warning {
+    font-size: 0.75rem; color: #92400e; background: #fef3c7;
+    border-radius: 8px; padding: 0.5rem 0.8rem; margin-top: 0.75rem;
+  }
+  /* RESEND MODAL */
+  .resend-preview {
+    background: #f8fbff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.9rem 1.1rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+  .resend-preview strong { color: var(--text); }
 
   /* TOAST */
   #toast {
@@ -232,6 +263,9 @@
         <button class="filter-tab" data-filter="doctor" onclick="setFilter('doctor')">🩺 Doctors</button>
         <button class="filter-tab" data-filter="nurse" onclick="setFilter('nurse')">💉 Nurses</button>
         <button class="filter-tab" data-filter="logs" onclick="setFilter('logs')">📜 Audit Logs</button>
+        <button class="filter-tab" data-filter="requests" onclick="setFilter('requests')" id="reqTabBtn">
+          🔔 Pending Requests<span id="reqBadge" style="display:none;margin-left:6px;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.7rem;font-weight:700;">0</span>
+        </button>
       </div>
     </div>
     <button class="btn-primary" onclick="openAddModal()">+ Add Staff Member</button>
@@ -260,6 +294,16 @@
         <tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">Loading…</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- PENDING PROFILE CHANGE REQUESTS PANEL -->
+  <div id="requestsPanel" style="display:none;">
+    <div id="requestsList"></div>
+    <div id="requestsEmpty" style="display:none; text-align:center; padding:3rem 1rem; color:var(--muted);">
+      <div style="font-size:2.5rem; margin-bottom:0.5rem;">✅</div>
+      <div style="font-weight:700; margin-bottom:0.25rem;">No pending requests</div>
+      <div style="font-size:0.85rem;">Profile change requests from staff will appear here.</div>
+    </div>
   </div>
 </main>
 
@@ -402,6 +446,30 @@
   </div>
 </div>
 
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="resetModalOverlay">
+  <div class="modal" style="max-width:440px;">
+    <h3>🔑 Reset Password</h3>
+    <p class="sub" id="resetModalSub">Reset password for this staff member.</p>
+    <div class="modal-error" id="resetModalError"></div>
+    <div id="resetFormSection">
+      <div class="resend-preview" id="resetPreview"></div>
+    </div>
+    <div id="resetSuccessBox" class="cred-box" style="display:none;">
+      <div style="font-size:0.88rem; color:#065f46; font-weight:600;">
+        ✅ A new password has been generated and emailed directly to the staff member.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeResetModal()">Cancel</button>
+      <button class="btn-submit" id="resetConfirmBtn" onclick="doResetPassword()">Reset &amp; Email New Password</button>
+    </div>
+  </div>
+</div>
+
+
+
 <script>
 const API = '../Back End/EHR_System.php';
 
@@ -472,6 +540,12 @@ async function init() {
       const addBtn = document.querySelector('.toolbar button.btn-primary');
       if (addBtn) addBtn.style.display = 'none';
       document.querySelector('.hero-badge').textContent = '👁️ VIEW-ONLY ACCESS';
+      // Approving requests is admin-only — hide tab for managers
+      const reqTab = document.getElementById('reqTabBtn');
+      if (reqTab) reqTab.style.display = 'none';
+    } else {
+      // Show pending request count badge for admins on page load
+      checkPendingRequestsBadge();
     }
 
   } catch (e) {
@@ -501,20 +575,29 @@ function setFilter(f) {
   const grid  = document.getElementById('staffGrid');
   const empty = document.getElementById('emptyState');
   const logs  = document.getElementById('auditLogPanel');
+  const reqs  = document.getElementById('requestsPanel');
   const addBtn = document.querySelector('.toolbar button.btn-primary');
 
+  // Hide everything first
+  grid.style.display = 'none';
+  empty.style.display = 'none';
+  logs.style.display = 'none';
+  if (reqs) reqs.style.display = 'none';
+  if (addBtn) addBtn.style.display = 'none';
+
   if (f === 'logs') {
-    grid.style.display = 'none';
-    empty.style.display = 'none';
-    if (addBtn) addBtn.style.display = 'none';
     logs.style.display = 'block';
     loadAuditLog();
     return;
   }
-
+  if (f === 'requests') {
+    if (reqs) reqs.style.display = 'block';
+    loadPendingRequests();
+    return;
+  }
+  // staff tabs
   grid.style.display = '';
-  if (addBtn) addBtn.style.display = '';
-  logs.style.display = 'none';
+  if (addBtn && !window._dashReadOnly) addBtn.style.display = '';
   renderStaff();
 }
 
@@ -601,6 +684,16 @@ function renderStaff() {
                </button>`
           )}
         </div>
+        ${window._dashReadOnly ? '' : `
+        <div class="staff-actions" style="margin-top:0.25rem;">
+          <button class="icon-btn" onclick="copyUsername('${escapeHtml(u.username)}', this)" title="Copy username to clipboard">
+            📋 Copy Username
+          </button>
+          <button class="icon-btn" onclick="openResetModal(${u.id}, '${escapeHtml((u.full_name || u.username).replace(/'/g, "\\'"))}', '${escapeHtml(u.username)}', '${escapeHtml(u.email)}')">
+            🔑 Reset Password
+          </button>
+
+        </div>`}
       </div>`;
   }).join('');
 }
@@ -818,6 +911,181 @@ function closePatientsModal() {
 document.getElementById('patientsModalOverlay').addEventListener('click', e => {
   if (e.target.id === 'patientsModalOverlay') closePatientsModal();
 });
+
+
+// ─── COPY USERNAME ──────────────────────────────────────────────────────
+function copyUsername(username, btn) {
+  copyText(username, btn);
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    btn.style.background = '#d1fae5';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+    }, 1800);
+  }).catch(() => {
+    showToast('⚠ Could not copy to clipboard.', false);
+  });
+}
+
+// ─── RESET PASSWORD MODAL ───────────────────────────────────────────────
+let pendingResetId = null;
+let pendingResetUsername = null;
+
+function openResetModal(id, name, username, email) {
+  pendingResetId = id;
+  pendingResetUsername = username;
+  document.getElementById('resetModalSub').textContent = `Reset password for ${name} (@${username})`;
+  document.getElementById('resetModalError').style.display = 'none';
+  document.getElementById('resetSuccessBox').style.display = 'none';
+  document.getElementById('resetFormSection').style.display = 'block';
+  document.getElementById('resetPreview').innerHTML =
+    `A new random password will be generated for <strong>${escapeHtml(name)}</strong> and emailed directly to:<br><br>` +
+    `<strong style="color:var(--primary);">\u2709\ufe0f ${escapeHtml(email)}</strong><br><br>` +
+    `<span style="color:var(--danger); font-size:0.8rem;">The old password will stop working immediately.</span>`;
+  const btn = document.getElementById('resetConfirmBtn');
+  btn.style.display = '';
+  btn.disabled = false;
+  btn.textContent = 'Reset & Email New Password';
+  btn.style.background = '';
+  document.getElementById('resetModalOverlay').classList.add('open');
+}
+
+function closeResetModal() {
+  document.getElementById('resetModalOverlay').classList.remove('open');
+  pendingResetId = null;
+  pendingResetUsername = null;
+}
+
+document.getElementById('resetModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'resetModalOverlay') closeResetModal();
+});
+
+function generatePassword(length = 12) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+  let pass = '';
+  const arr = new Uint32Array(length);
+  crypto.getRandomValues(arr);
+  for (let i = 0; i < length; i++) pass += chars[arr[i] % chars.length];
+  return pass;
+}
+
+async function doResetPassword() {
+  if (!pendingResetId) return;
+  const btn = document.getElementById('resetConfirmBtn');
+  const errEl = document.getElementById('resetModalError');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const newPassword = generatePassword();
+
+  try {
+    const res = await api({ action: 'reset_password' }, 'POST', { id: pendingResetId, new_password: newPassword });
+    if (res.success) {
+      document.getElementById('resetFormSection').style.display = 'none';
+      document.getElementById('resetSuccessBox').style.display = 'block';
+      btn.style.display = 'none';
+      document.querySelector('#resetModalOverlay .btn-secondary').textContent = 'Close';
+      showToast('✅ Password reset and emailed to staff member.');
+    } else {
+      errEl.textContent = res.message || 'Could not reset password.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Reset & Email New Password';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Reset & Email New Password';
+  }
+}
+
+
+// ─── PENDING PROFILE CHANGE REQUESTS ───────────────────────────────────────
+async function checkPendingRequestsBadge() {
+  try {
+    const res = await api({ action: 'get_profile_requests', status: 'pending' });
+    const badge = document.getElementById('reqBadge');
+    if (!badge) return;
+    const count = (res.success && res.data) ? res.data.length : 0;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-block' : 'none';
+  } catch (e) {}
+}
+
+async function loadPendingRequests() {
+  const list  = document.getElementById('requestsList');
+  const empty = document.getElementById('requestsEmpty');
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;">Loading...</div>';
+  empty.style.display = 'none';
+  try {
+    const res = await api({ action: 'get_profile_requests', status: 'pending' });
+    if (!res.success) {
+      list.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">' + escapeHtml(res.message || 'Failed to load.') + '</div>';
+      return;
+    }
+    if (!res.data || !res.data.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      checkPendingRequestsBadge();
+      return;
+    }
+    const roleIcons = { doctor: '&#x1F9BA;', nurse: '&#x1F489;', manager: '&#x1F454;' };
+    list.innerHTML = res.data.map(r => {
+      const fieldLabel = r.field === 'full_name' ? 'Full Name' : 'Specialty';
+      const date = new Date(r.created_at).toLocaleString();
+      const icon = roleIcons[r.role] || '&#x1F464;';
+      return `
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:0.9rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700;font-size:0.95rem;color:var(--text);">${icon} ${escapeHtml(r.full_name || r.username)}
+                <span style="font-weight:500;font-size:0.78rem;color:var(--muted);text-transform:capitalize;">(${escapeHtml(r.role)})</span>
+              </div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">@${escapeHtml(r.username)} &middot; ${escapeHtml(date)}</div>
+            </div>
+            <span style="background:#fef3c7;color:#92400e;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;">Pending</span>
+          </div>
+          <div style="margin-top:0.9rem;background:#f8fafc;border-radius:8px;padding:0.7rem 0.9rem;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.04em;">${escapeHtml(fieldLabel)} Change</div>
+            <div style="font-size:0.88rem;margin-top:4px;">
+              <span style="color:#94a3b8;text-decoration:line-through;">${escapeHtml(r.old_value || '(empty)')}</span>
+              <span style="margin:0 8px;color:var(--muted);">&rarr;</span>
+              <span style="color:#123a66;font-weight:700;">${escapeHtml(r.new_value)}</span>
+            </div>
+          </div>
+          <div style="margin-top:0.9rem;display:flex;gap:0.6rem;justify-content:flex-end;">
+            <button class="icon-btn danger" onclick="reviewRequest(${r.id}, 'reject')">&#x2715; Reject</button>
+            <button class="icon-btn" style="color:#fff;background:#16a34a;border-color:#16a34a;" onclick="reviewRequest(${r.id}, 'approve')">&#x2713; Approve</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">Network error.</div>';
+  }
+}
+
+async function reviewRequest(id, decision) {
+  try {
+    const res = await api({ action: 'review_profile_request' }, 'POST', { id, decision });
+    if (res.success) {
+      showToast(decision === 'approve' ? '✅ Request approved — profile updated.' : '🚫 Request rejected.');
+      loadPendingRequests();
+      checkPendingRequestsBadge();
+      if (decision === 'approve') loadStaff();
+    } else {
+      showToast('⚠ ' + (res.message || 'Could not process.'), false);
+    }
+  } catch (e) {
+    showToast('⚠ Network error.', false);
+  }
+}
 
 init();
 </script>

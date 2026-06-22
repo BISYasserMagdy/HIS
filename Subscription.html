@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pharos HIS – Subscription</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="payment_validators.js" defer></script>
   <style>
     :root {
-      --blue: #1d4ed8;
-      --blue-dark: #1e3a8a;
-      --blue-light: #eff6ff;
+      --blue: #123a66;
+      --blue-dark: #0a2240;
+      --blue-light: #eaf1fb;
       --green: #059669;
       --green-light: #d1fae5;
       --gray-bg: #f1f5f9;
@@ -21,7 +22,7 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       background: var(--gray-bg);
       color: var(--text);
       min-height: 100vh;
@@ -41,7 +42,7 @@
     .container { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1rem; }
 
     .page-title { text-align: center; margin-bottom: 2rem; }
-    .page-title h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--text); margin-bottom: 0.4rem; }
+    .page-title h2 { font-family: 'Fraunces', serif; font-size: 2.2rem; color: var(--text); margin-bottom: 0.4rem; }
     .page-title p { color: var(--gray-text); font-size: 1rem; }
 
     .currency-note {
@@ -92,7 +93,7 @@
     .select-btn {
       width: 100%; padding: 0.85rem; background: var(--blue); color: #fff;
       border: none; border-radius: 10px; font-size: 0.97rem; font-weight: 600;
-      cursor: pointer; transition: background 0.2s ease; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: background 0.2s ease; font-family: 'Inter', sans-serif;
     }
     .select-btn:hover { background: var(--blue-dark); }
 
@@ -146,7 +147,7 @@
     .form-group input {
       width: 100%; padding: 0.78rem 0.9rem;
       border: 1.5px solid var(--gray-border); border-radius: 8px;
-      font-size: 0.97rem; font-family: 'DM Sans', sans-serif;
+      font-size: 0.97rem; font-family: 'Inter', sans-serif;
       transition: border-color 0.2s; background: #fff;
     }
     .form-group input:focus { outline: none; border-color: var(--blue); }
@@ -189,7 +190,7 @@
       width: 100%; padding: 1rem; background: var(--green); color: #fff;
       border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700;
       cursor: pointer; transition: background 0.2s; margin-top: 1.2rem;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
     .submit-btn:hover { background: #047857; }
     .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; }
@@ -206,7 +207,7 @@
       padding: 0.8rem 2rem; background: #fff; color: #b91c1c;
       border: 2px solid #b91c1c; border-radius: 10px;
       font-size: 0.97rem; font-weight: 700; cursor: pointer;
-      transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
     }
     .cancel-btn:hover { background: #b91c1c; color: #fff; }
 
@@ -233,7 +234,7 @@
     .modal-btns button {
       padding: 0.75rem 1.6rem; border-radius: 8px; border: none;
       font-size: 0.97rem; font-weight: 700; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; transition: opacity 0.15s;
+      font-family: 'Inter', sans-serif; transition: opacity 0.15s;
     }
     .modal-btns button:hover { opacity: 0.85; }
     .btn-confirm-cancel { background: #b91c1c; color: #fff; }
@@ -493,7 +494,7 @@
     <p>Already subscribed and wish to cancel? Enter your registered email to cancel your active subscription. This action cannot be undone.</p>
     <div style="max-width:380px;margin:0 auto 1.2rem;">
       <input type="email" id="cancelEmail" placeholder="yourname@gmail.com"
-        style="width:100%;padding:0.78rem 0.9rem;border:1.5px solid #fca5a5;border-radius:8px;font-size:0.97rem;font-family:'DM Sans',sans-serif;margin-bottom:0.5rem;">
+        style="width:100%;padding:0.78rem 0.9rem;border:1.5px solid #fca5a5;border-radius:8px;font-size:0.97rem;font-family:'Inter',sans-serif;margin-bottom:0.5rem;">
       <div class="field-error" id="cancelEmailErr" style="display:none;">Please enter a valid email address.</div>
     </div>
     <button class="cancel-btn" onclick="openCancelModal()">Request Cancellation</button>
@@ -505,9 +506,26 @@
   <div class="modal">
     <div style="font-size:3rem;margin-bottom:0.8rem;">✅</div>
     <h3 style="color:var(--green);">Subscription Successful!</h3>
-    <p>Thank you for subscribing to Pharos HIS.<br><br>
-      Your <strong>Manager &amp; Employee credentials</strong> (IDs and passwords) have been generated and sent to <strong id="confirmedEmail"></strong>. Please check your inbox.</p>
+    <p>Your <strong>Pharos HIS Pharmacy</strong> subscription is now active. Here are your login credentials:</p>
+    
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:1.2rem;margin:1.2rem 0;font-size:0.92rem;">
+      <h4 style="margin-top:0;color:#0369a1;">👤 Manager Account</h4>
+      <p style="margin:0.3rem 0;"><strong>ID:</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;" id="credManagerId">—</code></p>
+      <p style="margin:0.3rem 0;"><strong>Password:</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;" id="credManagerPass">—</code></p>
+    </div>
+
+    <div style="background:#fef3c3;border:1px solid #fde047;border-radius:10px;padding:1.2rem;margin:1.2rem 0;font-size:0.92rem;">
+      <h4 style="margin-top:0;color:#92400e;">👨‍💼 Employee Account</h4>
+      <p style="margin:0.3rem 0;"><strong>ID:</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;" id="credEmployeeId">—</code></p>
+      <p style="margin:0.3rem 0;"><strong>Password:</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;" id="credEmployeePass">—</code></p>
+    </div>
+
+    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:1rem;margin:1rem 0;font-size:0.85rem;color:#991b1b;">
+      ⚠️ <strong>Save these credentials now.</strong> Change your passwords immediately after first login. Access is active at <strong id="confirmedEmail">—</strong>
+    </div>
+
     <div class="modal-btns">
+      <button class="btn-close-success" onclick="copyAllCredentials()">📋 Copy All</button>
       <button class="btn-close-success" onclick="closeSuccessModal()">Go to Home</button>
     </div>
   </div>
@@ -614,22 +632,36 @@
 
   function validateLuhn() {
     const raw = document.getElementById('cardNumber').value.replace(/\s/g, '');
-    if (raw.length < 13) return;
+    if (raw.length < 13) {
+      document.getElementById('cardValidBadge').classList.remove('show');
+      document.getElementById('cardInvalidBadge').classList.remove('show');
+      return;
+    }
 
     document.getElementById('luhnChecking').classList.add('show');
     document.getElementById('cardValidBadge').classList.remove('show');
     document.getElementById('cardInvalidBadge').classList.remove('show');
 
-    // Small delay to simulate async check
+    // Simulate async validation
     setTimeout(() => {
       document.getElementById('luhnChecking').classList.remove('show');
-      if (luhnCheck(raw)) {
+
+      // Use the advanced validator
+      const result = validateCard(raw);
+      const cardInput = document.getElementById('cardNumber');
+
+      if (result.valid) {
         document.getElementById('cardValidBadge').classList.add('show');
+        document.getElementById('cardValidBadge').textContent = result.message;
+        cardInput.classList.remove('error');
+        cardInput.style.borderColor = result.color || 'var(--green)';
       } else {
         document.getElementById('cardInvalidBadge').classList.add('show');
-        document.getElementById('cardNumber').classList.add('error');
+        document.getElementById('cardInvalidBadge').textContent = result.message;
+        cardInput.classList.add('error');
+        cardInput.style.borderColor = '#ef4444';
       }
-    }, 700);
+    }, 500);
   }
 
   // ─── Validation helpers ───────────────────────────────────────
@@ -664,33 +696,68 @@
     if (selectedPayment === 'visa') {
       // Cardholder name
       if (isEmpty('cardName')) { showErr('cardNameErr', true); valid = false; } else { showErr('cardNameErr', false); }
-      // Card number + Luhn
+      
+      // Card number + Luhn + Visa-specific checks
       const rawCard = document.getElementById('cardNumber').value.replace(/\s/g, '');
-      if (rawCard.length < 13 || !luhnCheck(rawCard)) {
-        showErr('cardNumberErr', true); valid = false;
+      const cardValidation = validateCard(rawCard);
+      if (!cardValidation.valid) {
+        showErr('cardNumberErr', true);
+        document.getElementById('cardNumberErr').textContent = cardValidation.message;
+        valid = false;
         document.getElementById('cardInvalidBadge').classList.add('show');
         document.getElementById('cardValidBadge').classList.remove('show');
       } else {
         showErr('cardNumberErr', false);
       }
+      
       // Expiry
       const expiry = document.getElementById('cardExpiry').value;
-      if (!/^\d{2}\/\d{2}$/.test(expiry) || !isExpiryValid(expiry)) {
-        showErr('cardExpiryErr', true); valid = false;
-      } else { showErr('cardExpiryErr', false); }
+      const expiryValidation = validateExpiry(expiry);
+      if (!expiryValidation.valid) {
+        showErr('cardExpiryErr', true);
+        document.getElementById('cardExpiryErr').textContent = expiryValidation.message;
+        valid = false;
+      } else { 
+        showErr('cardExpiryErr', false);
+      }
+      
       // CVV
-      if (isEmpty('cardCVV') || document.getElementById('cardCVV').value.length < 3) {
-        showErr('cardCVVErr', true); valid = false;
-      } else { showErr('cardCVVErr', false); }
+      const cvv = document.getElementById('cardCVV').value;
+      const cvvValidation = validateCVV(cvv);
+      if (!cvvValidation.valid) {
+        showErr('cardCVVErr', true);
+        document.getElementById('cardCVVErr').textContent = cvvValidation.message;
+        valid = false;
+      } else { 
+        showErr('cardCVVErr', false);
+      }
 
     } else if (selectedPayment === 'instapay') {
       if (isEmpty('instapayName')) { showErr('instapayNameErr', true); valid = false; } else { showErr('instapayNameErr', false); }
-      if (!isValidEgyptPhone(document.getElementById('instapayPhone').value)) { showErr('instapayPhoneErr', true); valid = false; } else { showErr('instapayPhoneErr', false); }
+      
+      const instapayPhoneValidation = validatePhone(document.getElementById('instapayPhone').value, 'EG');
+      if (!instapayPhoneValidation.valid) { 
+        showErr('instapayPhoneErr', true);
+        document.getElementById('instapayPhoneErr').textContent = instapayPhoneValidation.message;
+        valid = false; 
+      } else { 
+        showErr('instapayPhoneErr', false);
+      }
+      
       if (isEmpty('instapayRef')) { showErr('instapayRefErr', true); valid = false; } else { showErr('instapayRefErr', false); }
 
     } else if (selectedPayment === 'orange') {
       if (isEmpty('orangeName')) { showErr('orangeNameErr', true); valid = false; } else { showErr('orangeNameErr', false); }
-      if (!isValidEgyptPhone(document.getElementById('orangePhone').value)) { showErr('orangePhoneErr', true); valid = false; } else { showErr('orangePhoneErr', false); }
+      
+      const orangePhoneValidation = validatePhone(document.getElementById('orangePhone').value, 'EG');
+      if (!orangePhoneValidation.valid) { 
+        showErr('orangePhoneErr', true);
+        document.getElementById('orangePhoneErr').textContent = orangePhoneValidation.message;
+        valid = false; 
+      } else { 
+        showErr('orangePhoneErr', false);
+      }
+      
       if (isEmpty('orangeRef')) { showErr('orangeRefErr', true); valid = false; } else { showErr('orangeRefErr', false); }
     }
 
@@ -719,7 +786,12 @@
         return;
       }
 
+      // ── Display credentials in modal ──
       document.getElementById('confirmedEmail').textContent = email;
+      document.getElementById('credManagerId').textContent = data.manager_id || 'N/A';
+      document.getElementById('credManagerPass').textContent = data.manager_pass_dev || 'Check email';
+      document.getElementById('credEmployeeId').textContent = data.employee_id || 'N/A';
+      document.getElementById('credEmployeePass').textContent = data.employee_pass_dev || 'Check email';
       document.getElementById('successOverlay').classList.add('show');
 
     } catch (err) {
@@ -760,10 +832,45 @@
 
   function confirmCancel() {
     const email = document.getElementById('cancelEmail').value.trim();
-    document.getElementById('cancelConfirmedEmail').textContent = email;
-    document.getElementById('cancelOverlay').classList.remove('show');
-    document.getElementById('cancelSuccessOverlay').classList.add('show');
-    // In real app: POST to cancel_subscription.php
+    const btn = document.querySelector('[onclick="confirmCancel()"]');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    fetch('../Back End/cancel_subscription.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('cancelConfirmedEmail').textContent = email;
+        document.getElementById('cancelOverlay').classList.remove('show');
+        document.getElementById('cancelSuccessOverlay').classList.add('show');
+      } else {
+        alert('⚠ ' + (data.message || 'Cancellation failed. Please try again.'));
+      }
+    })
+    .catch(err => {
+      alert('⚠ Network error: ' + err.message);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = 'Yes, Cancel';
+    });
+  }
+
+  function copyAllCredentials() {
+    const text = `Manager ID: ${document.getElementById('credManagerId').textContent}
+Manager Password: ${document.getElementById('credManagerPass').textContent}
+Employee ID: ${document.getElementById('credEmployeeId').textContent}
+Employee Password: ${document.getElementById('credEmployeePass').textContent}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+      alert('✅ Credentials copied to clipboard!');
+    }).catch(() => {
+      alert('Could not copy to clipboard. Please copy manually.');
+    });
   }
 
   function closeCancelSuccessModal() {

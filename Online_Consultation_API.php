@@ -322,6 +322,7 @@ function handleLogin(array $b): void {
         return;
     }
 
+    // ── 1. Try healthcare_appointments.doctors (original / demo accounts) ─────
     $conn = getConn(APT_DB);
     $stmt = $conn->prepare("SELECT * FROM doctors WHERE doctor_id = ? LIMIT 1");
     $stmt->bind_param('s', $did);
@@ -330,29 +331,74 @@ function handleLogin(array $b): void {
     $stmt->close();
     $conn->close();
 
-    if (!$row) {
+    if ($row && password_verify($pwd, $row['password_hash'])) {
+        $token = base64_encode($row['doctor_id'] . ':' . time() . ':' . bin2hex(random_bytes(8)));
+        echo json_encode([
+            'success' => true,
+            'token'   => $token,
+            'doctor'  => [
+                'doctor_id'    => $row['doctor_id'],
+                'full_name'    => $row['full_name'],
+                'specialty'    => $row['specialty'],
+                'email'        => $row['email'],
+                'avatar_color' => $row['avatar_color'],
+            ]
+        ]);
+        return;
+    }
+
+    // ── 2. Fallback: try healthcare_ehr.users (EHR subscription accounts) ────
+    // The username from the subscription email (e.g. doctor_med_alex_FDA7)
+    // is entered as the Doctor ID in this portal.
+    $ehr  = getConn(EHR_DB);
+    $stmt = $ehr->prepare(
+        "SELECT * FROM users WHERE username = ? AND role IN ('doctor','admin') AND is_active = 1 LIMIT 1"
+    );
+    $stmt->bind_param('s', $did);
+    $stmt->execute();
+    $ehrRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $ehr->close();
+
+    if (!$ehrRow || !password_verify($pwd, $ehrRow['password_hash'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid Doctor ID or password.']);
         return;
     }
 
-    if (!password_verify($pwd, $row['password_hash'])) {
-        echo json_encode(['success' => false, 'message' => 'Invalid Doctor ID or password.']);
-        return;
-    }
+    // Auto-create a matching doctors row so future appointments can be linked
+    $conn2    = getConn(APT_DB);
+    $fullName = $ehrRow['full_name'] ?: $ehrRow['username'];
+    $specialty = $ehrRow['specialty'];
+    $email     = $ehrRow['email'];
+    $colors    = ['#0b3c7a', '#1a73e8', '#00b4a6', '#7c3aed', '#c2410c'];
+    $color     = $colors[array_rand($colors)];
+    $unusable  = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
 
-    // Issue a simple session token stored client-side (stateless for this demo).
-    // In production, use PHP sessions or JWT with proper expiry.
-    $token = base64_encode($row['doctor_id'] . ':' . time() . ':' . bin2hex(random_bytes(8)));
+    $ins = $conn2->prepare(
+        "INSERT IGNORE INTO doctors (doctor_id, password_hash, full_name, specialty, email, avatar_color)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    );
+    $ins->bind_param('ssssss', $did, $unusable, $fullName, $specialty, $email, $color);
+    $ins->execute();
+    $ins->close();
 
+    $stmt2 = $conn2->prepare("SELECT avatar_color FROM doctors WHERE doctor_id = ? LIMIT 1");
+    $stmt2->bind_param('s', $did);
+    $stmt2->execute();
+    $finalRow = $stmt2->get_result()->fetch_assoc();
+    $stmt2->close();
+    $conn2->close();
+
+    $token = base64_encode($did . ':' . time() . ':' . bin2hex(random_bytes(8)));
     echo json_encode([
         'success' => true,
         'token'   => $token,
         'doctor'  => [
-            'doctor_id'    => $row['doctor_id'],
-            'full_name'    => $row['full_name'],
-            'specialty'    => $row['specialty'],
-            'email'        => $row['email'],
-            'avatar_color' => $row['avatar_color'],
+            'doctor_id'    => $did,
+            'full_name'    => $fullName,
+            'specialty'    => $specialty,
+            'email'        => $email,
+            'avatar_color' => $finalRow['avatar_color'] ?? $color,
         ]
     ]);
 }

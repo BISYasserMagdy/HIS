@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pharos HIS – ERP | Pharmacy ERP Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -12,7 +15,7 @@
     }
 
     body {
-      font-family: Segoe UI, Arial, sans-serif;
+      font-family: Inter, Arial, sans-serif;
       background: #f3f7fb;
       color: #1f2937;
     }
@@ -25,7 +28,7 @@
     }
 
     header {
-      background: #1d4ed8;
+      background: #123a66;
       color: #fff;
       padding: 1rem 2rem;
       display: flex;
@@ -81,7 +84,7 @@
 
     .lang-btn.active {
       background: #fff;
-      color: #1d4ed8;
+      color: #123a66;
     }
 
     .home-btn {
@@ -149,13 +152,13 @@
 
     .nav-item:hover {
       background: #eef5ff;
-      border-left-color: #1d4ed8;
+      border-left-color: #123a66;
     }
 
     .nav-item.active {
-      background: #dbeafe;
-      border-left-color: #1d4ed8;
-      color: #1d4ed8;
+      background: #eaf1fb;
+      border-left-color: #123a66;
+      color: #123a66;
     }
 
     .main-content {
@@ -190,7 +193,7 @@
       border-radius: 12px;
       padding: 1.5rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      border-top: 4px solid #1d4ed8;
+      border-top: 4px solid #123a66;
     }
 
     .stat-card h3 {
@@ -204,7 +207,7 @@
     .stat-card .value {
       font-size: 2rem;
       font-weight: 700;
-      color: #1d4ed8;
+      color: #123a66;
     }
 
     .stat-card .change {
@@ -222,7 +225,7 @@
     }
 
     .table-header {
-      background: #1d4ed8;
+      background: #123a66;
       color: #fff;
       padding: 1.5rem;
       font-size: 1.2rem;
@@ -270,7 +273,7 @@
     }
 
     .btn-primary:hover {
-      background: #1d4ed8;
+      background: #123a66;
     }
 
     .btn-secondary {
@@ -308,7 +311,7 @@
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: #1d4ed8;
+      color: #123a66;
     }
 
     input, textarea, select {
@@ -323,7 +326,7 @@
 
     input:focus, textarea:focus, select:focus {
       outline: none;
-      border-color: #1d4ed8;
+      border-color: #123a66;
       background-color: #f0f4ff;
     }
 
@@ -342,7 +345,7 @@
     }
 
     .card h2 {
-      color: #1d4ed8;
+      color: #123a66;
       margin-bottom: 1.5rem;
       font-size: 1.5rem;
     }
@@ -371,7 +374,7 @@
     }
 
     .status-pending {
-      background: #dbeafe;
+      background: #eaf1fb;
       color: #0c4a6e;
     }
 
@@ -433,7 +436,7 @@
     }
 
     .modal-header h2 {
-      color: #1d4ed8;
+      color: #123a66;
       margin: 0;
     }
 
@@ -500,14 +503,14 @@
       transition: all 0.25s ease;
     }
     .settings-nav-btn:hover {
-      border-color: #1d4ed8;
-      color: #1d4ed8;
+      border-color: #123a66;
+      color: #123a66;
       background: #eef5ff;
     }
     .settings-nav-btn.active {
-      background: #1d4ed8;
+      background: #123a66;
       color: #fff;
-      border-color: #1d4ed8;
+      border-color: #123a66;
     }
     .settings-nav-btn.danger {
       border-color: #fee2e2;
@@ -557,13 +560,13 @@
     .backup-zone p { color: #6b7280; margin-bottom: 1.5rem; font-size: 0.95rem; }
 
     .restore-zone {
-      border: 2px solid #dbeafe;
+      border: 2px solid #eaf1fb;
       border-radius: 12px;
       padding: 2rem;
       background: #eff6ff;
       margin-bottom: 1.5rem;
     }
-    .restore-zone h3 { color: #1e40af; margin-bottom: 0.5rem; }
+    .restore-zone h3 { color: #0a2240; margin-bottom: 0.5rem; }
     .restore-zone p { color: #6b7280; margin-bottom: 1.5rem; font-size: 0.95rem; }
 
     /* Factory reset modal */
@@ -923,7 +926,7 @@
           </div>
 
           <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-            <h3 style="color: #1d4ed8; margin-bottom: 1rem;">Monthly Summary</h3>
+            <h3 style="color: #123a66; margin-bottom: 1rem;">Monthly Summary</h3>
             <div class="dashboard-grid">
               <div>
                 <strong>Total Sales:</strong> <span id="summaryTotalSales">--</span>
@@ -940,7 +943,7 @@
             </div>
           </div>
 
-          <h3 style="color: #1d4ed8; margin-bottom: 1rem;">Available Reports</h3>
+          <h3 style="color: #123a66; margin-bottom: 1rem;">Available Reports</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items:start;">
             <div>
               <button class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size:0.9rem;" onclick="downloadReport('sales')">📊 Sales CSV</button>
@@ -965,14 +968,14 @@
           </div>
 
           <div style="margin-top: 1.5rem; background:#fff; padding:12px; border-radius:8px;">
-            <h4 style="margin:0 0 8px 0; color:#1d4ed8">Sales Trend (last 7 days)</h4>
+            <h4 style="margin:0 0 8px 0; color:#123a66">Sales Trend (last 7 days)</h4>
             <div style="height:220px;">
               <canvas id="trendChart"></canvas>
             </div>
           </div>
 
           <div style="margin-top: 1.5rem; background:#fff; padding:12px; border-radius:8px;">
-            <h4 style="margin:0 0 8px 0; color:#1d4ed8">Payment Methods Breakdown</h4>
+            <h4 style="margin:0 0 8px 0; color:#123a66">Payment Methods Breakdown</h4>
             <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
               <div style="width:220px;height:220px;flex-shrink:0;">
                 <canvas id="paymentPieChart"></canvas>
@@ -1017,7 +1020,7 @@
                 <label>Phone</label>
                 <input type="tel" value="+1 (555) 123-4567" placeholder="Phone Number">
               </div>
-              <h3 style="color: #1d4ed8; margin: 2rem 0 1rem;">Change Password</h3>
+              <h3 style="color: #123a66; margin: 2rem 0 1rem;">Change Password</h3>
               <div class="form-group">
                 <label>Current Password</label>
                 <input type="password" placeholder="Enter current password">
@@ -1067,7 +1070,7 @@
                 <label>Select Backup File (.sql)</label>
                 <input type="file" id="restoreFileInput" accept=".sql,.gz" style="border:2px dashed #bfdbfe; background:#eff6ff; padding:1rem;">
               </div>
-              <div id="restoreFileInfo" style="display:none; background:#dbeafe; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#1e40af;"></div>
+              <div id="restoreFileInfo" style="display:none; background:#eaf1fb; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.9rem; color:#0a2240;"></div>
               <button class="btn btn-primary" onclick="triggerRestore()" style="padding:0.75rem 2rem;">
                 🔄 Restore Database
               </button>
@@ -1386,7 +1389,7 @@
         <button class="close-btn" onclick="closeModal('viewSaleModal')">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;background:#f8faff;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:0.95rem;">
-        <div><span style="color:#6b7280;font-weight:600;">Invoice #</span><br><span id="invNumber" style="color:#1d4ed8;font-weight:700;font-size:1rem;"></span></div>
+        <div><span style="color:#6b7280;font-weight:600;">Invoice #</span><br><span id="invNumber" style="color:#123a66;font-weight:700;font-size:1rem;"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Date &amp; Time</span><br><span id="invDate"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Cashier</span><br><span id="invCashier"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Payment</span><br><span style="display:inline-block;padding:0.2rem 0.75rem;border-radius:999px;background:#dcfce7;color:#166534;font-weight:600;font-size:0.85rem;">Cash</span></div>
@@ -1394,7 +1397,7 @@
       <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:1.25rem;">
         <table style="width:100%;border-collapse:collapse;">
           <thead>
-            <tr style="background:#1d4ed8;color:#fff;">
+            <tr style="background:#123a66;color:#fff;">
               <th style="padding:0.65rem 1rem;text-align:left;font-size:0.88rem;">Item Name</th>
               <th style="padding:0.65rem 1rem;text-align:center;font-size:0.88rem;">Qty</th>
               <th style="padding:0.65rem 1rem;text-align:right;font-size:0.88rem;">Unit Price</th>
@@ -1406,7 +1409,7 @@
       </div>
       <div style="display:flex;justify-content:flex-end;align-items:center;gap:1rem;padding:0.25rem;">
         <span style="font-size:1rem;font-weight:600;color:#374151;">Total Amount:</span>
-        <span id="invTotal" style="font-size:1.4rem;font-weight:700;color:#1d4ed8;"></span>
+        <span id="invTotal" style="font-size:1.4rem;font-weight:700;color:#123a66;"></span>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:1.25rem;">
         <button class="btn btn-primary" onclick="closeModal('viewSaleModal')" style="min-width:120px;">Close</button>
@@ -1422,12 +1425,12 @@
         <button class="close-btn" onclick="closeModal('viewReturnModal')">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;background:#f8faff;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:0.95rem;">
-        <div><span style="color:#6b7280;font-weight:600;">Return #</span><br><span id="vrReturnId" style="color:#1d4ed8;font-weight:700;font-size:1rem;"></span></div>
+        <div><span style="color:#6b7280;font-weight:600;">Return #</span><br><span id="vrReturnId" style="color:#123a66;font-weight:700;font-size:1rem;"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Original Invoice</span><br><span id="vrInvoice"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Item</span><br><span id="vrItem"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Quantity</span><br><span id="vrQty"></span></div>
         <div><span style="color:#6b7280;font-weight:600;">Reason</span><br><span id="vrReason"></span></div>
-        <div><span style="color:#6b7280;font-weight:600;">Amount</span><br><span id="vrAmount" style="font-weight:700;color:#1d4ed8;font-size:1.1rem;"></span></div>
+        <div><span style="color:#6b7280;font-weight:600;">Amount</span><br><span id="vrAmount" style="font-weight:700;color:#123a66;font-size:1.1rem;"></span></div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0;">
         <div style="display:flex;gap:0.75rem;">
@@ -1487,7 +1490,7 @@
 
         <div style="display:flex;justify-content:flex-end;align-items:center;gap:1rem;margin-bottom:1.25rem;">
           <span style="font-weight:600;color:#374151;">Total:</span>
-          <span id="saleRunningTotal" style="font-size:1.2rem;font-weight:700;color:#1d4ed8;">$0.00</span>
+          <span id="saleRunningTotal" style="font-size:1.2rem;font-weight:700;color:#123a66;">$0.00</span>
         </div>
 
         <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
@@ -1701,7 +1704,7 @@
     function viewPurchase(poNumber) {
       const po = window._purchaseOrders[poNumber];
       if (!po) { alert('Purchase order not found: ' + poNumber); return; }
-      const statusColors = { Received: ['#dcfce7','#166534'], Pending: ['#dbeafe','#1e40af'], Cancelled: ['#fee2e2','#991b1b'] };
+      const statusColors = { Received: ['#dcfce7','#166534'], Pending: ['#eaf1fb','#0a2240'], Cancelled: ['#fee2e2','#991b1b'] };
       const [sbg, scolor] = statusColors[po.status] || ['#f3f4f6','#374151'];
       let total = 0;
       const rows = po.items.map(item => {
@@ -1717,7 +1720,7 @@
 
       document.getElementById('viewPurchaseContent').innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;background:#f8faff;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:0.95rem;">
-          <div><span style="color:#6b7280;font-weight:600;">PO Number</span><br><span style="color:#1d4ed8;font-weight:700;font-size:1rem;">${po.po}</span></div>
+          <div><span style="color:#6b7280;font-weight:600;">PO Number</span><br><span style="color:#123a66;font-weight:700;font-size:1rem;">${po.po}</span></div>
           <div><span style="color:#6b7280;font-weight:600;">Date</span><br><span>${po.date}</span></div>
           <div><span style="color:#6b7280;font-weight:600;">Supplier</span><br><span style="font-weight:600;">${po.supplier}</span></div>
           <div><span style="color:#6b7280;font-weight:600;">Status</span><br><span style="display:inline-block;padding:0.2rem 0.75rem;border-radius:999px;background:${sbg};color:${scolor};font-weight:600;font-size:0.85rem;">${po.status}</span></div>
@@ -1725,7 +1728,7 @@
         <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:1.25rem;">
           <table style="width:100%;border-collapse:collapse;">
             <thead>
-              <tr style="background:#1d4ed8;color:#fff;">
+              <tr style="background:#123a66;color:#fff;">
                 <th style="padding:0.65rem 1rem;text-align:left;font-size:0.88rem;">Item Name</th>
                 <th style="padding:0.65rem 1rem;text-align:center;font-size:0.88rem;">Qty</th>
                 <th style="padding:0.65rem 1rem;text-align:right;font-size:0.88rem;">Unit Price</th>
@@ -1737,7 +1740,7 @@
         </div>
         <div style="display:flex;justify-content:flex-end;align-items:center;gap:1rem;padding:0.25rem;">
           <span style="font-size:1rem;font-weight:600;color:#374151;">Total Amount:</span>
-          <span style="font-size:1.4rem;font-weight:700;color:#1d4ed8;">$${total.toFixed(2)}</span>
+          <span style="font-size:1.4rem;font-weight:700;color:#123a66;">$${total.toFixed(2)}</span>
         </div>
       `;
       showModal('viewPurchaseModal');
@@ -2267,8 +2270,8 @@
 
       const statusEl = document.getElementById('vrStatus');
       statusEl.textContent = r.status;
-      statusEl.style.background = r.status === 'Approved' ? '#dcfce7' : r.status === 'Rejected' ? '#fee2e2' : '#dbeafe';
-      statusEl.style.color      = r.status === 'Approved' ? '#166534' : r.status === 'Rejected' ? '#991b1b' : '#1e40af';
+      statusEl.style.background = r.status === 'Approved' ? '#dcfce7' : r.status === 'Rejected' ? '#fee2e2' : '#eaf1fb';
+      statusEl.style.color      = r.status === 'Approved' ? '#166534' : r.status === 'Rejected' ? '#991b1b' : '#0a2240';
 
       const isPending = r.status === 'Pending';
       document.getElementById('vrApproveBtn').style.display = isPending ? 'inline-flex' : 'none';
@@ -2619,12 +2622,12 @@
           <head>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; }
-              .header { background-color: #1d4ed8; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+              .header { background-color: #123a66; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
               h1 { margin: 0; font-size: 24px; }
               .timestamp { font-size: 12px; margin-top: 5px; }
               table { width: 100%; border-collapse: collapse; margin: 20px 0; }
               th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #1d4ed8; color: white; }
+              th { background-color: #123a66; color: white; }
               tr:nth-child(even) { background-color: #f9fafb; }
             </style>
           </head>
@@ -2709,7 +2712,7 @@
 
       const labels = Object.keys(paymentCounts);
       const values = Object.values(paymentCounts);
-      const colors = ['#1d4ed8','#10b981','#f59e0b','#6366f1','#ef4444'];
+      const colors = ['#123a66','#10b981','#f59e0b','#6366f1','#ef4444'];
       const ctx = document.getElementById('paymentPieChart');
       if (!ctx) return;
 
@@ -2771,13 +2774,13 @@
             datasets: [{
               label: 'Daily Sales',
               data: values,
-              borderColor: '#1d4ed8',
+              borderColor: '#123a66',
               backgroundColor: 'rgba(29,78,216,0.15)',
               fill: true,
               tension: 0.3,
               pointRadius: 6,
-              pointBackgroundColor: '#1d4ed8',
-              pointBorderColor: '#1d4ed8',
+              pointBackgroundColor: '#123a66',
+              pointBorderColor: '#123a66',
               pointBorderWidth: 2,
               spanGaps: true
             }]
@@ -3035,7 +3038,7 @@
           <td>${med.category}</td>
           <td>${med.quantity_in_stock}</td>
           <td>${expiryDate.toLocaleDateString('en-GB')}</td>
-          <td style="font-weight:700;color:${daysLeft<=7?'#dc2626':daysLeft<=14?'#d97706':'#1d4ed8'}">${daysLeft} days</td>
+          <td style="font-weight:700;color:${daysLeft<=7?'#dc2626':daysLeft<=14?'#d97706':'#123a66'}">${daysLeft} days</td>
           <td><span class="status-badge ${urgencyClass}">${urgencyLabel}</span></td>`;
         tbody.appendChild(row);
       });

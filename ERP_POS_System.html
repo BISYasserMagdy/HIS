@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Pharos HIS – POS | ERP POS System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * {
@@ -12,14 +15,14 @@
     }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Inter, Arial, sans-serif;
       background: #eef3fb;
       color: #102a43;
       min-height: 100vh;
     }
 
     header {
-      background: #1d4ed8;
+      background: #0a2240;
       color: #fff;
       padding: 18px 28px;
       display: flex;
@@ -143,7 +146,7 @@
     .checkout-btn {
       border: none;
       border-radius: 12px;
-      background: #2563eb;
+      background: #123a66;
       color: #fff;
       font-weight: 700;
       padding: 12px 16px;
@@ -152,7 +155,7 @@
 
     .product button:hover,
     .checkout-btn:hover {
-      background: #1d4ed8;
+      background: #0a2240;
     }
 
     .cart-summary {
@@ -202,7 +205,7 @@
       color: #102a43;
       background: #f8fafc;
     }
-    .search-bar input:focus { outline: none; border-color: #2563eb; background: #fff; }
+    .search-bar input:focus { outline: none; border-color: #123a66; background: #fff; }
     .search-bar .search-icon {
       position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
       color: #94a3b8; font-size: 1rem; pointer-events: none;
@@ -215,7 +218,7 @@
       width: 56px; padding: 6px 8px; border: 1px solid #cbd5e1;
       border-radius: 8px; text-align: center; font-size: 0.9rem; color: #102a43;
     }
-    .product-qty-row input[type=number]:focus { outline: none; border-color: #2563eb; }
+    .product-qty-row input[type=number]:focus { outline: none; border-color: #123a66; }
 
     .badge-out { background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-weight: 700; }
     .badge-low { background: #fef3c7; color: #92400e; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-weight: 700; }
@@ -395,7 +398,7 @@
           <div>
             <strong>${product.name}</strong>
             <span>Code: ${product.code} • $${product.unit_price.toFixed(2)} • <span class="${badgeClass}">${badgeLabel}</span></span>
-            ${inCart ? `<span style="color:#2563eb;font-size:0.85rem;margin-top:4px;display:block;">In cart: ${inCart}</span>` : ''}
+            ${inCart ? `<span style="color:#123a66;font-size:0.85rem;margin-top:4px;display:block;">In cart: ${inCart}</span>` : ''}
             <div class="product-qty-row">
               <input type="number" id="qty_${product.id}" value="1" min="1" max="${Math.max(1,stock)}" style="width:56px;">
               <button onclick="addToCartQty('${product.id}')" ${disabled}>Add to Cart</button>

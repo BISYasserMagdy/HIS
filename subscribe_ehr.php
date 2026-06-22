@@ -2,22 +2,21 @@
 /**
  * subscribe_ehr.php
  * ════════════════════════════════════════════════════════════════════════════
- * Handles new EHR subscription form submissions from Subscription.html.
+ * Handles new EHR subscription form submissions from Subscription_EHR.html.
  *
- * On a successful subscription, this script:
- *   1. Creates a new row in `hospitals` (name supplied by the subscriber;
- *      logo can be added later by the admin from EHR_System.php).
- *   2. Auto-generates FOUR staff accounts scoped to that hospital:
- *        - 1 Admin   (full access, manages staff for this hospital)
- *        - 1 Manager (view-only dashboards)
- *        - 1 Doctor  (sample clinical account)
- *        - 1 Nurse   (sample clinical account)
- *   3. Returns the generated usernames + plain-text passwords so the
- *      subscriber can log in immediately (dev/testing). In production,
- *      these should be emailed instead of returned in the response.
+ * On success:
+ *   - Creates hospital row in `healthcare_ehr`.`hospitals`
+ *   - Auto-generates 4 staff accounts (admin / manager / doctor / nurse)
+ *   - Sends a single HTML credentials email with all 4 accounts to the
+ *     subscriber via Gmail SMTP
  *
- * Place this file alongside EHR_System.php (Back End/ folder) — it shares
- * the same `healthcare_ehr` database and `users`/`hospitals` tables.
+ * For card payments (payment_method === 'visa'), this file re-verifies the
+ * Stripe PaymentIntent with Stripe's API before creating anything — it never
+ * trusts the browser's claim that a card was valid. See create_payment_intent.php
+ * and stripe_config.php for the rest of the payment flow.
+ *
+ * Requires: composer require phpmailer/phpmailer stripe/stripe-php
+ *           mailer_config.php and stripe_config.php (in the same Back End/ folder)
  * ════════════════════════════════════════════════════════════════════════════
  */
 
@@ -28,12 +27,14 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'healthcare_ehr');
+// ── PHPMailer bootstrap ───────────────────────────────────────────────────────
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/mailer_config.php';
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+use PHPMailer\PHPMailer\Exception as MailException;
+
+// ── Database ──────────────────────────────────────────────────────────────────
+$conn = new mysqli('localhost', 'root', '', 'healthcare_ehr');
 if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'DB connection failed: ' . $conn->connect_error]);
     exit;
@@ -41,35 +42,35 @@ if ($conn->connect_error) {
 $conn->set_charset('utf8mb4');
 $conn->query("SET SESSION sql_mode = ''");
 
-// ── Ensure tables exist (in case this endpoint is hit before EHR_System.php) ──
+// ── Ensure tables exist ───────────────────────────────────────────────────────
 $conn->query("CREATE TABLE IF NOT EXISTS `hospitals` (
-    id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name        VARCHAR(160) NOT NULL,
-    logo_url    VARCHAR(255) NULL,
-    email       VARCHAR(150) NULL,
-    plan        VARCHAR(50)  NULL,
-    status      ENUM('active','cancelled') NOT NULL DEFAULT 'active',
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name       VARCHAR(160) NOT NULL,
+    logo_url   VARCHAR(255) NULL,
+    email      VARCHAR(150) NULL,
+    plan       VARCHAR(50)  NULL,
+    status     ENUM('active','cancelled') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_hospital_name (name)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
 $conn->query("CREATE TABLE IF NOT EXISTS `users` (
-    id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    username      VARCHAR(80)     NOT NULL,
-    email         VARCHAR(120)    NOT NULL,
-    password_hash VARCHAR(255)    NOT NULL,
+    id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    username      VARCHAR(80)  NOT NULL,
+    email         VARCHAR(120) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     role          ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse',
-    hospital      VARCHAR(120)    NOT NULL DEFAULT 'General Hospital',
-    full_name     VARCHAR(160)    NULL,
-    specialty     VARCHAR(100)    NULL,
-    is_active     TINYINT(1)      NOT NULL DEFAULT 1,
-    created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    hospital      VARCHAR(120) NOT NULL DEFAULT 'General Hospital',
+    full_name     VARCHAR(160) NULL,
+    specialty     VARCHAR(100) NULL,
+    is_active     TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_username (username),
     UNIQUE KEY uq_email    (email),
-    KEY idx_role (role),
+    KEY idx_role     (role),
     KEY idx_hospital (hospital)
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
@@ -85,7 +86,7 @@ if (!$email || !$plan || !$paymentMethod || $hospitalName === '') {
     exit;
 }
 
-// ── Check for duplicate hospital name ─────────────────────────────────────────
+// ── Check for duplicate hospital ─────────────────────────────────────────────
 $check = $conn->prepare("SELECT id, status FROM hospitals WHERE name = ?");
 $check->bind_param('s', $hospitalName);
 $check->execute();
@@ -93,15 +94,55 @@ $existing = $check->get_result()->fetch_assoc();
 $check->close();
 
 if ($existing && $existing['status'] === 'active') {
-    echo json_encode(['success' => false, 'message' => 'A hospital with this name is already subscribed. Please choose a different name or contact support.']);
+    echo json_encode(['success' => false, 'message' => 'A hospital with this name is already subscribed.']);
     exit;
 }
 
-// ── Generate unique usernames & passwords ─────────────────────────────────────
+// ── Verify the card payment actually succeeded ────────────────────────────────
+// We never trust the browser's word that "the card was valid" — a fake card
+// number can pass a client-side Luhn check trivially (Luhn is just a checksum
+// format, not proof of a real, funded account). Here we ask Stripe directly,
+// using the PaymentIntent id the browser got back, whether the card network
+// actually approved a real charge for this exact plan/email/hospital.
+if ($paymentMethod === 'visa') {
+    $paymentIntentId = trim($data['payment_intent_id'] ?? '');
+    if ($paymentIntentId === '') {
+        echo json_encode(['success' => false, 'message' => 'Missing payment confirmation. Please try again.']);
+        exit;
+    }
+
+    require __DIR__ . '/stripe_config.php';
+    \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+
+    try {
+        $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+    } catch (\Stripe\Exception\ApiErrorException $e) {
+        echo json_encode(['success' => false, 'message' => 'Could not verify payment: ' . $e->getMessage()]);
+        exit;
+    }
+
+    $expectedAmount = EHR_PLAN_PRICES_CENTS[$plan] ?? null;
+
+    if ($intent->status !== 'succeeded') {
+        echo json_encode(['success' => false, 'message' => 'Payment was not completed (status: ' . $intent->status . ').']);
+        exit;
+    }
+    // Make sure this PaymentIntent was actually created for this plan/email/
+    // hospital — otherwise someone could reuse an unrelated successful
+    // payment id from a different, cheaper transaction.
+    if ($expectedAmount === null
+        || $intent->amount !== $expectedAmount
+        || ($intent->metadata->plan ?? null) !== $plan
+        || ($intent->metadata->email ?? null) !== $email
+        || ($intent->metadata->hospital_name ?? null) !== $hospitalName) {
+        echo json_encode(['success' => false, 'message' => 'Payment details do not match this subscription request.']);
+        exit;
+    }
+}
+
+// ── Generate credentials ──────────────────────────────────────────────────────
 function ehrSlug(string $name): string {
-    $slug = strtolower(trim($name));
-    $slug = preg_replace('/[^a-z0-9]+/', '_', $slug);
-    return trim($slug, '_');
+    return trim(preg_replace('/[^a-z0-9]+/', '_', strtolower($name)), '_');
 }
 function ehrGeneratePassword(int $length = 12): string {
     $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
@@ -111,50 +152,36 @@ function ehrGeneratePassword(int $length = 12): string {
     }
     return $pass;
 }
-// Append a short random suffix to keep usernames unique across hospitals
-// that might otherwise collide on slug (e.g. two "City Hospital"s).
+
 $suffix = strtoupper(substr(md5(uniqid((string)random_int(0, 999999), true)), 0, 4));
 $slug   = ehrSlug($hospitalName) ?: 'hospital';
 
-$accounts = [
-    'admin'   => [
-        'username'  => "admin_{$slug}_{$suffix}",
-        'full_name' => 'System Administrator',
-        'specialty' => null,
-    ],
-    'manager' => [
-        'username'  => "manager_{$slug}_{$suffix}",
-        'full_name' => 'Hospital Manager',
-        'specialty' => null,
-    ],
-    'doctor'  => [
-        'username'  => "doctor_{$slug}_{$suffix}",
-        'full_name' => 'Dr. New Doctor',
-        'specialty' => 'General Medicine',
-    ],
-    'nurse'   => [
-        'username'  => "nurse_{$slug}_{$suffix}",
-        'full_name' => 'New Nurse',
-        'specialty' => null,
-    ],
+$roleConfig = [
+    'admin'   => ['full_name' => 'System Administrator', 'specialty' => null,               'icon' => '🛡️'],
+    'manager' => ['full_name' => 'Hospital Manager',      'specialty' => null,               'icon' => '👔'],
+    'doctor'  => ['full_name' => 'Dr. New Doctor',        'specialty' => 'General Medicine', 'icon' => '🩺'],
+    'nurse'   => ['full_name' => 'New Nurse',             'specialty' => null,               'icon' => '💊'],
 ];
 
-// Generate a plain-text password per account (returned for dev/testing,
-// would be emailed in production) and its bcrypt hash for storage.
-foreach ($accounts as $role => &$acct) {
-    $acct['password']      = ehrGeneratePassword();
-    $acct['password_hash'] = password_hash($acct['password'], PASSWORD_BCRYPT, ['cost' => 12]);
-    // Each account gets its own contact email derived from the subscriber's
-    // email + role, so the `uq_email` constraint never collides across roles.
-    $emailParts = explode('@', $email, 2);
-    $acct['email'] = $emailParts[0] . '+' . $role . '_' . strtolower($suffix) . '@' . ($emailParts[1] ?? 'example.com');
-}
-unset($acct);
+$accounts = [];
+$emailParts = explode('@', $email, 2);
 
-// ── Persist everything in a transaction ────────────────────────────────────────
+foreach ($roleConfig as $role => $cfg) {
+    $plain = ehrGeneratePassword();
+    $accounts[$role] = [
+        'username'      => "{$role}_{$slug}_{$suffix}",
+        'email'         => $emailParts[0] . '+' . $role . '_' . strtolower($suffix) . '@' . ($emailParts[1] ?? 'example.com'),
+        'password'      => $plain,
+        'password_hash' => password_hash($plain, PASSWORD_BCRYPT, ['cost' => 12]),
+        'full_name'     => $cfg['full_name'],
+        'specialty'     => $cfg['specialty'],
+        'icon'          => $cfg['icon'],
+    ];
+}
+
+// ── Persist in a transaction ──────────────────────────────────────────────────
 $conn->begin_transaction();
 try {
-    // 1) Create or reactivate the hospital row
     if ($existing) {
         $upd = $conn->prepare("UPDATE hospitals SET email = ?, plan = ?, status = 'active' WHERE id = ?");
         $upd->bind_param('ssi', $email, $plan, $existing['id']);
@@ -167,21 +194,14 @@ try {
         $ins->close();
     }
 
-    // 2) Insert the four staff accounts
     $stmt = $conn->prepare(
         "INSERT INTO users (username, email, password_hash, role, full_name, specialty, hospital)
          VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
     foreach ($accounts as $role => $acct) {
-        $stmt->bind_param(
-            'sssssss',
-            $acct['username'],
-            $acct['email'],
-            $acct['password_hash'],
-            $role,
-            $acct['full_name'],
-            $acct['specialty'],
-            $hospitalName
+        $stmt->bind_param('sssssss',
+            $acct['username'], $acct['email'], $acct['password_hash'],
+            $role, $acct['full_name'], $acct['specialty'], $hospitalName
         );
         $stmt->execute();
     }
@@ -197,49 +217,106 @@ try {
 
 $conn->close();
 
-// ── Send credentials email (requires PHPMailer or similar) ───────────────────
-// Uncomment and configure once SMTP is set up. Sends all four sets of
-// credentials to the subscriber's real email address.
-/*
-require 'vendor/autoload.php';
-use PHPMailer\PHPMailer\PHPMailer;
+// ── Build and send credentials email ─────────────────────────────────────────
+$planLabel = strtoupper($plan);
 
-$mail = new PHPMailer(true);
-$mail->isSMTP();
-$mail->Host       = 'smtp.gmail.com';
-$mail->SMTPAuth   = true;
-$mail->Username   = 'your-sender@gmail.com';
-$mail->Password   = 'app-password';
-$mail->SMTPSecure = 'tls';
-$mail->Port       = 587;
-$mail->setFrom('your-sender@gmail.com', 'Pharos HIS');
-$mail->addAddress($email);
-$mail->Subject = 'Your Pharos HIS — EHR Login Credentials';
-$mail->isHTML(true);
-$mail->Body = "
-<h2>Welcome to Pharos HIS — {$hospitalName}</h2>
-<p>Your EHR subscription is now active. Here are your login credentials:</p>
-<h3>Admin Account</h3>
-<p>Username: <strong>{$accounts['admin']['username']}</strong><br>Password: <strong>{$accounts['admin']['password']}</strong></p>
-<h3>Manager Account</h3>
-<p>Username: <strong>{$accounts['manager']['username']}</strong><br>Password: <strong>{$accounts['manager']['password']}</strong></p>
-<h3>Doctor Account</h3>
-<p>Username: <strong>{$accounts['doctor']['username']}</strong><br>Password: <strong>{$accounts['doctor']['password']}</strong></p>
-<h3>Nurse Account</h3>
-<p>Username: <strong>{$accounts['nurse']['username']}</strong><br>Password: <strong>{$accounts['nurse']['password']}</strong></p>
-<p>Please change all passwords after first login. The Admin account can manage staff, branding (logo), and other settings from the EHR dashboard.</p>
+$credRow = fn(string $label, string $value) =>
+    "<tr>
+       <td style='padding:10px 14px;background:#f8fafc;border-radius:6px;font-weight:600;color:#374151;font-size:13px;width:38%;'>
+         {$label}
+       </td>
+       <td style='padding:10px 14px;font-family:monospace;font-size:14px;color:#1d4ed8;font-weight:700;'>
+         {$value}
+       </td>
+     </tr>";
+
+$accountSections = '';
+foreach ($accounts as $role => $acct) {
+    $roleName  = ucfirst($role);
+    $icon      = $acct['icon'];
+    $borderClr = match($role) {
+        'admin'   => '#7c3aed',
+        'manager' => '#1d4ed8',
+        'doctor'  => '#059669',
+        'nurse'   => '#db2777',
+        default   => '#6b7280',
+    };
+    $accountSections .= "
+    <div style='margin-bottom:22px;'>
+      <h3 style='margin:0 0 10px;color:#1e3a8a;font-size:15px;border-left:4px solid {$borderClr};padding-left:12px;'>
+        {$icon} {$roleName} Account
+      </h3>
+      <table width='100%' cellspacing='0' cellpadding='0' style='border-collapse:separate;border-spacing:0 5px;'>
+        " . $credRow('Username', $acct['username']) . "
+        " . $credRow('Password', $acct['password']) . "
+      </table>
+    </div>";
+}
+
+$emailBody = "
+<p style='margin:0 0 24px;color:#374151;font-size:16px;line-height:1.6;'>
+  Hello! 👋 Your <strong>Pharos HIS — EHR</strong> subscription for 
+  <strong style='color:#1d4ed8;'>{$hospitalName}</strong> is now 
+  <span style='color:#059669;font-weight:700;'>active</span>.
+  Here are the login credentials for all staff accounts:
+</p>
+
+<!-- Plan badge -->
+<div style='background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:14px 20px;margin-bottom:28px;text-align:center;'>
+  <span style='color:#1d4ed8;font-weight:700;font-size:15px;'>📦 Plan: {$planLabel} &nbsp;|&nbsp; 🏥 {$hospitalName}</span>
+</div>
+
+{$accountSections}
+
+<!-- Warning box -->
+<div style='background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;color:#92400e;font-size:13px;line-height:1.6;margin-top:8px;'>
+  ⚠️ <strong>Security reminder:</strong> Please change all passwords after your first login.
+  The <em>Admin</em> account can manage staff, branding, and settings from the EHR dashboard.
+  Do not share these credentials with anyone.
+</div>
 ";
-$mail->send();
-*/
 
-echo json_encode([
-    'success'  => true,
-    'message'  => 'Subscription successful for ' . $hospitalName . '. Credentials generated below.',
-    'hospital' => $hospitalName,
-    'accounts' => [
-        'admin'   => ['username' => $accounts['admin']['username'],   'password' => $accounts['admin']['password']],
-        'manager' => ['username' => $accounts['manager']['username'], 'password' => $accounts['manager']['password']],
-        'doctor'  => ['username' => $accounts['doctor']['username'],  'password' => $accounts['doctor']['password']],
-        'nurse'   => ['username' => $accounts['nurse']['username'],   'password' => $accounts['nurse']['password']],
-    ],
-]);
+$emailSent  = false;
+$emailError = '';
+
+try {
+    $mail = createMailer();
+    $mail->addAddress($email);
+    $mail->Subject = "🏥 Your Pharos HIS (EHR) Login Credentials — {$hospitalName}";
+    $mail->Body    = emailWrapper("EHR — Subscription Confirmed for {$hospitalName}", $emailBody);
+
+    // Plain-text fallback
+    $altText = "Your EHR subscription is active for {$hospitalName}.\n\n";
+    foreach ($accounts as $role => $acct) {
+        $altText .= strtoupper($role) . " Account\n"
+                  . "Username: {$acct['username']}\nPassword: {$acct['password']}\n\n";
+    }
+    $altText .= "Please change all passwords after first login.";
+    $mail->AltBody = $altText;
+
+    $mail->send();
+    $emailSent = true;
+} catch (MailException $e) {
+    $emailError = $e->getMessage();
+}
+
+// ── Response ──────────────────────────────────────────────────────────────────
+// Passwords are only echoed back as a FALLBACK when the email failed to send
+// — otherwise they only ever leave the server via the credentials email, so
+// they don't sit in browser dev tools / proxy / server logs unnecessarily.
+$responsePayload = [
+    'success'    => true,
+    'message'    => $emailSent
+        ? "Subscription successful for {$hospitalName}. Credentials sent to {$email}."
+        : "Subscription saved, but the credentials email failed ({$emailError}). Showing credentials below — please save them now and change passwords after first login.",
+    'email_sent' => $emailSent,
+    'hospital'   => $hospitalName,
+    'usernames'  => array_map(fn($a) => $a['username'], $accounts),
+];
+if (!$emailSent) {
+    $responsePayload['accounts'] = array_map(
+        fn($a) => ['username' => $a['username'], 'password' => $a['password']],
+        $accounts
+    );
+}
+echo json_encode($responsePayload);

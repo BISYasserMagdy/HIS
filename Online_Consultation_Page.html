@@ -4,17 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Online Consultations — Pharos HIS</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     /* ── Design tokens ─────────────────────────────────────────────────── */
     :root {
       --bg:            #f0f6ff;
       --surface:       #ffffff;
-      --primary:       #1a73e8;
-      --primary-dark:  #0b3c7a;
-      --primary-light: #e8f0fe;
-      --accent:        #00b4a6;
-      --accent2:       #f59e0b;
+      --primary:       #123a66;
+      --primary-dark:  #0a2240;
+      --primary-light: #eaf1fb;
+      --accent:        #c9a84c;
+      --accent2:       #2bb8a8;
       --danger:        #ef4444;
       --success:       #10b981;
       --text:          #1f2937;
@@ -28,7 +28,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'DM Sans', Arial, sans-serif;
+      font-family: 'Inter', Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -68,7 +68,7 @@
     }
 
     .brand-name {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 1.15rem;
       font-weight: 700;
       color: #fff;
@@ -161,7 +161,7 @@
     }
 
     .sidebar-title {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--primary-dark);
@@ -313,7 +313,7 @@
     }
 
     #empty-state h3 {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--primary-dark);
@@ -347,7 +347,7 @@
       border-radius: 50%;
       display: grid;
       place-items: center;
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 1.4rem;
       font-weight: 700;
       color: #fff;
@@ -355,7 +355,7 @@
     }
 
     .cons-name {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 1.25rem;
       font-weight: 700;
       color: var(--primary-dark);
@@ -406,7 +406,7 @@
     }
 
     .cons-section-header h3 {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 0.88rem;
       font-weight: 700;
       color: var(--primary-dark);
@@ -543,7 +543,7 @@
     }
 
     .vital-val {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 1.35rem;
       font-weight: 700;
       color: var(--primary-dark);
@@ -609,7 +609,7 @@
     }
 
     .lab-val {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 0.9rem;
       font-weight: 700;
       min-width: 70px;
@@ -723,7 +723,7 @@
     }
 
     .login-logo h2 {
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       font-size: 1.4rem;
       font-weight: 700;
       color: var(--primary-dark);
@@ -755,7 +755,7 @@
       border: 1.5px solid var(--border);
       border-radius: 10px;
       font-size: 0.95rem;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       color: var(--text);
       background: var(--bg);
       transition: border-color .2s, box-shadow .2s;
@@ -787,28 +787,13 @@
       border-radius: 10px;
       font-size: 1rem;
       font-weight: 700;
-      font-family: 'Sora', sans-serif;
+      font-family: 'Fraunces', serif;
       cursor: pointer;
       transition: background .2s, transform .15s;
     }
 
     #btn-login:hover { background: var(--primary-dark); transform: translateY(-1px); }
     #btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-
-    .login-demo-hint {
-      text-align: center;
-      margin-top: 1.2rem;
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-
-    .login-demo-hint code {
-      background: var(--bg);
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-family: monospace;
-      color: var(--primary-dark);
-    }
 
     .login-nav-buttons {
       display: flex;
@@ -826,7 +811,7 @@
       border-radius: 10px;
       font-size: 0.82rem;
       font-weight: 600;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       text-decoration: none;
       cursor: pointer;
       border: 1.5px solid var(--border);
@@ -882,6 +867,11 @@
 
     <div id="login-error"></div>
 
+    <!-- SSO hint for EHR subscribers -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:0.7rem 1rem;font-size:0.8rem;color:#1e40af;margin-bottom:1.1rem;line-height:1.6;">
+      💡 <strong>EHR subscriber?</strong> Log into the EHR System first as a <em>doctor</em> account, then come back here — you'll be signed in automatically.
+    </div>
+
     <div class="login-field">
       <label>Doctor ID</label>
       <input type="text" id="inp-doctor-id" placeholder="e.g. DR-001" autocomplete="username" />
@@ -894,9 +884,7 @@
 
     <button id="btn-login">Sign In</button>
 
-    <p class="login-demo-hint">
-      Demo — ID: <code>DR-001</code> &nbsp;|&nbsp; Password: <code>doctor123</code>
-    </p>
+
 
     <div class="login-nav-buttons">
       <a class="login-nav-btn" href="Home_Page.html">
@@ -1052,7 +1040,7 @@
 
   // Avatar colour palette
   const PALETTE = [
-    '#1a73e8','#0b3c7a','#00b4a6','#7c3aed','#db2777',
+    '#123a66','#0a2240','#c9a84c','#7c3aed','#db2777',
     '#ea580c','#059669','#0284c7','#9333ea','#16a34a'
   ];
 
@@ -1085,7 +1073,9 @@
   async function trySessionLogin() {
     try {
       const ehrUser = JSON.parse(localStorage.getItem('ehr_user') || 'null');
-      if (!ehrUser || ehrUser.role !== 'doctor') return;
+      // Accept 'doctor' or 'admin' roles (admin can also access consultations)
+      const validRoles = ['doctor', 'admin'];
+      if (!ehrUser || !validRoles.includes(ehrUser.role)) return;
 
       const res = await fetch(`${API}?action=session_login`, {
         method: 'POST',
@@ -1168,7 +1158,7 @@
     document.getElementById('hdr-spec').textContent = doctorInfo.specialty || '';
     const av = document.getElementById('hdr-avatar');
     av.textContent       = initials(doctorInfo.full_name);
-    av.style.background  = doctorInfo.avatar_color || '#1a73e8';
+    av.style.background  = doctorInfo.avatar_color || '#123a66';
 
     loadAppointments();
   }

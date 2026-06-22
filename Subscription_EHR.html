@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pharos HIS – EHR Subscription</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="payment_validators.js" defer></script>
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root {
-      --blue: #1d4ed8;
-      --blue-dark: #1e3a8a;
-      --blue-light: #eff6ff;
+      --blue: #123a66;
+      --blue-dark: #0a2240;
+      --blue-light: #eaf1fb;
       --green: #059669;
       --green-light: #d1fae5;
       --gray-bg: #f1f5f9;
@@ -21,7 +23,7 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       background: var(--gray-bg);
       color: var(--text);
       min-height: 100vh;
@@ -41,7 +43,7 @@
     .container { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1rem; }
 
     .page-title { text-align: center; margin-bottom: 2rem; }
-    .page-title h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--text); margin-bottom: 0.4rem; }
+    .page-title h2 { font-family: 'Fraunces', serif; font-size: 2.2rem; color: var(--text); margin-bottom: 0.4rem; }
     .page-title p { color: var(--gray-text); font-size: 1rem; }
 
     .currency-note {
@@ -92,7 +94,7 @@
     .select-btn {
       width: 100%; padding: 0.85rem; background: var(--blue); color: #fff;
       border: none; border-radius: 10px; font-size: 0.97rem; font-weight: 600;
-      cursor: pointer; transition: background 0.2s ease; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: background 0.2s ease; font-family: 'Inter', sans-serif;
     }
     .select-btn:hover { background: var(--blue-dark); }
 
@@ -146,7 +148,7 @@
     .form-group input {
       width: 100%; padding: 0.78rem 0.9rem;
       border: 1.5px solid var(--gray-border); border-radius: 8px;
-      font-size: 0.97rem; font-family: 'DM Sans', sans-serif;
+      font-size: 0.97rem; font-family: 'Inter', sans-serif;
       transition: border-color 0.2s; background: #fff;
     }
     .form-group input:focus { outline: none; border-color: var(--blue); }
@@ -177,6 +179,16 @@
     .luhn-checking { display: none; color: var(--blue); font-size: 0.85rem; margin-top: 0.3rem; }
     .luhn-checking.show { display: block; }
 
+    /* Stripe Elements mount points */
+    .stripe-element {
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--border, #cbd5e1);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .stripe-element.StripeElement--focus { border-color: var(--blue); }
+    .stripe-element.StripeElement--invalid { border-color: #ef4444; }
+
     /* email note */
     .email-note {
       background: #fef9c3; border: 1px solid #fde047;
@@ -189,7 +201,7 @@
       width: 100%; padding: 1rem; background: var(--green); color: #fff;
       border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700;
       cursor: pointer; transition: background 0.2s; margin-top: 1.2rem;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
     }
     .submit-btn:hover { background: #047857; }
     .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; }
@@ -206,7 +218,7 @@
       padding: 0.8rem 2rem; background: #fff; color: #b91c1c;
       border: 2px solid #b91c1c; border-radius: 10px;
       font-size: 0.97rem; font-weight: 700; cursor: pointer;
-      transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
     }
     .cancel-btn:hover { background: #b91c1c; color: #fff; }
 
@@ -233,7 +245,7 @@
     .modal-btns button {
       padding: 0.75rem 1.6rem; border-radius: 8px; border: none;
       font-size: 0.97rem; font-weight: 700; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; transition: opacity 0.15s;
+      font-family: 'Inter', sans-serif; transition: opacity 0.15s;
     }
     .modal-btns button:hover { opacity: 0.85; }
     .btn-confirm-cancel { background: #b91c1c; color: #fff; }
@@ -407,23 +419,22 @@
       </div>
       <div class="form-group">
         <label>Card Number <span class="req">*</span></label>
-        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNumber(this)" onblur="validateLuhn()">
-        <div class="luhn-checking" id="luhnChecking">🔍 Validating card number…</div>
-        <div class="card-valid-badge" id="cardValidBadge">✅ Card number is valid</div>
-        <div class="card-invalid-badge" id="cardInvalidBadge">❌ Invalid card number</div>
-        <div class="field-error" id="cardNumberErr">Please enter a valid card number.</div>
+        <!-- Stripe mounts a secure iframe here. Card data never touches our server. -->
+        <div id="cardNumberElement" class="stripe-element"></div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Expiry Date <span class="req">*</span></label>
-          <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)">
-          <div class="field-error" id="cardExpiryErr">Please enter a valid expiry date.</div>
+          <div id="cardExpiryElement" class="stripe-element"></div>
         </div>
         <div class="form-group">
           <label>CVV <span class="req">*</span></label>
-          <input type="password" id="cardCVV" placeholder="•••" maxlength="4">
-          <div class="field-error" id="cardCVVErr">Please enter the CVV.</div>
+          <div id="cardCvcElement" class="stripe-element"></div>
         </div>
+      </div>
+      <div class="field-error" id="cardErrors" style="display:none;"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:0.4rem;color:var(--gray-text);font-size:0.8rem;">
+        🔒 Payments are processed securely by Stripe. We never see or store your full card number.
       </div>
     </div>
 
@@ -501,7 +512,7 @@
     <p>Already subscribed and wish to cancel? Enter the email address your hospital used to subscribe. Cancelling will deactivate all Admin, Manager, Doctor &amp; Nurse accounts for that hospital. This action cannot be undone.</p>
     <div style="max-width:380px;margin:0 auto 1.2rem;">
       <input type="email" id="cancelEmail" placeholder="yourname@gmail.com"
-        style="width:100%;padding:0.78rem 0.9rem;border:1.5px solid #fca5a5;border-radius:8px;font-size:0.97rem;font-family:'DM Sans',sans-serif;margin-bottom:0.5rem;">
+        style="width:100%;padding:0.78rem 0.9rem;border:1.5px solid #fca5a5;border-radius:8px;font-size:0.97rem;font-family:'Inter',sans-serif;margin-bottom:0.5rem;">
       <div class="field-error" id="cancelEmailErr" style="display:none;">Please enter a valid email address.</div>
     </div>
     <button class="cancel-btn" onclick="openCancelModal()">Request Cancellation</button>
@@ -510,19 +521,21 @@
 
 <!-- SUCCESS MODAL -->
 <div class="overlay" id="successOverlay">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:540px;">
     <div style="font-size:3rem;margin-bottom:0.8rem;">✅</div>
-    <h3 style="color:var(--green);">Subscription Successful!</h3>
-    <p>Thank you for subscribing to Pharos HIS — EHR module.<br>
-      Login credentials for <strong id="confirmedHospital"></strong> have been generated. They've also been sent to <strong id="confirmedEmail"></strong>.</p>
+    <h3 style="color:var(--green);">EHR Subscription Activated!</h3>
+    <p>Your hospital <strong id="confirmedHospital">—</strong> is now set up in Pharos HIS. Here are your 4 starter accounts:</p>
 
-    <div id="credsBox" style="text-align:left;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:10px;padding:1rem;margin-top:1rem;font-size:0.85rem;font-family:'DM Sans',monospace;line-height:1.6;"></div>
+    <div id="credsBox" style="text-align:left;font-size:0.9rem;line-height:1.8;margin:1rem 0;">
+      <!-- Populated by JavaScript with admin, manager, doctor, nurse creds -->
+    </div>
 
-    <p style="font-size:0.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:0.6rem 0.8rem;margin-top:0.8rem;">
-      ⚠️ Save these now — for security they won't be shown again. Please change all passwords after first login.
+    <p style="font-size:0.8rem;color:#991b1b;background:#fee2e2;border-radius:8px;padding:0.8rem;margin:0.8rem 0;">
+      ⚠️ <strong>Save these credentials now.</strong> Change all passwords immediately after first login. For security, they won't be shown again.
     </p>
 
     <div class="modal-btns">
+      <button class="btn-close-success" onclick="copyAllEhrCredentials()" style="background:var(--blue);">📋 Copy All Credentials</button>
       <button class="btn-close-success" onclick="closeSuccessModal()">Go to EHR Sign In</button>
     </div>
   </div>
@@ -599,53 +612,38 @@
     }
   }
 
-  // ─── Card Formatting ──────────────────────────────────────────
-  function formatCardNumber(input) {
-    let v = input.value.replace(/\D/g, '').substring(0, 16);
-    input.value = v.replace(/(.{4})/g, '$1 ').trim();
-    // reset validation badges
-    document.getElementById('cardValidBadge').classList.remove('show');
-    document.getElementById('cardInvalidBadge').classList.remove('show');
-    document.getElementById('luhnChecking').classList.remove('show');
-  }
+  // ─── Stripe Elements (real card validation happens with the card network,
+  // not just a Luhn checksum — see https://js.stripe.com/v3/) ─────────────
+  // ⚠️ Replace with your own Stripe TEST publishable key (starts with pk_test_)
+  const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TktifGczofZfLq9hk5qbWHfc2AR8v2K0QDPkUzgxZBhAqreS1HRP1y6sCpcx52GHLFFZKrscr2wYxTdLJKJVzYX00WHVO1Zg7';
+  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+  const stripeElements = stripe.elements();
 
-  function formatExpiry(input) {
-    let v = input.value.replace(/\D/g, '');
-    if (v.length >= 3) v = v.substring(0,2) + '/' + v.substring(2,4);
-    input.value = v;
-  }
+  const stripeElementStyle = {
+    style: {
+      base: { fontSize: '15px', color: '#1e293b', fontFamily: "'Inter', sans-serif", '::placeholder': { color: '#94a3b8' } },
+      invalid: { color: '#ef4444' },
+    },
+  };
+  const cardNumberElement = stripeElements.create('cardNumber', stripeElementStyle);
+  const cardExpiryElement = stripeElements.create('cardExpiry', stripeElementStyle);
+  const cardCvcElement    = stripeElements.create('cardCvc', stripeElementStyle);
 
-  // ─── Luhn Algorithm (real card number validation) ─────────────
-  function luhnCheck(num) {
-    let arr = num.split('').reverse().map(Number);
-    let sum = 0;
-    for (let i = 0; i < arr.length; i++) {
-      let d = arr[i];
-      if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; }
-      sum += d;
-    }
-    return sum % 10 === 0;
-  }
+  cardNumberElement.mount('#cardNumberElement');
+  cardExpiryElement.mount('#cardExpiryElement');
+  cardCvcElement.mount('#cardCvcElement');
 
-  function validateLuhn() {
-    const raw = document.getElementById('cardNumber').value.replace(/\s/g, '');
-    if (raw.length < 13) return;
-
-    document.getElementById('luhnChecking').classList.add('show');
-    document.getElementById('cardValidBadge').classList.remove('show');
-    document.getElementById('cardInvalidBadge').classList.remove('show');
-
-    // Small delay to simulate async check
-    setTimeout(() => {
-      document.getElementById('luhnChecking').classList.remove('show');
-      if (luhnCheck(raw)) {
-        document.getElementById('cardValidBadge').classList.add('show');
+  [cardNumberElement, cardExpiryElement, cardCvcElement].forEach(el => {
+    el.on('change', (event) => {
+      const errBox = document.getElementById('cardErrors');
+      if (event.error) {
+        errBox.textContent = event.error.message;
+        errBox.style.display = 'block';
       } else {
-        document.getElementById('cardInvalidBadge').classList.add('show');
-        document.getElementById('cardNumber').classList.add('error');
+        errBox.style.display = 'none';
       }
-    }, 700);
-  }
+    });
+  });
 
   // ─── Validation helpers ───────────────────────────────────────
   function showErr(id, show) {
@@ -687,33 +685,36 @@
     if (selectedPayment === 'visa') {
       // Cardholder name
       if (isEmpty('cardName')) { showErr('cardNameErr', true); valid = false; } else { showErr('cardNameErr', false); }
-      // Card number + Luhn
-      const rawCard = document.getElementById('cardNumber').value.replace(/\s/g, '');
-      if (rawCard.length < 13 || !luhnCheck(rawCard)) {
-        showErr('cardNumberErr', true); valid = false;
-        document.getElementById('cardInvalidBadge').classList.add('show');
-        document.getElementById('cardValidBadge').classList.remove('show');
-      } else {
-        showErr('cardNumberErr', false);
-      }
-      // Expiry
-      const expiry = document.getElementById('cardExpiry').value;
-      if (!/^\d{2}\/\d{2}$/.test(expiry) || !isExpiryValid(expiry)) {
-        showErr('cardExpiryErr', true); valid = false;
-      } else { showErr('cardExpiryErr', false); }
-      // CVV
-      if (isEmpty('cardCVV') || document.getElementById('cardCVV').value.length < 3) {
-        showErr('cardCVVErr', true); valid = false;
-      } else { showErr('cardCVVErr', false); }
+      // Card number/expiry/CVV are now collected by Stripe Elements (mounted
+      // in #cardNumberElement/#cardExpiryElement/#cardCvcElement) — Stripe
+      // validates those fields live in its own secure iframes.
 
     } else if (selectedPayment === 'instapay') {
       if (isEmpty('instapayName')) { showErr('instapayNameErr', true); valid = false; } else { showErr('instapayNameErr', false); }
-      if (!isValidEgyptPhone(document.getElementById('instapayPhone').value)) { showErr('instapayPhoneErr', true); valid = false; } else { showErr('instapayPhoneErr', false); }
+      
+      const instapayPhoneValidation = validatePhone(document.getElementById('instapayPhone').value, 'EG');
+      if (!instapayPhoneValidation.valid) { 
+        showErr('instapayPhoneErr', true);
+        document.getElementById('instapayPhoneErr').textContent = instapayPhoneValidation.message;
+        valid = false; 
+      } else { 
+        showErr('instapayPhoneErr', false);
+      }
+      
       if (isEmpty('instapayRef')) { showErr('instapayRefErr', true); valid = false; } else { showErr('instapayRefErr', false); }
 
     } else if (selectedPayment === 'orange') {
       if (isEmpty('orangeName')) { showErr('orangeNameErr', true); valid = false; } else { showErr('orangeNameErr', false); }
-      if (!isValidEgyptPhone(document.getElementById('orangePhone').value)) { showErr('orangePhoneErr', true); valid = false; } else { showErr('orangePhoneErr', false); }
+      
+      const orangePhoneValidation = validatePhone(document.getElementById('orangePhone').value, 'EG');
+      if (!orangePhoneValidation.valid) { 
+        showErr('orangePhoneErr', true);
+        document.getElementById('orangePhoneErr').textContent = orangePhoneValidation.message;
+        valid = false; 
+      } else { 
+        showErr('orangePhoneErr', false);
+      }
+      
       if (isEmpty('orangeRef')) { showErr('orangeRefErr', true); valid = false; } else { showErr('orangeRefErr', false); }
     }
 
@@ -728,6 +729,58 @@
     btn.textContent = 'Processing…';
 
     try {
+      let paymentIntentId = null;
+
+      // ── Real card payment: ask Stripe to actually authorize the card ──────
+      if (selectedPayment === 'visa') {
+        btn.textContent = 'Contacting payment processor…';
+
+        // 1) Ask our server for a PaymentIntent (server decides the amount —
+        //    never trust a price sent from the browser).
+        const piRes = await fetch('../Back End/create_payment_intent.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            plan: selectedPlan.plan,
+            hospital_name: hospitalName,
+          }),
+        });
+        const piData = await piRes.json();
+        if (!piData.success) {
+          submitErr.textContent = '⚠ ' + (piData.message || 'Could not start payment.');
+          submitErr.style.display = 'block';
+          return;
+        }
+
+        // 2) Confirm the card with Stripe directly — this is the step that
+        //    actually talks to the card network. A fake-but-Luhn-valid number
+        //    will be declined here because it isn't a real, issued card.
+        const { paymentIntent, error } = await stripe.confirmCardPayment(piData.client_secret, {
+          payment_method: {
+            card: cardNumberElement,
+            billing_details: { name: document.getElementById('cardName').value.trim() },
+          },
+        });
+
+        if (error) {
+          submitErr.textContent = '⚠ ' + (error.message || 'Your card was declined.');
+          submitErr.style.display = 'block';
+          return;
+        }
+        if (paymentIntent.status !== 'succeeded') {
+          submitErr.textContent = '⚠ Payment was not completed (status: ' + paymentIntent.status + ').';
+          submitErr.style.display = 'block';
+          return;
+        }
+
+        paymentIntentId = paymentIntent.id;
+      }
+
+      // 3) Only now create the hospital + staff accounts. For card payments,
+      //    the backend re-checks the PaymentIntent with Stripe before doing
+      //    anything — it never trusts the browser's word that payment succeeded.
+      btn.textContent = 'Creating your accounts…';
       const res = await fetch('../Back End/subscribe_ehr.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -736,6 +789,7 @@
           plan: selectedPlan.plan,
           payment_method: selectedPayment,
           hospital_name: hospitalName,
+          payment_intent_id: paymentIntentId,
         }),
       });
       const data = await res.json();
@@ -750,7 +804,7 @@
       document.getElementById('confirmedHospital').textContent = data.hospital || hospitalName;
       document.getElementById('confirmedEmail').textContent = email;
 
-      const a = data.accounts || {};
+      const a = data.accounts || null;
       const rolesOrder = [
         ['admin',   '🛡️ Admin'],
         ['manager', '📊 Manager'],
@@ -758,13 +812,21 @@
         ['nurse',   '💉 Nurse'],
       ];
       const credsBox = document.getElementById('credsBox');
-      credsBox.innerHTML = rolesOrder.map(([key, label]) => {
-        const acct = a[key];
-        if (!acct) return '';
-        return `<div style="margin-bottom:0.6rem;"><strong>${label}</strong><br>
-          Username: <code>${acct.username}</code><br>
-          Password: <code>${acct.password}</code></div>`;
-      }).join('');
+      if (a) {
+        // Email delivery failed — this is the one-time fallback display.
+        credsBox.innerHTML = rolesOrder.map(([key, label]) => {
+          const acct = a[key];
+          if (!acct) return '';
+          return `<div style="margin-bottom:0.6rem;"><strong>${label}</strong><br>
+            Username: <code>${acct.username}</code><br>
+            Password: <code>${acct.password}</code></div>`;
+        }).join('') + `<p style="margin-top:0.8rem;color:#b91c1c;font-size:0.85rem;">
+            ⚠ Save these now — they won't be shown again. Please change passwords after first login.</p>`;
+      } else {
+        // Email sent successfully — credentials were delivered there, not shown here.
+        credsBox.innerHTML = `<p>✅ Login credentials for all staff accounts have been sent to
+          <strong>${email}</strong>. Please check that inbox to get started.</p>`;
+      }
 
       document.getElementById('successOverlay').classList.add('show');
 
@@ -842,6 +904,16 @@
 
   function closeCancelSuccessModal() {
     document.getElementById('cancelSuccessOverlay').classList.remove('show');
+  }
+
+  function copyAllEhrCredentials() {
+    const credsBox = document.getElementById('credsBox');
+    const text = credsBox.innerText || credsBox.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('✅ All credentials copied to clipboard!');
+    }).catch(() => {
+      alert('Could not copy to clipboard. Please select and copy manually.');
+    });
   }
 </script>
 </body>

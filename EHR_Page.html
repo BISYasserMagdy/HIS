@@ -29,16 +29,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Electronic Health Records – Pharos HIS</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f0f6ff;
       --surface: #ffffff;
-      --primary: #1a73e8;
-      --primary-dark: #0b3c7a;
-      --primary-light: #e8f0fe;
-      --accent: #00b4a6;
-      --accent2: #f59e0b;
+      --primary: #123a66;
+      --primary-dark: #0a2240;
+      --primary-light: #eaf1fb;
+      --accent: #c9a84c;
+      --accent2: #2bb8a8;
       --text: #1f2937;
       --muted: #5b6b7b;
       --border: #dbe4f0;
@@ -46,7 +46,7 @@
       --success: #10b981;
     }
     *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; font-family: 'DM Sans', Arial, sans-serif; background: var(--bg); color: var(--text); }
+    body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--text); }
 
     /* HEADER */
     header {
@@ -55,7 +55,7 @@
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
       overflow:visible;
 }
-    .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .logo { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
     nav { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; flex: 1; }
     nav a {
       color: #fff; text-decoration: none; padding: 8px 14px;
@@ -73,7 +73,7 @@
 
     /* HERO */
     .hero {
-      background: linear-gradient(135deg, #0b3c7a 0%, #1a73e8 60%, #00b4a6 100%);
+      background: linear-gradient(135deg, #0a2240 0%, #123a66 60%, #c9a84c 100%);
       color: #fff; padding: 3.5rem 2rem 4.5rem; text-align: center; position: relative; overflow: hidden;
     }
     .hero::before {
@@ -86,7 +86,7 @@
       padding: 6px 18px; font-size: 0.82rem; font-weight: 600;
       letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.2rem;
     }
-    .hero h2 { font-family: 'Sora', sans-serif; font-size: clamp(1.8rem,4vw,3rem); font-weight: 700; margin: 0 0 1rem; line-height: 1.2; }
+    .hero h2 { font-family: 'Fraunces', serif; font-size: clamp(1.8rem,4vw,3rem); font-weight: 700; margin: 0 0 1rem; line-height: 1.2; }
     .hero p { max-width: 680px; margin: 0 auto 2rem; font-size: 1.05rem; opacity: 0.92; line-height: 1.7; }
     .hero-cta {
       display: inline-flex; align-items: center; gap: 0.5rem;
@@ -103,7 +103,7 @@
     }
     .stat-item { padding: 1.4rem 1.5rem; text-align: center; border-right: 1px solid var(--border); }
     .stat-item:last-child { border-right: none; }
-    .stat-num { font-family: 'Sora', sans-serif; font-size: 1.9rem; font-weight: 700; color: var(--primary); display: block; }
+    .stat-num { font-family: 'Fraunces', serif; font-size: 1.9rem; font-weight: 700; color: var(--primary); display: block; }
     .stat-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
 
     /* MAIN */
@@ -111,7 +111,7 @@
     section { margin-bottom: 3rem; }
     .section-header { margin-bottom: 1.5rem; }
     .section-header h3 {
-      font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700;
+      font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 700;
       color: var(--primary-dark); margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem;
     }
     .section-header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
@@ -132,7 +132,7 @@
       width: 48px; height: 48px; background: var(--primary-light); border-radius: 12px;
       display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;
     }
-    .feature-card h4 { font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.5rem; color: var(--primary-dark); }
+    .feature-card h4 { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.5rem; color: var(--primary-dark); }
     .feature-card p { margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
 
     /* PATIENT LIST */
@@ -186,7 +186,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem; color: #fff; flex-shrink: 0;
     }
-    .patient-meta h4 { font-family: 'Sora', sans-serif; margin: 0 0 0.3rem; font-size: 1.1rem; }
+    .patient-meta h4 { font-family: 'Fraunces', serif; margin: 0 0 0.3rem; font-size: 1.1rem; }
     .patient-meta span { font-size: 0.85rem; color: var(--muted); }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
     .badge-active  { background: #d1fae5; color: #065f46; }
@@ -201,7 +201,7 @@
     /* VITALS */
     .vitals-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
     .vital-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
-    .vital-val  { font-family: 'Sora', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .vital-val  { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; color: var(--primary); }
     .vital-unit { font-size: 0.75rem; color: var(--muted); }
     .vital-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
 
@@ -235,7 +235,7 @@
     .lab-quick-btn {
       padding: 5px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
       border: 1.5px solid var(--border); background: #fff; color: var(--muted);
-      cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
     }
     .lab-quick-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
     .lab-quick-btn.selected { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
@@ -256,8 +256,8 @@
     /* WORKFLOW */
     .workflow { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; counter-reset: wf; }
     .wf-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem; counter-increment: wf; }
-    .wf-card::before { content: counter(wf, decimal-leading-zero); font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; color: var(--primary-light); display: block; line-height: 1; margin-bottom: 0.5rem; }
-    .wf-card h4 { font-family: 'Sora', sans-serif; font-size: 0.92rem; margin: 0 0 0.4rem; color: var(--primary-dark); }
+    .wf-card::before { content: counter(wf, decimal-leading-zero); font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--primary-light); display: block; line-height: 1; margin-bottom: 0.5rem; }
+    .wf-card h4 { font-family: 'Fraunces', serif; font-size: 0.92rem; margin: 0 0 0.4rem; color: var(--primary-dark); }
     .wf-card p  { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
 
     /* ALERTS */
@@ -370,7 +370,7 @@
       transform: translateY(20px); transition: transform 0.25s;
     }
     .modal-overlay.open .modal { transform: none; }
-    .modal h3 { font-family: 'Sora', sans-serif; margin: 0 0 1.5rem; color: var(--primary-dark); }
+    .modal h3 { font-family: 'Fraunces', serif; margin: 0 0 1.5rem; color: var(--primary-dark); }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .form-grid .full { grid-column: 1 / -1; }
     .form-group { display: flex; flex-direction: column; gap: 5px; }
@@ -409,6 +409,36 @@
     }
     .epm-tab:hover { color: var(--text); }
     .epm-tab.epm-tab-active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* FLOATING PROFILE BUTTON */
+    #profileFab {
+      position:fixed; bottom:28px; right:28px; z-index:500;
+      width:56px; height:56px; border-radius:50%; border:none;
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff; font-size:1.4rem; cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,0.22);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .15s,box-shadow .15s;
+    }
+    #profileFab:hover { transform:translateY(-3px) scale(1.05); box-shadow:0 10px 24px rgba(0,0,0,0.28); }
+    #profileFab .fab-dot {
+      position:absolute; top:4px; right:4px; width:13px; height:13px;
+      border-radius:50%; background:#2bb8a8; border:2px solid #fff; display:none;
+    }
+    #profileFab .fab-dot.show { display:block; }
+    .pr-row {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:0.6rem; padding:0.7rem 0.9rem; border:1px solid var(--border);
+      border-radius:10px; margin-bottom:0.6rem; background:#fff;
+    }
+    .pr-field-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.04em; }
+    .pr-current { font-size:0.95rem; font-weight:600; color:var(--text); margin-top:2px; }
+    .pr-status-pill { font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; }
+    .pr-status-pending  { background:#fef3c7; color:#92400e; }
+    .pr-status-approved { background:#d1fae5; color:#065f46; }
+    .pr-status-rejected { background:#fee2e2; color:#991b1b; }
+    .pr-history-item { font-size:0.8rem; padding:0.55rem 0; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+    .pr-history-item:last-child { border-bottom:none; }
 
     footer { background: #0f172a; color: #cbd5e1; text-align: center; padding: 1.5rem 1rem; font-size: 0.9rem; }
     @media (max-width: 640px) {
@@ -478,14 +508,14 @@
       <p>Everything a modern healthcare facility needs — from patient intake to discharge summaries.</p>
     </div>
     <div class="features-grid">
-      <div class="feature-card" style="--card-accent:#1a73e8"><div class="feature-icon">📁</div><h4>Patient Record Management</h4><p>Centralized, structured patient profiles with demographics, insurance, and full clinical history in one place.</p></div>
-      <div class="feature-card" style="--card-accent:#00b4a6"><div class="feature-icon">🔬</div><h4>Lab & Diagnostic Analytics</h4><p>Automatically import lab results, trend key biomarkers, and flag abnormal values for immediate review.</p></div>
-      <div class="feature-card" style="--card-accent:#f59e0b"><div class="feature-icon">🔔</div><h4>Smart Reminders</h4><p>Automated alerts for follow-up appointments, medication refills, overdue screenings, and care plan tasks.</p></div>
+      <div class="feature-card" style="--card-accent:#123a66"><div class="feature-icon">📁</div><h4>Patient Record Management</h4><p>Centralized, structured patient profiles with demographics, insurance, and full clinical history in one place.</p></div>
+      <div class="feature-card" style="--card-accent:#c9a84c"><div class="feature-icon">🔬</div><h4>Lab & Diagnostic Analytics</h4><p>Automatically import lab results, trend key biomarkers, and flag abnormal values for immediate review.</p></div>
+      <div class="feature-card" style="--card-accent:#2bb8a8"><div class="feature-icon">🔔</div><h4>Smart Reminders</h4><p>Automated alerts for follow-up appointments, medication refills, overdue screenings, and care plan tasks.</p></div>
       <div class="feature-card" style="--card-accent:#10b981"><div class="feature-icon">💳</div><h4>Payment Management</h4><p>Integrated billing with insurance claim tracking, co-pay collection, and itemised invoicing.</p></div>
       <div class="feature-card" style="--card-accent:#8b5cf6"><div class="feature-icon">📋</div><h4>Task Management</h4><p>Assign clinical tasks to care team members with priority levels, due dates, and completion tracking.</p></div>
       <div class="feature-card" style="--card-accent:#ec4899"><div class="feature-icon">🗣️</div><h4>Secure Communication</h4><p>HIPAA-compliant messaging between providers, staff, and patients — keeping conversations in the record.</p></div>
       <div class="feature-card" style="--card-accent:#ef4444"><div class="feature-icon">💊</div><h4>E-Prescribing</h4><p>Send prescriptions directly to pharmacies with drug–drug interaction checks and allergy alerts built in.</p></div>
-      <div class="feature-card" style="--card-accent:#0b3c7a"><div class="feature-icon">📜</div><h4>Medical History</h4><p>Chronological records of diagnoses, procedures, vaccinations, allergies, and family history.</p></div>
+      <div class="feature-card" style="--card-accent:#0a2240"><div class="feature-icon">📜</div><h4>Medical History</h4><p>Chronological records of diagnoses, procedures, vaccinations, allergies, and family history.</p></div>
       <div class="feature-card" style="--card-accent:#06b6d4"><div class="feature-icon">🖥️</div><h4>Customised Templates</h4><p>Specialty-specific note templates and encounter forms to speed up documentation without sacrificing quality.</p></div>
     </div>
   </section>
@@ -634,7 +664,7 @@
       <div class="form-group full"><label>Known Allergies</label><input type="text" id="np-allergies" placeholder="e.g. Penicillin, Sulfa Drugs (comma separated)" /></div>
       <div class="form-group full"><label>Active Conditions</label><input type="text" id="np-conditions" placeholder="e.g. Hypertension, Asthma" /></div>
       <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem;">
-        <div style="font-family:'Sora',sans-serif;font-size:0.85rem;font-weight:700;color:var(--primary-dark);margin-bottom:0.75rem;">📋 Medical History</div>
+        <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;font-weight:700;color:var(--primary-dark);margin-bottom:0.75rem;">📋 Medical History</div>
         <div class="form-grid" style="margin:0;">
           <div class="form-group full"><label>Past Medical History</label><textarea id="np-pmh" rows="2" placeholder="e.g. Appendectomy 2015, Fracture left tibia 2018…" style="resize:vertical;"></textarea></div>
           <div class="form-group full"><label>Family Medical History</label><textarea id="np-fmh" rows="2" placeholder="e.g. Father: Hypertension, Diabetes; Mother: Breast Cancer…" style="resize:vertical;"></textarea></div>
@@ -698,14 +728,14 @@
           <div style="display:flex;gap:0.6rem;align-items:center;">
             <input type="date" id="epm-nextappt-date"
                    style="flex:1;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;
-                          font-size:0.95rem;font-family:'DM Sans',sans-serif;color:var(--text);
+                          font-size:0.95rem;font-family:'Inter',sans-serif;color:var(--text);
                           background:var(--bg);cursor:pointer;outline:none;transition:border-color .2s,box-shadow .2s;"
                    onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(26,115,232,.15)'"
                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
             <span style="color:var(--muted);font-weight:600;font-size:1rem;flex-shrink:0;">at</span>
             <input type="time" id="epm-nextappt-time"
                    style="width:130px;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;
-                          font-size:0.95rem;font-family:'DM Sans',sans-serif;color:var(--text);
+                          font-size:0.95rem;font-family:'Inter',sans-serif;color:var(--text);
                           background:var(--bg);cursor:pointer;outline:none;transition:border-color .2s,box-shadow .2s;"
                    onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(26,115,232,.15)'"
                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
@@ -766,7 +796,7 @@
           </select>
         </div>
         <div class="form-group" style="align-self:end;">
-          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:0.75rem;font-size:0.82rem;color:#92400e;">
+          <div style="background:#fef3c7;border:1px solid #2bb8a8;border-radius:10px;padding:0.75rem;font-size:0.82rem;color:#92400e;">
             ⚠️ Setting to <strong>Inactive</strong> hides the patient from active lists.
           </div>
         </div>
@@ -802,7 +832,7 @@
       <div class="form-group full"><label>Prescribed By *</label><input type="text" id="ep-physician" placeholder="e.g. Dr. Sara Nour" /></div>
       <div class="form-group full"><label>Notes / Instructions</label><textarea id="ep-notes" rows="2" placeholder="e.g. Take with food. Avoid alcohol." style="resize:vertical;"></textarea></div>
       <div class="form-group full">
-        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:0.75rem;font-size:0.83rem;color:#92400e;">
+        <div style="background:#fef3c7;border:1px solid #2bb8a8;border-radius:10px;padding:0.75rem;font-size:0.83rem;color:#92400e;">
           ⚠️ Drug interactions and allergy checks are simulated. Always verify against the patient's allergy list before prescribing.
         </div>
       </div>
@@ -1132,7 +1162,7 @@ async function init() {
 
     // Sync server-authoritative role back into EHR_USER (guards against
     // a tampered localStorage value)
-    window.EHR_USER = { name: whoData.name, role: whoData.role };
+    window.EHR_USER = { name: whoData.name, role: whoData.role, specialty: whoData.specialty ?? null };
     localStorage.setItem('ehr_user', JSON.stringify(window.EHR_USER));
 
     // Silently seed CDSS rules (INSERT IGNORE — idempotent, admin will get 200, others 403 which is caught)
@@ -1143,6 +1173,7 @@ async function init() {
   await loadPatients();
   applyRbacUi();        // hide/show elements based on role
   setupNavBadge();      // show user name + role in header
+  setupProfileFab();    // floating profile btn (non-admin only)
 }
 
 // ─── RBAC UI ENFORCEMENT ─────────────────────────────────────────────
@@ -1341,7 +1372,7 @@ async function openAdminStaffPanel() {
       data.data.map(u => `
         <div style="padding:6px 0; border-bottom:1px solid #f3f4f6;">
           <div style="font-weight:600;">${escapeHtml(u.full_name || u.username)}
-            <span style="font-size:11px; color:${u.role === 'doctor' ? '#1d4ed8' : '#047857'}; text-transform:uppercase;">
+            <span style="font-size:11px; color:${u.role === 'doctor' ? '#123a66' : '#047857'}; text-transform:uppercase;">
               ${escapeHtml(u.role)}
             </span>
           </div>
@@ -1370,7 +1401,7 @@ function setupNavBadge() {
   const u = window.EHR_USER || {};
   const roleColors = {
     admin:  { bg: '#fef3c7', color: '#92400e', icon: '🔐' },
-    doctor: { bg: '#dbeafe', color: '#1e3a8a', icon: '🩺' },
+    doctor: { bg: '#dbeafe', color: '#0a2240', icon: '🩺' },
     nurse:  { bg: '#d1fae5', color: '#065f46', icon: '💉' },
   };
   const meta  = roleColors[u.role] || roleColors.nurse;
@@ -1417,7 +1448,7 @@ function renderPatientList(list) {
       <div class="plc-info">
         <div class="plc-name">${p.name}</div>
         <div class="plc-sub">${p.id} · ${p.gender} · ${p.age} yrs</div>
-        <div class="plc-sub" style="margin-top:2px;color:#1a73e8;font-weight:600;">${p.conditions.split(',')[0]}</div>
+        <div class="plc-sub" style="margin-top:2px;color:#123a66;font-weight:600;">${p.conditions.split(',')[0]}</div>
       </div>
       <div class="plc-badge"><span class="badge badge-active">Active</span></div>
     </div>
@@ -1849,7 +1880,7 @@ async function loadAndRenderHistory(p) {
 
   const medHistSection = (p.pmh || p.fmh || p.surgical || p.vaccines || p.alcohol) ? `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.5rem;">
-      <div style="font-family:'Sora',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);margin-bottom:1rem;">📋 Medical History Summary</div>
+      <div style="font-family:'Fraunces',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);margin-bottom:1rem;">📋 Medical History Summary</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
         ${p.pmh ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Past Medical History</div><div style="font-size:0.88rem;">${p.pmh}</div></div>` : ''}
         ${p.fmh ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Family History</div><div style="font-size:0.88rem;">${p.fmh}</div></div>` : ''}
@@ -1872,7 +1903,7 @@ async function loadAndRenderHistory(p) {
   document.getElementById('tab-history').innerHTML = `
     ${medHistSection}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem;">
-      <div style="font-family:'Sora',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);">🕐 Clinical Timeline</div>
+      <div style="font-family:'Fraunces',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);">🕐 Clinical Timeline</div>
       <button class="btn-primary btn-sm" onclick="openTimelineModal()" style="display:flex;align-items:center;gap:6px;">
         <span style="font-size:1.1rem;line-height:1;">＋</span> Add Entry
       </button>
@@ -2258,7 +2289,7 @@ function computeLabResult(testName, valueStr, refStr) {
     }
   }
 
-  const clsToColor = { ok: '#10b981', med: '#f59e0b', hi: '#ef4444' };
+  const clsToColor = { ok: '#10b981', med: '#2bb8a8', hi: '#ef4444' };
   const clsToColorType = { ok: 'success', med: 'warning', hi: 'danger' };
 
   return { cls, label, pct, tip, color: clsToColor[cls], colorType: clsToColorType[cls] };
@@ -3054,10 +3085,184 @@ async function navigateToAlertPatient(patientId) {
   document.getElementById('recordPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+
+// ─── PROFILE MODAL (doctor / nurse / manager) ────────────────────────────────
+let pendingEditField = null;
+
+function setupProfileFab() {
+  const role = (window.EHR_USER || {}).role;
+  const fab  = document.getElementById('profileFab');
+  if (!fab) return;
+  // Admins use the Admin Dashboard for their own settings
+  if (role === 'admin') { fab.style.display = 'none'; return; }
+  fab.style.display = 'flex';
+  // Show dot if any pending requests exist
+  loadMyProfileRequests(true);
+}
+
+function openProfileModal() {
+  const u = window.EHR_USER || {};
+  document.getElementById('prCurrentName').textContent = u.name || '—';
+  document.getElementById('prCurrentSpecialty').textContent = u.specialty || '— (not set)';
+  // Managers have no clinical specialty
+  document.getElementById('prSpecialtyRow').style.display = (u.role === 'manager') ? 'none' : 'flex';
+  document.getElementById('profileModalError').style.display = 'none';
+  cancelEditField();
+  document.getElementById('profileModal').classList.add('open');
+  loadMyProfileRequests(false);
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('open');
+}
+
+document.getElementById('profileModal').addEventListener('click', function(e) {
+  if (e.target.id === 'profileModal') closeProfileModal();
+});
+
+function startEditField(field, currentVal) {
+  pendingEditField = field;
+  document.getElementById('prEditLabel').textContent = field === 'full_name' ? 'New full name' : 'New specialty';
+  const clean = (currentVal || '').replace(/^—.*$/, '');
+  document.getElementById('prEditInput').value = clean;
+  document.getElementById('prEditForm').style.display = 'block';
+  document.getElementById('prEditInput').focus();
+}
+
+function cancelEditField() {
+  pendingEditField = null;
+  document.getElementById('prEditForm').style.display = 'none';
+  document.getElementById('prEditInput').value = '';
+}
+
+async function submitProfileChange() {
+  const errEl    = document.getElementById('profileModalError');
+  const btn      = document.getElementById('prSubmitBtn');
+  const newValue = document.getElementById('prEditInput').value.trim();
+  errEl.style.display = 'none';
+  if (!pendingEditField || !newValue) {
+    errEl.textContent = 'Please enter a value.';
+    errEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  try {
+    const res = await api({ action: 'submit_profile_request' }, 'POST', {
+      field: pendingEditField, new_value: newValue
+    });
+    if (res.success) {
+      showToast('✅ Request submitted — waiting for admin approval.');
+      cancelEditField();
+      loadMyProfileRequests(false);
+    } else {
+      errEl.textContent = res.message || 'Could not submit request.';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit for Approval';
+  }
+}
+
+async function loadMyProfileRequests(dotOnly = false) {
+  try {
+    const res  = await api({ action: 'get_my_profile_requests' });
+    const dot  = document.getElementById('profileFabDot');
+    const list = document.getElementById('prHistoryList');
+
+    if (!res.success || !res.data) {
+      if (!dotOnly && list) list.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0;">No requests yet.</div>';
+      return;
+    }
+
+    const hasPending = res.data.some(function(r) { return r.status === 'pending'; });
+    if (dot) dot.classList.toggle('show', hasPending);
+    if (dotOnly) return;
+
+    if (!res.data.length) {
+      list.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0;">No requests yet.</div>';
+      return;
+    }
+    list.innerHTML = res.data.map(function(r) {
+      const fieldLabel = r.field === 'full_name' ? 'Name' : 'Specialty';
+      const date = new Date(r.created_at).toLocaleDateString();
+      return '<div class="pr-history-item">'
+        + '<span>' + escapeHtml(fieldLabel) + ': <strong>' + escapeHtml(r.new_value) + '</strong>'
+        + ' <span style="color:var(--muted);">(' + date + ')</span></span>'
+        + '<span class="pr-status-pill pr-status-' + escapeHtml(r.status) + '">' + escapeHtml(r.status) + '</span>'
+        + '</div>';
+    }).join('');
+  } catch (e) {
+    const list = document.getElementById('prHistoryList');
+    if (list && !dotOnly) list.innerHTML = '<div style="font-size:0.82rem;color:#ef4444;">Could not load history.</div>';
+  }
+}
+
 /* ── boot on page load ── */
 document.addEventListener('DOMContentLoaded', () => {
   fetchDbAlerts();
 });
 </script>
+
+<!-- FLOATING PROFILE BUTTON (doctor / nurse / manager only — hidden for admin) -->
+<button id="profileFab" onclick="openProfileModal()" title="My Profile" style="display:none;">
+  &#x1F464;<span class="fab-dot" id="profileFabDot"></span>
+</button>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal" style="max-width:480px;">
+    <h3>&#x1F464; My Profile</h3>
+    <p class="sub">Changes to your name or specialty require admin approval before they take effect.</p>
+    <div class="modal-error" id="profileModalError"></div>
+
+    <div class="pr-row">
+      <div>
+        <div class="pr-field-label">Full Name</div>
+        <div class="pr-current" id="prCurrentName">&mdash;</div>
+      </div>
+      <button class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;flex-shrink:0;"
+              onclick="startEditField('full_name', document.getElementById('prCurrentName').textContent)">&#x270F;&#xFE0F; Request Change</button>
+    </div>
+
+    <div class="pr-row" id="prSpecialtyRow">
+      <div>
+        <div class="pr-field-label">Specialty</div>
+        <div class="pr-current" id="prCurrentSpecialty">&mdash;</div>
+      </div>
+      <button class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;flex-shrink:0;"
+              onclick="startEditField('specialty', document.getElementById('prCurrentSpecialty').textContent)">&#x270F;&#xFE0F; Request Change</button>
+    </div>
+
+    <!-- Inline edit form -->
+    <div id="prEditForm" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+      <div class="form-group">
+        <label id="prEditLabel">New value</label>
+        <input type="text" id="prEditInput" placeholder="Enter new value..." />
+      </div>
+      <div class="modal-footer" style="margin-top:0.8rem;">
+        <button class="btn-secondary" onclick="cancelEditField()">Cancel</button>
+        <button class="btn-submit" id="prSubmitBtn" onclick="submitProfileChange()">Submit for Approval</button>
+      </div>
+    </div>
+
+    <!-- Recent request history -->
+    <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid var(--border);">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.04em;margin-bottom:0.5rem;">Recent Requests</div>
+      <div id="prHistoryList" style="max-height:180px;overflow-y:auto;">
+        <div style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0;">Loading...</div>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="margin-top:1.2rem;">
+      <button class="btn-secondary" onclick="closeProfileModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

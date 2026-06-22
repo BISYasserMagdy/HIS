@@ -7,11 +7,13 @@
 // Correct cookie params ensure the session cookie is shared across all
 // PHP scripts regardless of subdirectory depth.
 if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
         'domain'   => '',
-        'secure'   => false,   // change to true when serving over HTTPS
+        'secure'   => $isHttps, // auto: true once you're actually serving over HTTPS
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -21,13 +23,34 @@ if (session_status() === PHP_SESSION_NONE) {
 // ── STEP 2: CORS + output headers — before any echo or require_once ──────────
 // When credentials: 'include' is used in fetch(), CORS requires an explicit
 // origin — the wildcard '*' is rejected by the browser for credentialed requests.
-// We reflect the incoming Origin header; fall back to '*' for direct/same-origin.
-$allowedOrigin = (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] !== '')
-    ? $_SERVER['HTTP_ORIGIN']
-    : '*';
+//
+// IMPORTANT: we do NOT blindly reflect whatever Origin header the browser
+// sends. Doing that + Access-Control-Allow-Credentials: true would let ANY
+// website on the internet make authenticated, cookie-carrying requests to
+// this API on behalf of a logged-in user (a classic CORS/CSRF hole) — which
+// is especially bad here since this API serves patient records.
+//
+// Instead we only ever echo back an Origin that's on our explicit allow-list.
+// Add every real frontend origin you serve this from (scheme + host + port).
+$EHR_ALLOWED_ORIGINS = [
+    'http://localhost',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    // 'https://your-production-domain.com',
+];
+
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($requestOrigin, $EHR_ALLOWED_ORIGINS, true)) {
+    $allowedOrigin = $requestOrigin;
+} else {
+    // Unknown/no Origin (e.g. same-origin or server-to-server call): don't
+    // grant credentialed cross-origin access at all.
+    $allowedOrigin = 'null';
+}
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+header('Vary: Origin');
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS, DELETE, PUT');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -611,9 +634,15 @@ switch ($action) {
     case 'create_user':         requireRole(['admin']); createUser($body);        break;
     case 'update_user':         requireRole(['admin']); updateUser($body);        break;
     case 'deactivate_user':     requireRole(['admin']); deactivateUser($body);    break;
-    case 'reset_password':      requireRole(['admin']); resetPassword($body);     break;
+    case 'reset_password':      requireRole(['admin']); handleResetPassword($body); break;
     case 'get_audit_log':       requireRole(['admin','manager']); getAuditLog();            break;
     case 'get_staff_patients':   requireRole(['admin','manager']); getStaffPatients();      break;
+
+    // ── Profile change requests (doctor/nurse/manager submit, admin approves) ──
+    case 'submit_profile_request':  requireRole(['doctor','nurse','manager']); submitProfileRequest($body); break;
+    case 'get_my_profile_requests': requireRole(['doctor','nurse','manager']); getMyProfileRequests();      break;
+    case 'get_profile_requests':    requireRole(['admin']); getProfileRequests();                           break;
+    case 'review_profile_request':  requireRole(['admin']); reviewProfileRequest($body);                    break;
 
     // ── Patients ───────────────────────────────────────────────────────────────
     // View: all roles (no gate — session checked by requireRole inside whoAmI / or open)
@@ -863,6 +892,18 @@ function whoAmI(): void {
         echo json_encode(['success' => false, 'logged_in' => false]);
         return;
     }
+    // Fetch specialty fresh so the profile modal can show current value
+    // without needing admin-only endpoints.
+    $specialty = null;
+    $conn = getConn();
+    $stmt = $conn->prepare("SELECT specialty FROM users WHERE id = ? LIMIT 1");
+    $stmt->bind_param('i', $_SESSION['user_id']);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $conn->close();
+    if ($row) $specialty = $row['specialty'];
+
     echo json_encode([
         'success'   => true,
         'logged_in' => true,
@@ -871,6 +912,7 @@ function whoAmI(): void {
         'role'      => $_SESSION['role'],
         'name'      => $_SESSION['full_name'] ?? $_SESSION['username'],
         'hospital'  => $_SESSION['hospital'] ?? null,
+        'specialty' => $specialty,
     ]);
 }
 
@@ -1031,19 +1073,110 @@ function deactivateUser(array $b): void {
 }
 
 /** POST action=reset_password  body: {id, new_password} */
-function resetPassword(array $b): void {
+// ── Helper: send updated credentials email to a staff member ─────────────────
+function sendCredentialsEmail(string $toEmail, string $fullName, string $username,
+                              string $plainPassword, string $hospital, string $role): bool {
+    require_once __DIR__ . '/vendor/autoload.php';
+    require_once __DIR__ . '/mailer_config.php';
+
+    $roleIcon = match($role) { 'doctor' => '🩺', 'manager' => '👔', default => '💊' };
+    $roleName = ucfirst($role);
+
+    $emailBody = "
+<p style='margin:0 0 20px;color:#374151;font-size:16px;line-height:1.6;'>
+  Hello <strong>{$fullName}</strong>! 👋 An admin at <strong>{$hospital}</strong> has reset your login credentials.
+  Here are your updated details:
+</p>
+<table width='100%' cellspacing='0' cellpadding='0' style='border-collapse:separate;border-spacing:0 6px;margin-bottom:24px;'>
+  <tr>
+    <td style='padding:12px 16px;background:#f8fafc;border-radius:8px;font-weight:600;color:#374151;font-size:14px;width:38%;'>
+      {$roleIcon} {$roleName} Username
+    </td>
+    <td style='padding:12px 16px;font-family:monospace;font-size:15px;color:#1d4ed8;font-weight:700;'>
+      {$username}
+    </td>
+  </tr>
+  <tr>
+    <td style='padding:12px 16px;background:#f8fafc;border-radius:8px;font-weight:600;color:#374151;font-size:14px;'>
+      🔑 New Password
+    </td>
+    <td style='padding:12px 16px;font-family:monospace;font-size:15px;color:#1d4ed8;font-weight:700;'>
+      {$plainPassword}
+    </td>
+  </tr>
+</table>
+<div style='background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;color:#92400e;font-size:13px;line-height:1.6;'>
+  ⚠️ <strong>Security reminder:</strong> Please change your password after first login.
+  Do not share these credentials with anyone.
+</div>
+";
+    try {
+        $mail = createMailer();
+        $mail->addAddress($toEmail);
+        $mail->Subject = "🏥 Your Pharos HIS Login Credentials — {$hospital}";
+        $mail->Body    = emailWrapper("Your Updated Login Credentials", $emailBody);
+        $mail->AltBody = "Hello {$fullName},\n\nYour credentials were reset by an admin at {$hospital}.\n\n"
+                       . "Username: {$username}\nNew Password: {$plainPassword}\n\nPlease change your password after first login.";
+        $mail->send();
+        return true;
+    } catch (\Exception $e) {
+        return false;
+    }
+}
+
+/** POST action=reset_password  body: {id, new_password}
+ *  Hashes and saves the new password, then emails it directly to the
+ *  staff member. The admin never sees the plain-text password.
+ */
+function handleResetPassword(array $b): void {
     $id  = (int)($b['id']           ?? 0);
-    $pwd = (string)($b['new_password'] ?? '');
+    $pwd = trim($b['new_password']   ?? '');
     if (!$id || strlen($pwd) < 8) {
         echo json_encode(['success' => false, 'message' => 'id and new_password (min 8 chars) required']);
         return;
     }
-    $hash = password_hash($pwd, PASSWORD_BCRYPT, ['cost' => 12]);
+
+    $hospital = $_SESSION['hospital'] ?? '';
     $conn = getConn();
-    $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-    $stmt->bind_param('si', $hash, $id);
-    $ok = $stmt->execute(); $stmt->close(); $conn->close();
-    echo json_encode(['success' => $ok]);
+
+    $stmt = $conn->prepare(
+        "SELECT id, username, email, full_name, role, hospital FROM users
+         WHERE id = ? AND role IN ('doctor','nurse','manager') LIMIT 1"
+    );
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$user || $user['hospital'] !== $hospital) {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'Staff member not found in your hospital.']);
+        return;
+    }
+
+    $hash = password_hash($pwd, PASSWORD_BCRYPT, ['cost' => 12]);
+    $upd  = $conn->prepare("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?");
+    $upd->bind_param('si', $hash, $id);
+    $upd->execute();
+    $upd->close();
+    $conn->close();
+
+    $sent = sendCredentialsEmail(
+        $user['email'],
+        $user['full_name'] ?: $user['username'],
+        $user['username'],
+        $pwd,
+        $user['hospital'],
+        $user['role']
+    );
+
+    echo json_encode([
+        'success'    => true,
+        'message'    => $sent
+            ? "Password reset and emailed to {$user['email']}."
+            : "Password reset, but email could not be sent to {$user['email']}.",
+        'email_sent' => $sent,
+    ]);
 }
 
 /** GET ?action=get_staff_patients&staff_id=...  — patients whose `physician_id`
@@ -1832,4 +1965,193 @@ function deleteLab($b) {
     $stmt=$conn->prepare("DELETE FROM lab_results WHERE id=?");
     $stmt->bind_param('i',$id);$ok=$stmt->execute();$stmt->close();$conn->close();
     echo json_encode(['success'=>$ok]);
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PROFILE CHANGE REQUESTS
+// Doctors / nurses / managers submit requests to change their own name or
+// specialty. An admin at the same hospital must approve before the change
+// is applied to `users`. Nothing is altered without admin sign-off.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Ensures the profile_requests table exists (idempotent). */
+function ensureProfileRequestsTable(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS `profile_requests` (
+        id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id       INT UNSIGNED NOT NULL,
+        hospital      VARCHAR(120) NOT NULL,
+        field         ENUM('full_name','specialty') NOT NULL,
+        old_value     VARCHAR(160) NULL,
+        new_value     VARCHAR(160) NOT NULL,
+        status        ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+        reviewed_by   INT UNSIGNED NULL,
+        reviewed_at   TIMESTAMP NULL,
+        review_note   VARCHAR(255) NULL,
+        created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_user (user_id),
+        KEY idx_hospital_status (hospital, status)
+    ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+}
+
+/** POST action=submit_profile_request  body: {field, new_value}
+ *  Blocks duplicate pending requests for the same field and no-op submissions.
+ */
+function submitProfileRequest(array $b): void {
+    $field    = trim($b['field']     ?? '');
+    $newValue = trim($b['new_value'] ?? '');
+    $userId   = (int)($_SESSION['user_id'] ?? 0);
+    $hospital = $_SESSION['hospital'] ?? '';
+
+    if (!in_array($field, ['full_name','specialty'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid field. Only full_name or specialty can be changed.']); return;
+    }
+    if ($newValue === '' || strlen($newValue) > 160) {
+        echo json_encode(['success' => false, 'message' => 'New value is empty or too long.']); return;
+    }
+
+    $conn = getConn();
+    ensureProfileRequestsTable($conn);
+
+    // Block duplicate pending requests for the same field
+    $dup = $conn->prepare("SELECT id FROM profile_requests WHERE user_id = ? AND field = ? AND status = 'pending' LIMIT 1");
+    $dup->bind_param('is', $userId, $field);
+    $dup->execute();
+    if ($dup->get_result()->fetch_assoc()) {
+        $dup->close(); $conn->close();
+        echo json_encode(['success' => false, 'message' => 'You already have a pending request for this field. Wait for admin review.']); return;
+    }
+    $dup->close();
+
+    // Get current value for the audit trail
+    $cur = $conn->prepare("SELECT $field AS val FROM users WHERE id = ? LIMIT 1");
+    $cur->bind_param('i', $userId);
+    $cur->execute();
+    $curRow   = $cur->get_result()->fetch_assoc();
+    $cur->close();
+    $oldValue = $curRow['val'] ?? null;
+
+    if ($oldValue !== null && trim((string)$oldValue) === $newValue) {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'That is already your current value.']); return;
+    }
+
+    $stmt = $conn->prepare("INSERT INTO profile_requests (user_id, hospital, field, old_value, new_value) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param('issss', $userId, $hospital, $field, $oldValue, $newValue);
+    $ok = $stmt->execute(); $stmt->close(); $conn->close();
+
+    echo json_encode([
+        'success' => $ok,
+        'message' => $ok ? 'Request submitted — pending admin approval.' : 'Could not submit request.',
+    ]);
+}
+
+/** GET action=get_my_profile_requests  — own request history (newest first). */
+function getMyProfileRequests(): void {
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+    $conn   = getConn();
+    ensureProfileRequestsTable($conn);
+
+    $stmt = $conn->prepare(
+        "SELECT id, field, old_value, new_value, status, review_note, created_at, reviewed_at
+         FROM profile_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 20"
+    );
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $rows = []; $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $stmt->close(); $conn->close();
+    echo json_encode(['success' => true, 'data' => $rows]);
+}
+
+/** GET action=get_profile_requests  (admin only)
+ *  Lists pending requests for the admin's hospital, joined with staff identity.
+ */
+function getProfileRequests(): void {
+    $hospital = $_SESSION['hospital'] ?? '';
+    $status   = $_GET['status'] ?? 'pending';
+
+    $conn = getConn();
+    ensureProfileRequestsTable($conn);
+
+    $sql = "SELECT pr.id, pr.user_id, pr.field, pr.old_value, pr.new_value, pr.status,
+                   pr.review_note, pr.created_at, pr.reviewed_at,
+                   u.username, u.full_name, u.role, u.email
+            FROM profile_requests pr
+            JOIN users u ON u.id = pr.user_id
+            WHERE pr.hospital = ?";
+    if ($status !== 'all') $sql .= " AND pr.status = 'pending'";
+    $sql .= " ORDER BY pr.created_at DESC LIMIT 100";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $hospital);
+    $stmt->execute();
+    $rows = []; $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $stmt->close(); $conn->close();
+    echo json_encode(['success' => true, 'data' => $rows]);
+}
+
+/** POST action=review_profile_request  body: {id, decision: 'approve'|'reject', note?}
+ *  On approval, applies the change to `users` inside a transaction.
+ */
+function reviewProfileRequest(array $b): void {
+    $id       = (int)($b['id']       ?? 0);
+    $decision = $b['decision']        ?? '';
+    $note     = trim($b['note']       ?? '');
+    $adminId  = (int)($_SESSION['user_id'] ?? 0);
+    $hospital = $_SESSION['hospital'] ?? '';
+
+    if (!$id || !in_array($decision, ['approve','reject'], true)) {
+        echo json_encode(['success' => false, 'message' => 'id and a valid decision (approve|reject) are required.']); return;
+    }
+
+    $conn = getConn();
+    ensureProfileRequestsTable($conn);
+
+    $stmt = $conn->prepare(
+        "SELECT pr.*, u.hospital AS user_hospital FROM profile_requests pr
+         JOIN users u ON u.id = pr.user_id WHERE pr.id = ? LIMIT 1"
+    );
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $req = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$req || $req['user_hospital'] !== $hospital) {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'Request not found at your hospital.']); return;
+    }
+    if ($req['status'] !== 'pending') {
+        $conn->close();
+        echo json_encode(['success' => false, 'message' => 'This request has already been reviewed.']); return;
+    }
+
+    $conn->begin_transaction();
+    try {
+        if ($decision === 'approve') {
+            // field is ENUM('full_name','specialty') — safe to interpolate
+            $upd = $conn->prepare("UPDATE users SET {$req['field']} = ? WHERE id = ?");
+            $upd->bind_param('si', $req['new_value'], $req['user_id']);
+            $upd->execute(); $upd->close();
+        }
+        $newStatus = $decision === 'approve' ? 'approved' : 'rejected';
+        $noteVal   = $note !== '' ? $note : null;
+        $rev = $conn->prepare(
+            "UPDATE profile_requests SET status = ?, reviewed_by = ?, reviewed_at = NOW(), review_note = ? WHERE id = ?"
+        );
+        $rev->bind_param('sisi', $newStatus, $adminId, $noteVal, $id);
+        $rev->execute(); $rev->close();
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback(); $conn->close();
+        echo json_encode(['success' => false, 'message' => 'Could not process: ' . $e->getMessage()]); return;
+    }
+    $conn->close();
+
+    echo json_encode([
+        'success' => true,
+        'message' => $decision === 'approve' ? 'Request approved — profile updated.' : 'Request rejected.',
+    ]);
 }

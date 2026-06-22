@@ -1,28 +1,36 @@
 <?php
 /**
  * subscribe.php
- * Handles new subscription form submissions.
- * Called via POST from Subscription.html (JavaScript fetch).
+ * ════════════════════════════════════════════════════════════════════════════
+ * Handles new ERP subscription form submissions from Subscription.html.
  *
- * Saves: email, plan, payment method, generated manager & employee credentials
- * In production, also sends credentials to the user's Gmail via PHPMailer/SMTP.
+ * On success:
+ *   - Saves subscription + hashed passwords to `pharmacy_erp`.`subscriptions`
+ *   - Creates/updates pharmacist record in `pharmacists`
+ *   - Sends an HTML credentials email to the subscriber via Gmail SMTP
+ *
+ * Requires: composer require phpmailer/phpmailer
+ *           mailer_config.php (in the same Back End/ folder)
+ * ════════════════════════════════════════════════════════════════════════════
  */
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-$servername = "localhost";
-$username   = "root";
-$password   = "";
-$dbname     = "pharmacy_erp";
+// ── PHPMailer bootstrap ───────────────────────────────────────────────────────
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/mailer_config.php';
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+use PHPMailer\PHPMailer\Exception as MailException;
+
+// ── Database ──────────────────────────────────────────────────────────────────
+$conn = new mysqli('localhost', 'root', '', 'pharmacy_erp');
 if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'DB connection failed.']);
     exit;
 }
 
-// ── Create subscriptions table if not exists ──────────────────────────────────
+// ── Create subscriptions table if needed ─────────────────────────────────────
 $conn->query("CREATE TABLE IF NOT EXISTS subscriptions (
     id             INT PRIMARY KEY AUTO_INCREMENT,
     email          VARCHAR(150) UNIQUE NOT NULL,
@@ -39,34 +47,38 @@ $conn->query("CREATE TABLE IF NOT EXISTS subscriptions (
 // ── Read & sanitise input ─────────────────────────────────────────────────────
 $data          = json_decode(file_get_contents('php://input'), true);
 $email         = filter_var(trim($data['email'] ?? ''), FILTER_VALIDATE_EMAIL);
-$plan          = $conn->real_escape_string($data['plan'] ?? '');
-$paymentMethod = $conn->real_escape_string($data['payment_method'] ?? '');
+$plan          = trim($data['plan'] ?? '');
+$paymentMethod = trim($data['payment_method'] ?? '');
 
 if (!$email || !$plan || !$paymentMethod) {
     echo json_encode(['success' => false, 'message' => 'Missing or invalid fields.']);
     exit;
 }
 
-// ── Check for duplicate email ─────────────────────────────────────────────────
-$check = $conn->query("SELECT id, status FROM subscriptions WHERE email = '$email'");
+// ── Check duplicate ───────────────────────────────────────────────────────────
+$checkStmt = $conn->prepare("SELECT id, status FROM subscriptions WHERE email = ?");
+$checkStmt->bind_param('s', $email);
+$checkStmt->execute();
+$check      = $checkStmt->get_result();
+$reactivate = false;
 if ($check->num_rows > 0) {
     $row = $check->fetch_assoc();
+    $checkStmt->close();
     if ($row['status'] === 'active') {
         echo json_encode(['success' => false, 'message' => 'This email is already subscribed.']);
         exit;
     }
-    // Re-activating a cancelled subscription: update instead of insert
     $reactivate = true;
 } else {
-    $reactivate = false;
+    $checkStmt->close();
 }
 
-// ── Generate unique IDs & passwords ──────────────────────────────────────────
+// ── Generate credentials ──────────────────────────────────────────────────────
 function generateId(string $prefix): string {
     return strtoupper($prefix) . '-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
 }
 function generatePassword(int $length = 12): string {
-    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$';
+    $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
     $pass  = '';
     for ($i = 0; $i < $length; $i++) {
         $pass .= $chars[random_int(0, strlen($chars) - 1)];
@@ -74,78 +86,135 @@ function generatePassword(int $length = 12): string {
     return $pass;
 }
 
-$managerId   = generateId('MGR');
-$managerPass = generatePassword();
-$employeeId  = generateId('EMP');
-$employeePass = generatePassword();
-
-// Store hashed passwords in DB; send plain-text ones to email
+$managerId        = generateId('MGR');
+$managerPass      = generatePassword();
+$employeeId       = generateId('EMP');
+$employeePass     = generatePassword();
 $managerPassHash  = password_hash($managerPass,  PASSWORD_BCRYPT);
 $employeePassHash = password_hash($employeePass, PASSWORD_BCRYPT);
 
+// ── Save to database ──────────────────────────────────────────────────────────
 if ($reactivate) {
-    $sql = "UPDATE subscriptions SET
-                plan='$plan', payment_method='$paymentMethod',
-                manager_id='$managerId', manager_pass='$managerPassHash',
-                employee_id='$employeeId', employee_pass='$employeePassHash',
-                status='active', subscribed_at=NOW()
-            WHERE email='$email'";
+    $stmt = $conn->prepare(
+        "UPDATE subscriptions SET
+             plan=?, payment_method=?,
+             manager_id=?, manager_pass=?,
+             employee_id=?, employee_pass=?,
+             status='active', subscribed_at=NOW()
+         WHERE email=?"
+    );
+    $stmt->bind_param(
+        'sssssss',
+        $plan, $paymentMethod, $managerId, $managerPassHash, $employeeId, $employeePassHash, $email
+    );
 } else {
-    $sql = "INSERT INTO subscriptions
-                (email, plan, payment_method, manager_id, manager_pass, employee_id, employee_pass)
-            VALUES
-                ('$email', '$plan', '$paymentMethod', '$managerId', '$managerPassHash', '$employeeId', '$employeePassHash')";
+    $stmt = $conn->prepare(
+        "INSERT INTO subscriptions
+             (email, plan, payment_method, manager_id, manager_pass, employee_id, employee_pass)
+         VALUES (?, ?, ?, ?, ?, ?, ?)"
+    );
+    $stmt->bind_param(
+        'sssssss',
+        $email, $plan, $paymentMethod, $managerId, $managerPassHash, $employeeId, $employeePassHash
+    );
 }
 
-if (!$conn->query($sql)) {
-    echo json_encode(['success' => false, 'message' => 'Could not save subscription: ' . $conn->error]);
+if (!$stmt->execute()) {
+    echo json_encode(['success' => false, 'message' => 'Could not save subscription: ' . $stmt->error]);
     exit;
 }
+$stmt->close();
 
-// ── Also upsert into pharmacists table so manager can log in ──────────────────
+// Upsert pharmacists table so manager can log in
 $managerName = 'Manager (' . $email . ')';
-$conn->query("INSERT IGNORE INTO pharmacists (pharmacist_id, name, email, status, password_hash)
-              VALUES ('$managerId', '$managerName', '$email', 'active', '$managerPassHash')");
-
-// ── Send credentials email (requires PHPMailer or similar) ───────────────────
-// Uncomment and configure once SMTP is set up.
-/*
-require 'vendor/autoload.php';
-use PHPMailer\PHPMailer\PHPMailer;
-
-$mail = new PHPMailer(true);
-$mail->isSMTP();
-$mail->Host       = 'smtp.gmail.com';
-$mail->SMTPAuth   = true;
-$mail->Username   = 'your-sender@gmail.com';
-$mail->Password   = 'app-password';
-$mail->SMTPSecure = 'tls';
-$mail->Port       = 587;
-$mail->setFrom('your-sender@gmail.com', 'Health Information System');
-$mail->addAddress($email);
-$mail->Subject = 'Your HIS Login Credentials';
-$mail->isHTML(true);
-$mail->Body = "
-<h2>Welcome to Health Information System</h2>
-<p>Your subscription is now active. Here are your login credentials:</p>
-<h3>Manager Account</h3>
-<p>ID: <strong>$managerId</strong><br>Password: <strong>$managerPass</strong></p>
-<h3>Employee Account</h3>
-<p>ID: <strong>$employeeId</strong><br>Password: <strong>$employeePass</strong></p>
-<p>Please change your passwords after first login.</p>
-";
-$mail->send();
-*/
-
-echo json_encode([
-    'success'      => true,
-    'message'      => 'Subscription successful. Credentials sent to ' . $email,
-    'manager_id'   => $managerId,
-    'employee_id'  => $employeeId,
-    // Remove the plain-text passwords from the response once email is wired up.
-    // Included here for development/testing only.
-    'manager_pass_dev'  => $managerPass,
-    'employee_pass_dev' => $employeePass,
-]);
+$pharmStmt = $conn->prepare(
+    "INSERT IGNORE INTO pharmacists (pharmacist_id, name, email, status, password_hash)
+     VALUES (?, ?, ?, 'active', ?)"
+);
+$pharmStmt->bind_param('ssss', $managerId, $managerName, $email, $managerPassHash);
+$pharmStmt->execute();
+$pharmStmt->close();
 
 $conn->close();
+
+// ── Send credentials email ────────────────────────────────────────────────────
+$planLabel = strtoupper($plan);
+
+$credRow = fn(string $label, string $value, string $icon) =>
+    "<tr>
+       <td style='padding:12px 16px;background:#f8fafc;border-radius:8px;font-weight:600;color:#374151;font-size:14px;width:40%;'>
+         {$icon} {$label}
+       </td>
+       <td style='padding:12px 16px;font-family:monospace;font-size:15px;color:#1d4ed8;font-weight:700;'>
+         {$value}
+       </td>
+     </tr>";
+
+$emailBody = "
+<p style='margin:0 0 24px;color:#374151;font-size:16px;line-height:1.6;'>
+  Hello! 👋 Your <strong>Pharos HIS — Pharmacy ERP</strong> subscription is now 
+  <span style='color:#059669;font-weight:700;'>active</span>.
+  Here are your login credentials:
+</p>
+
+<!-- Plan badge -->
+<div style='background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:14px 20px;margin-bottom:28px;text-align:center;'>
+  <span style='color:#1d4ed8;font-weight:700;font-size:15px;'>📦 Plan: {$planLabel}</span>
+</div>
+
+<!-- Manager credentials -->
+<h3 style='margin:0 0 12px;color:#1e3a8a;font-size:16px;border-left:4px solid #1d4ed8;padding-left:12px;'>
+  👔 Manager Account
+</h3>
+<table width='100%' cellspacing='0' cellpadding='0' style='border-collapse:separate;border-spacing:0 6px;margin-bottom:28px;'>
+  " . $credRow('Manager ID',       $managerId,   '🪪') . "
+  " . $credRow('Password',         $managerPass, '🔑') . "
+</table>
+
+<!-- Employee credentials -->
+<h3 style='margin:0 0 12px;color:#1e3a8a;font-size:16px;border-left:4px solid #059669;padding-left:12px;'>
+  👷 Employee Account
+</h3>
+<table width='100%' cellspacing='0' cellpadding='0' style='border-collapse:separate;border-spacing:0 6px;margin-bottom:28px;'>
+  " . $credRow('Employee ID',  $employeeId,   '🪪') . "
+  " . $credRow('Password',     $employeePass, '🔑') . "
+</table>
+
+<!-- Warning box -->
+<div style='background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;color:#92400e;font-size:13px;line-height:1.6;'>
+  ⚠️ <strong>Security reminder:</strong> Please change your passwords after your first login.
+  Do not share these credentials with anyone.
+</div>
+";
+
+$emailSent = false;
+$emailError = '';
+
+try {
+    $mail = createMailer();
+    $mail->addAddress($email);
+    $mail->Subject = '🏥 Your Pharos HIS (ERP) Login Credentials';
+    $mail->Body    = emailWrapper('Pharmacy ERP — Subscription Confirmed', $emailBody);
+    $mail->AltBody = "Your ERP subscription is active.\n\n"
+                   . "Manager ID: $managerId\nManager Password: $managerPass\n\n"
+                   . "Employee ID: $employeeId\nEmployee Password: $employeePass\n\n"
+                   . "Please change your passwords after first login.";
+    $mail->send();
+    $emailSent = true;
+} catch (MailException $e) {
+    $emailError = $e->getMessage();
+}
+
+// ── Response ──────────────────────────────────────────────────────────────────
+// NOTE: plaintext passwords are intentionally NOT included here — they only
+// ever go out via the credentials email. Returning them in the API response
+// puts them in browser dev tools, proxy logs, and server access logs.
+echo json_encode([
+    'success'     => true,
+    'message'     => $emailSent
+        ? "Subscription successful. Credentials sent to $email."
+        : "Subscription saved, but the credentials email could not be sent ($emailError). Please use 'Resend Credentials' from the admin dashboard once email delivery is working, or contact support.",
+    'email_sent'  => $emailSent,
+    'manager_id'  => $managerId,
+    'employee_id' => $employeeId,
+]);

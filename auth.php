@@ -17,11 +17,13 @@ if (session_status() === PHP_SESSION_NONE) {
     // scripts regardless of which subdirectory they live in.
     // Without this, EHR_System.php and Online_Consultation_API.php each get
     // a different cookie path and can never see the same session.
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
         'domain'   => '',          // same host
-        'secure'   => false,       // set true if serving over HTTPS
+        'secure'   => $isHttps,    // auto: true once you're actually serving over HTTPS
         'httponly' => true,
         'samesite' => 'Lax',
     ]);

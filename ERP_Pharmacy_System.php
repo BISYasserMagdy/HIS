@@ -5,6 +5,45 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 
 session_start();
 
+// ════════════════════════════════════════════════════════════════════════════
+// AUTH GUARDS — added to close unauthenticated access to ERP data/actions.
+//
+// erpRequireAuth():        any logged-in pharmacist OR employee may proceed.
+//                          Returns the session's user_type ('pharmacist'|'employee').
+// erpRequireRole($roles):  only the given user_type(s) may proceed
+//                          (e.g. erpRequireRole(['pharmacist']) for manager-only
+//                          actions like backup/restore/suppliers).
+//
+// Both send a JSON 401/403 response and exit() immediately on failure, exactly
+// like requireRole() does in EHR_System.php / auth.php, so the existing
+// frontend's error handling (checking response.success) keeps working.
+// ════════════════════════════════════════════════════════════════════════════
+function erpRequireAuth(): string {
+    if (empty($_SESSION['user_id']) || empty($_SESSION['user_type'])) {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'status'  => 'Unauthorized access',
+            'message' => 'You must be logged in to perform this action.'
+        ]);
+        exit;
+    }
+    return $_SESSION['user_type'];
+}
+
+function erpRequireRole(array $roles): void {
+    $userType = erpRequireAuth();
+    if (!in_array($userType, $roles, true)) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'status'  => 'Unauthorized access',
+            'message' => 'Your account type (' . $userType . ') does not have permission for this action.'
+        ]);
+        exit;
+    }
+}
+
 // Initialize database if it doesn't exist (on first run)
 initializeDatabase();
 
@@ -96,6 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'restore_database') {
         handleRestoreDatabase();
+        exit;
+    }
+
+    if ($action === 'execute_factory_reset') {
+        executeFactoryReset();
         exit;
     }
 
@@ -350,6 +394,7 @@ function initializeDatabase() {
 }
 
 function sendProductList($lang = 'en') {
+    erpRequireAuth();
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -384,6 +429,7 @@ function sendProductList($lang = 'en') {
 }
 
 function sendSalesList() {
+    erpRequireAuth();
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -419,6 +465,7 @@ function sendSalesList() {
 }
 
 function sendDashboardStats() {
+    erpRequireAuth();
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -478,6 +525,7 @@ function sendDashboardStats() {
  * Query params: start_date=YYYY-MM-DD, end_date=YYYY-MM-DD (optional; defaults to current month)
  */
 function sendMonthlySummary() {
+    erpRequireAuth();
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -542,6 +590,7 @@ function sendMonthlySummary() {
 
 // Simple CSV report generators (demo implementations)
 function generateSalesReport() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
     // Fetch sales
@@ -579,6 +628,7 @@ function generateSalesReport() {
 }
 
 function generateInventoryReport() {
+    erpRequireAuth();
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -609,6 +659,7 @@ function generateInventoryReport() {
 }
 
 function generateFinancialReport() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
     $servername = "localhost";
@@ -644,6 +695,7 @@ function generateFinancialReport() {
 }
 
 function generateTrendAnalysis() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-07', strtotime('-7 days'));
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
@@ -684,6 +736,7 @@ function generateTrendAnalysis() {
 use Dompdf\Dompdf;
 
 function generateSalesPDF() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
@@ -728,6 +781,7 @@ function generateSalesPDF() {
 }
 
 function generateInventoryPDF() {
+    erpRequireAuth();
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -762,6 +816,7 @@ function generateInventoryPDF() {
 }
 
 function generateFinancialPDF() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
@@ -822,6 +877,7 @@ function generateFinancialPDF() {
 }
 
 function generateTrendPDF() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d', strtotime('-7 days'));
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
@@ -874,6 +930,7 @@ function generateTrendPDF() {
 
 // Return sales within a date range as JSON
 function sendSalesData() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
@@ -910,6 +967,7 @@ function sendSalesData() {
 
 // Return daily sales totals as JSON for a date range
 function sendTrendData() {
+    erpRequireAuth();
     $start = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d', strtotime('-7 days'));
     $end = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
@@ -954,6 +1012,7 @@ function sendTrendData() {
 }
 
 function handleSubmitSale() {
+    erpRequireAuth();
     $saleData = null;
     if (isset($_POST['sale_data'])) {
         $saleData = json_decode($_POST['sale_data'], true);
@@ -1195,6 +1254,7 @@ function getSupplierConn() {
  * GET ?action=get_suppliers  — return all suppliers
  */
 function sendSupplierList() {
+    erpRequireRole(['pharmacist']);
     $conn = getSupplierConn();
     $result = $conn->query("SELECT * FROM suppliers ORDER BY id ASC");
     $rows = array();
@@ -1208,6 +1268,7 @@ function sendSupplierList() {
  * Required: name  |  Optional: contact_person, address, phone, email, city, status
  */
 function handleAddSupplier() {
+    erpRequireRole(['pharmacist']);
     $name    = isset($_POST['name'])           ? trim($_POST['name'])           : '';
     $contact = isset($_POST['contact_person']) ? trim($_POST['contact_person']) : '';
     $address = isset($_POST['address'])        ? trim($_POST['address'])        : '';
@@ -1241,6 +1302,7 @@ function handleAddSupplier() {
  * Required: id  |  Any of: name, contact_person, address, phone, email, city, status
  */
 function handleEditSupplier() {
+    erpRequireRole(['pharmacist']);
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
     if ($id <= 0) {
         http_response_code(400);
@@ -1284,6 +1346,7 @@ function handleEditSupplier() {
  * Required: id
  */
 function handleDeleteSupplier() {
+    erpRequireRole(['pharmacist']);
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
     if ($id <= 0) {
         http_response_code(400);
@@ -1312,6 +1375,7 @@ function handleDeleteSupplier() {
  * Returns medicines expiring within 60 days.
  */
 function sendNearExpiryMedicines() {
+    erpRequireAuth();
     $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
     if ($conn->connect_error) {
         http_response_code(500);
@@ -1357,6 +1421,7 @@ function sendNearExpiryMedicines() {
  * Streams the pharmacy database as a plain-SQL backup.
  */
 function backupDatabase() {
+    erpRequireRole(['pharmacist']);
     $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
     if ($conn->connect_error) {
         http_response_code(500);
@@ -1444,7 +1509,15 @@ function handleFactoryResetRequest() {
         $conn->close();
     }
     if (empty($managerEmail)) {
-        $managerEmail = strtolower($manager_id) . '@pharmacy.com';
+        // Don't guess an address ("manager_id@pharmacy.com") — sending a
+        // destructive "delete everything" link to a guessed/wrong inbox is
+        // worse than just stopping here.
+        http_response_code(500);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "No email address on file for this manager account. Please contact support to set one before requesting a factory reset."
+        ));
+        exit;
     }
 
     // Generate secure one-time token
@@ -1478,37 +1551,137 @@ function handleFactoryResetRequest() {
     $host      = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $resetLink = $protocol . '://' . $host . '/Back%20End/ERP_Pharmacy_System.php?action=confirm_factory_reset&token=' . urlencode($token);
 
-    // Send email
-    $subject = "=?UTF-8?B?" . base64_encode("⚠️ Pharmacy ERP – Factory Reset Confirmation") . "?=";
-    $body    = "Dear {$managerName},\r\n\r\n"
-             . "A factory reset has been requested using your Manager credentials.\r\n\r\n"
-             . "Click the link below to CONFIRM the factory reset:\r\n\r\n"
-             . $resetLink . "\r\n\r\n"
-             . "⚠️  WARNING: This will PERMANENTLY DELETE ALL pharmacy data.\r\n"
-             . "This link expires in 30 minutes.\r\n\r\n"
-             . "If you did NOT request this, please ignore this email and change your password immediately.\r\n\r\n"
-             . "— Pharmacy ERP System";
-    $headers = "From: noreply@pharmacy-erp.com\r\nReply-To: noreply@pharmacy-erp.com\r\nX-Mailer: PHP/" . phpversion();
-    $sent = @mail($managerEmail, $subject, $body, $headers);
+    // ── Send email via PHPMailer/SMTP (same setup as subscribe.php/subscribe_ehr.php) ──
+    // The bare mail() function is unreliable on most hosts and easily
+    // spam-filtered; for a "delete everything" confirmation link we want
+    // actual delivery confirmation, not a fire-and-forget call.
+    $sent = false;
+    if (file_exists(__DIR__ . '/vendor/autoload.php') && file_exists(__DIR__ . '/mailer_config.php')) {
+        require_once __DIR__ . '/vendor/autoload.php';
+        require_once __DIR__ . '/mailer_config.php';
+
+        $safeLink = htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8');
+        $emailBody = "
+<p style='margin:0 0 20px;color:#374151;font-size:16px;line-height:1.6;'>
+  Dear <strong>{$managerName}</strong>,<br><br>
+  A factory reset has been requested using your Manager credentials.
+  Click the button below to confirm.
+</p>
+<p style='text-align:center;margin:28px 0;'>
+  <a href='{$safeLink}' style='background:#dc2626;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;'>
+    Confirm Factory Reset
+  </a>
+</p>
+<div style='background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;color:#92400e;font-size:13px;line-height:1.6;'>
+  ⚠️ <strong>Warning:</strong> this will PERMANENTLY DELETE ALL pharmacy data.
+  This link expires in 30 minutes. If you did not request this, ignore this
+  email and change your password immediately.
+</div>";
+
+        try {
+            $mail = createMailer();
+            $mail->addAddress($managerEmail);
+            $mail->Subject = '⚠️ Pharmacy ERP — Factory Reset Confirmation';
+            $mail->Body    = emailWrapper('Factory Reset Confirmation', $emailBody);
+            $mail->AltBody = "Dear {$managerName},\n\nA factory reset has been requested.\n"
+                           . "Confirm here: {$resetLink}\n\n"
+                           . "WARNING: this permanently deletes all pharmacy data. Link expires in 30 minutes.";
+            $mail->send();
+            $sent = true;
+        } catch (\Throwable $e) {
+            $sent = false;
+        }
+    } else {
+        // Fallback only if PHPMailer/mailer_config aren't installed yet.
+        $subject = "=?UTF-8?B?" . base64_encode("⚠️ Pharmacy ERP – Factory Reset Confirmation") . "?=";
+        $body    = "Dear {$managerName},\r\n\r\n"
+                 . "A factory reset has been requested using your Manager credentials.\r\n\r\n"
+                 . "Click the link below to CONFIRM the factory reset:\r\n\r\n"
+                 . $resetLink . "\r\n\r\n"
+                 . "⚠️  WARNING: This will PERMANENTLY DELETE ALL pharmacy data.\r\n"
+                 . "This link expires in 30 minutes.\r\n\r\n"
+                 . "If you did NOT request this, please ignore this email and change your password immediately.\r\n\r\n"
+                 . "— Pharmacy ERP System";
+        $headers = "From: noreply@pharmacy-erp.com\r\nReply-To: noreply@pharmacy-erp.com\r\nX-Mailer: PHP/" . phpversion();
+        $sent = @mail($managerEmail, $subject, $body, $headers);
+    }
 
     echo json_encode(array(
         "success"    => true,
         "message"    => "Reset link sent to " . $managerEmail,
-        "email_sent" => $sent,
-        "debug_link" => $resetLink  // Remove this in production
+        "email_sent" => $sent
+        // NOTE: the one-time token/link is intentionally NOT echoed back here.
+        // It must only ever reach the manager via the email itself.
     ));
     exit;
 }
 
 /**
  * GET ?action=confirm_factory_reset&token=TOKEN
- * Validates token and executes the factory reset.
+ *
+ * SAFE BY DESIGN: a GET request must never have a destructive side effect
+ * (links get prefetched by browsers/email scanners, bookmarked, re-visited,
+ * etc.). This handler only *validates* the token and renders a confirmation
+ * page with a button. The actual deletion happens in executeFactoryReset(),
+ * which only runs on an explicit POST containing the same token.
  */
 function confirmFactoryReset() {
     $token = isset($_GET['token']) ? trim($_GET['token']) : '';
     header('Content-Type: text/html; charset=utf-8');
     if (empty($token)) {
         echo "<h2>Invalid reset link.</h2>"; exit;
+    }
+
+    $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
+    if ($conn->connect_error) { echo "<h2>Database connection failed.</h2>"; exit; }
+    $conn->set_charset("utf8");
+
+    $stmt = $conn->prepare("SELECT id, manager_id, expires_at, used FROM factory_reset_tokens WHERE token = ?");
+    $stmt->bind_param("s", $token);
+    $stmt->execute();
+    $tokenRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $conn->close();
+
+    if (!$tokenRow || $tokenRow['used']) {
+        echo "<h2 style='color:#dc2626;'>This reset link is invalid or has already been used.</h2>"; exit;
+    }
+    if (new DateTime() > new DateTime($tokenRow['expires_at'])) {
+        echo "<h2 style='color:#dc2626;'>This reset link has expired. Please request a new one.</h2>"; exit;
+    }
+
+    $safeToken = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+    echo "<!DOCTYPE html><html><head><title>Confirm Factory Reset</title>
+    <style>body{font-family:sans-serif;text-align:center;padding:4rem;background:#fff5f5;}
+    button{background:#dc2626;color:#fff;border:none;padding:14px 28px;font-size:1rem;border-radius:8px;cursor:pointer;}
+    button:hover{background:#b91c1c;}</style>
+    </head><body>
+    <h1 style='color:#dc2626;'>⚠️ Confirm Factory Reset</h1>
+    <p style='font-size:1.1rem;max-width:480px;margin:0 auto 24px;'>
+        This will <strong>permanently delete all pharmacy data</strong>
+        (sales, prescriptions, purchases, returns, suppliers, medicines).
+        This cannot be undone.
+    </p>
+    <form method='POST' action='ERP_Pharmacy_System.php'>
+        <input type='hidden' name='action' value='execute_factory_reset'>
+        <input type='hidden' name='token' value='{$safeToken}'>
+        <button type='submit'>Yes, permanently delete everything</button>
+    </form>
+    </body></html>";
+    exit;
+}
+
+/**
+ * POST action=execute_factory_reset, body: { token: TOKEN }
+ * The actual destructive step. Re-validates the token (same checks as
+ * confirmFactoryReset) so a confirmation page can never be confused with
+ * authorization on its own, then truncates the tables and marks the token used.
+ */
+function executeFactoryReset() {
+    header('Content-Type: text/html; charset=utf-8');
+    $token = isset($_POST['token']) ? trim($_POST['token']) : '';
+    if (empty($token)) {
+        echo "<h2>Invalid reset request.</h2>"; exit;
     }
 
     $conn = new mysqli("localhost", "root", "", "pharmacy_erp");
@@ -1558,6 +1731,7 @@ function confirmFactoryReset() {
  * Accepts an uploaded .sql file and restores the database.
  */
 function handleRestoreDatabase() {
+    erpRequireRole(['pharmacist']);
     if (!isset($_FILES['backup_file']) || $_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
         http_response_code(400);
         echo json_encode(array("success" => false, "message" => "No backup file uploaded."));
