@@ -498,26 +498,23 @@
     }
     @media (max-width: 660px) {
       header {
-        display: grid; grid-template-columns: minmax(0, 1fr);
-        justify-items: center; gap: 0.4rem; padding: 0.65rem 1rem;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 0.5rem; padding: 0.65rem 0.75rem;
+        transition: background 0.4s, border-color 0.4s;
       }
       header > nav { display: none; }
-      header .logo-wrap { justify-self: center; gap: 0.3rem; flex: none; }
+      header .logo-wrap { gap: 0.3rem; flex: none; }
       header .logo-wrap img { display: none; }
       header .logo-text { font-size: 1rem; }
       .nav-right {
-        width: 100%; display: grid;
-        grid-template-columns: max-content max-content;
-        justify-content: center; align-items: center; gap: 0.5rem;
+        display: flex; align-items: center; justify-content: flex-end;
+        gap: 0.35rem;
       }
-      .theme-toggle { grid-column: 1 / -1; justify-self: center; }
       .theme-toggle .toggle-label { display: none; }
-      .lang-buttons { grid-column: 1; }
-      .nav-cta { grid-column: 2; }
+      .nav-cta { display: none; }
       .lang-buttons { gap: 0.25rem; }
       .lang-btn { padding: 0.4rem 0.55rem; font-size: 0.75rem; }
       .theme-toggle { padding: 0.4rem 0.65rem; }
-      .nav-right > .nav-cta { display: none; }
       .hero-stats { gap: 1.5rem; }
       .contact-card { padding: 2rem; }
       footer { flex-direction: column; text-align: center; }
@@ -933,8 +930,8 @@
     window.addEventListener('scroll', () => {
       const isScrolled = window.scrollY > 60;
       header.style.padding = isScrolled
-        ? (window.innerWidth > 900 ? '0.75rem 3rem' : '0.75rem 1.5rem')
-        : (window.innerWidth > 900 ? '1.1rem 3rem'  : '1rem 1.5rem');
+        ? (window.innerWidth > 900 ? '0.75rem 3rem' : window.innerWidth <= 660 ? '0.65rem 0.75rem' : '0.75rem 1.5rem')
+        : (window.innerWidth > 900 ? '1.1rem 3rem'  : window.innerWidth <= 660 ? '0.65rem 0.75rem' : '1rem 1.5rem');
     }, { passive: true });
     /* ── EHR LOGIN MODAL ── */
     const EHR_API = '../Back End/EHR_System.php'; // matches the path used in EHR_Page.html
