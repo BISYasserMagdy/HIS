@@ -501,13 +501,21 @@
         display: grid; grid-template-columns: minmax(0, 1fr);
         justify-items: center; gap: 0.4rem; padding: 0.65rem 1rem;
       }
+      header > nav { display: none; }
       header .logo-wrap { justify-self: center; gap: 0.3rem; flex: none; }
       header .logo-wrap img { width: 44px; height: 44px; }
       header .logo-text { font-size: 1rem; }
-      .nav-right { justify-content: center; gap: 0.35rem; }
+      .nav-right {
+        width: 100%; display: grid;
+        grid-template-columns: max-content max-content;
+        justify-content: center; align-items: center; gap: 0.5rem;
+      }
+      .theme-toggle { grid-column: 1 / -1; justify-self: center; }
+      .lang-buttons { grid-column: 1; }
+      .nav-cta { grid-column: 2; }
       .lang-buttons { gap: 0.25rem; }
       .lang-btn { padding: 0.4rem 0.55rem; font-size: 0.75rem; }
-      .theme-toggle { padding: 0.4rem 0.5rem; }
+      .theme-toggle { padding: 0.4rem 0.65rem; }
       .hero-stats { gap: 1.5rem; }
       .contact-card { padding: 2rem; }
       footer { flex-direction: column; text-align: center; }
