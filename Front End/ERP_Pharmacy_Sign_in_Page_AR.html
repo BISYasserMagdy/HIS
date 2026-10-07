@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Pharos HIS – تسجيل الدخول | نظام الـ ERP للصيدلية - الصيادلة فقط</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --brand-blue: #0a4d8c;
+  --brand-light: #f0f6ff;
+  --brand-dark: #032f5f;
+  --accent: #38a169;
+  --text: #152238;
+  --panel: #ffffff;
+}
+body {
+  margin: 0;
+  font-family: 'Arabic Typesetting', Arial, Helvetica, sans-serif;
+  background: linear-gradient(180deg, #f0f6ff 0%, #ffffff 100%);
+  color: var(--text);
+  direction: rtl;
+  font-size: 1.1rem;
+}
+header {
+  background: var(--brand-blue);
+  color: #fff;
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow:visible;
+}
+header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+nav a {
+  color: #d9e8ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+nav a:hover {
+  color: #fff;
+}
+.lang-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-right: auto;
+}
+.lang-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+.lang-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+.lang-btn.active {
+  background: #fff;
+  color: var(--brand-blue);
+}
+.banner {
+  padding: 64px 24px;
+  text-align: center;
+}
+.banner h2 {
+  margin: 0 0 12px;
+  font-size: 2.8rem;
+  color: var(--brand-dark);
+}
+.banner p {
+  max-width: 760px;
+  margin: 0 auto;
+  line-height: 1.75;
+  color: #2c3f61;
+  font-size: 1.15rem;
+}
+.section {
+  display: grid;
+  gap: 20px;
+  max-width: 1080px;
+  margin: 0 auto 40px;
+  padding: 0 24px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid #d9e5f1;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+.card h3 {
+  margin-top: 0;
+  color: var(--brand-dark);
+  font-size: 1.3rem;
+}
+.card p {
+  margin: 10px 0 0;
+  line-height: 1.65;
+  color: #3a4a6f;
+  font-size: 1.05rem;
+}
+.notice {
+  background: #fff7db;
+  border-left: 4px solid #f0b429;
+  color: #3c3a37;
+  padding: 18px 22px;
+  border-radius: 12px;
+  max-width: 1080px;
+  margin: 0 auto 40px;
+  border-right: 4px solid #f0b429;
+  border-left: none;
+  font-size: 1.05rem;
+}
+footer {
+  background: var(--brand-dark);
+  color: #cbd5e1;
+  padding: 18px 24px;
+  text-align: center;
+  font-size: 1.05rem;
+}
+.login-panel {
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--panel);
+  border: 1px solid #d9e5f1;
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.08);
+}
+.login-panel h3 {
+  font-size: 1.3rem;
+}
+.login-panel p {
+  font-size: 1.05rem;
+}
+.login-panel label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--brand-dark);
+  font-size: 1.05rem;
+}
+.login-panel input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #c8d8f0;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: var(--text);
+  box-sizing: border-box;
+  font-size: 1.05rem;
+}
+.login-panel button {
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.login-panel button:hover {
+  background: #2f8a50;
+}
+.error-message {
+  background-color: #fee;
+  border-right: 4px solid #c33;
+  color: #c33;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  display: none;
+}
+.error-message.show {
+  display: block;
+}
+.success-message {
+  background-color: #efe;
+  border-right: 4px solid #3c3;
+  color: #3c3;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  display: none;
+}
+.success-message.show {
+  display: block;
+}
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.forgot-password {
+  text-align: left;
+  margin-bottom: 16px;
+  margin-top: -8px;
+}
+.forgot-password a {
+  color: var(--brand-blue);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.forgot-password a:hover {
+  text-decoration: underline;
+}
+.new-user-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #d9e5f1;
+  text-align: center;
+}
+.new-user-section p {
+  color: #3a4a6f;
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+.subscribe-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--brand-blue);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--brand-blue);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+.subscribe-btn:hover {
+  background: var(--brand-blue);
+  color: #fff;
+}
+.forgot-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.forgot-modal.show {
+  display: flex;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+.modal-content h3 {
+  margin: 0 0 10px;
+  color: var(--brand-dark);
+}
+.modal-content p {
+  color: #3a4a6f;
+  margin: 0 0 20px;
+  font-size: 1rem;
+}
+.modal-content input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #c8d8f0;
+  border-radius: 10px;
+  background: #f8fbff;
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.modal-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+.modal-btn.primary {
+  background: var(--brand-blue);
+  color: #fff;
+  margin-bottom: 10px;
+}
+.modal-btn.primary:hover {
+  background: var(--brand-dark);
+}
+.modal-btn.secondary {
+  background: #e2e8f0;
+  color: #3a4a6f;
+}
+.modal-btn.secondary:hover {
+  background: #d1d5db;
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="Home_Page_AR.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="../Brand Identity/Pharos HIS Icon2.png" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
+  <nav>
+    <a href="Home Page AR.html">الصفحة الرئيسية</a>
+    <div class="lang-buttons">
+      <button class="lang-btn" onclick="window.location.href='ERP Pharmacy Sign in Page.html'">English</button>
+      <button class="lang-btn active" onclick="changeLanguage('ar')">العربية</button>
+    </div>
+  </nav>
+</header>
+<div class="forgot-modal" id="forgotModal">
+  <div class="modal-content">
+    <h3>استعادة كلمة المرور</h3>
+    <p>أدخل رقم الصيدلي الخاص بك وسنرسل لك رابط إعادة تعيين كلمة المرور.</p>
+    <input type="text" id="resetPharmId" placeholder="أدخل رقم الصيدلي">
+    <input type="email" id="resetEmail" placeholder="أدخل بريدك الإلكتروني">
+    <button class="modal-btn primary" onclick="sendResetLink()">إرسال رابط الاستعادة</button>
+    <button class="modal-btn secondary" onclick="closeForgotPassword()">إلغاء</button>
+  </div>
+</div>
+<section class="banner">
+  <h2>نظام الـ ERP للصيادلة</h2>
+  <p>أهلاً بك في بوابة نظام الـ ERP المصممة حصراً للصيادلة المرخصين. توفر هذه الصفحة الآمنة التحكم بالمخزون وإدارة الروشتات وتتبع الموردين والتقارير مع الحفاظ على قيود الوصول للمرضى.</p>
+</section>
+<section class="notice">
+  <strong>الوصول محدود:</strong> يمكن للصيادلة المصرح لهم فقط استخدام هذه الصفحة. المرضى لا يمكنهم الوصول لوظائف الـ ERP من هذه البوابة.
+</section>
+<section class="section">
+  <article class="card">
+    <h3>إدارة المخزون</h3>
+    <p>تتبع مخزون الأدوية في الوقت الفعلي واستقبال تنبيهات المخزون المنخفض وإدارة أوامر الشراء من خلال لوحة تحكم موحدة موجهة للصيادلة.</p>
+  </article>
+  <article class="card">
+    <h3>سير عمل الروشتات</h3>
+    <p>الموافقة على الروشتات والتحقق من الجرعات ومراقبة سجل الصرف مع الامتثال للمتطلبات التنظيمية في جميع عمليات الصيدلية.</p>
+  </article>
+  <article class="card">
+    <h3>الموردون والفواتير</h3>
+    <p>تبسيط أوامر الموردين والمقارنة بين الأسعار وإنشاء تقارير فواتير مصممة خصيصاً لشراء الصيدلية والمحاسبة.</p>
+  </article>
+</section>
+<section class="section">
+  <div class="login-panel">
+    <h3>دخول المستخدم</h3>
+    <p>أدخل رقم المستخدم وكلمة المرور للمتابعة. سيتم تحويل الموظفين إلى نظام الـ POS والمدراء إلى لوحة تحكم الـ ERP.</p>
+    <div id="errorMessage" class="error-message"></div>
+    <div id="successMessage" class="success-message"></div>
+    <form id="loginForm">
+      <label for="userId">رقم المستخدم</label>
+      <input id="userId" type="text" placeholder="أدخل رقم المستخدم" required>
+      <label for="password">كلمة المرور</label>
+      <input id="password" type="password" placeholder="أدخل كلمة المرور" required>
+      <div class="forgot-password">
+        <a href="#" onclick="showForgotPassword()">نسيت كلمة المرور؟</a>
+      </div>
+      <button type="submit" id="submitBtn">تسجيل الدخول</button>
+    </form>
+    <div class="new-user-section">
+      <p>جديد في نظامنا؟ اشترك الآن للوصول إلى بوابة نظام الـ ERP للصيدلية.</p>
+      <a href="Subscription.html" class="subscribe-btn">اشترك الآن</a>
+    </div>
+  </div>
+</section>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const userId = document.getElementById('userId').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errorDiv = document.getElementById('errorMessage');
+    const successDiv = document.getElementById('successMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('loginForm');
+
+    // Clear previous messages
+    errorDiv.classList.remove('show');
+    successDiv.classList.remove('show');
+
+    // Validate input
+    if (!userId || !password) {
+        errorDiv.textContent = 'يرجى إدخال رقم المستخدم وكلمة المرور';
+        errorDiv.classList.add('show');
+        return;
+    }
+
+    // Disable button and show loading state
+    submitBtn.disabled = true;
+    form.classList.add('loading');
+
+    // Determine user type by ID prefix and create FormData for POST request
+    const userType = userId.toUpperCase().startsWith('EMP') ? 'employee' : 'pharmacist';
+    const formData = new FormData();
+    formData.append('user_type', userType);
+    formData.append('user_id', userId);
+    formData.append('password', password);
+    formData.append('lang', 'ar');
+
+    // Send login request to PHP backend
+    fetch('../Back End/ERP Pharmacy System.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.user_type === 'employee') {
+                localStorage.setItem('posEmployeeId', userId);
+                localStorage.setItem('posEmployeeName', data.name);
+            } else {
+                localStorage.setItem('pharmacistName', data.name);
+            }
+
+            successDiv.textContent = 'تم تسجيل الدخول بنجاح! جاري إعادة التوجيه...';
+            successDiv.classList.add('show');
+            setTimeout(() => {
+                window.location.href = data.redirect || 'ERP Dashboard AR.html';
+            }, 1500);
+        } else {
+            errorDiv.textContent = data.message || 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+            errorDiv.classList.add('show');
+            submitBtn.disabled = false;
+            form.classList.remove('loading');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        errorDiv.textContent = 'حدث خطأ. يرجى المحاولة لاحقاً.';
+        errorDiv.classList.add('show');
+        submitBtn.disabled = false;
+        form.classList.remove('loading');
+    });
+});
+
+function changeLanguage(lang) {
+  // Update active button
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+function showForgotPassword() {
+  document.getElementById('forgotModal').classList.add('show');
+  return false;
+}
+
+function closeForgotPassword() {
+  document.getElementById('forgotModal').classList.remove('show');
+}
+
+function sendResetLink() {
+  const pharmId = document.getElementById('resetPharmId').value.trim();
+  const email = document.getElementById('resetEmail').value.trim();
+
+  if (!pharmId || !email) {
+      alert('يرجى إدخال كل من رقم الصيدلي والبريد الإلكتروني.');
+      return;
+  }
+
+  if (!email.includes('@')) {
+      alert('يرجى إدخال بريد إلكتروني صحيح.');
+      return;
+  }
+
+  alert('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد.');
+  closeForgotPassword();
+}
+</script>
+<footer>
+  <p>نظام الـ ERP للصيدلية — للصيادلة فقط</p>
+</footer>
+</body>
+</html>
