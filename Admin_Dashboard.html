@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Pharos HIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f6ff;
+    --surface: #ffffff;
+    --primary: #123a66;
+    --primary-dark: #0a2240;
+    --primary-light: #eaf1fb;
+    --accent: #c9a84c;
+    --accent2: #2bb8a8;
+    --text: #1f2937;
+    --muted: #5b6b7b;
+    --border: #dbe4f0;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; padding: 1.5rem 2rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .logo { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
+  nav { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  nav a {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+    padding: 0.4rem 0.9rem; border-radius: 8px; transition: background 0.15s;
+  }
+  nav a:hover { background: rgba(255,255,255,0.15); }
+  .lang-btn {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.85rem;
+    font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--primary-light), #fff);
+    padding: 2.5rem 2rem; text-align: center;
+  }
+  .hero-badge {
+    display: inline-block; background: #fef3c7; color: #92400e;
+    padding: 0.35rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+    margin-bottom: 0.75rem; letter-spacing: 0.03em;
+  }
+  .hero h2 {
+    font-family: 'Fraunces', serif; font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin: 0 0 0.5rem; color: var(--primary-dark);
+  }
+  .hero p { color: var(--muted); margin: 0; font-size: 0.98rem; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .hospital-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--primary-light); color: var(--primary-dark);
+    padding: 0.4rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem;
+    border: 1px solid var(--border);
+  }
+  .filter-tabs { display: flex; gap: 0.4rem; }
+  .filter-tab {
+    padding: 0.45rem 1rem; border-radius: 20px; border: 1px solid var(--border);
+    background: #fff; color: var(--muted); font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .btn-primary {
+    background: var(--primary); color: #fff; border: none; padding: 0.65rem 1.4rem;
+    border-radius: 10px; font-weight: 700; font-size: 0.92rem; cursor: pointer;
+    font-family: inherit; transition: background 0.15s; display: inline-flex;
+    align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  /* STAFF GRID */
+  .staff-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .staff-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem;
+    transition: box-shadow 0.15s; position: relative;
+  }
+  .staff-card:hover { box-shadow: 0 4px 16px rgba(26,115,232,0.08); }
+  .staff-card.inactive { opacity: 1; }
+  .staff-card.inactive .staff-top,
+  .staff-card.inactive .staff-meta,
+  .staff-card.inactive .role-badge { opacity: 0.55; }
+  .staff-top { display: flex; align-items: center; gap: 0.8rem; }
+  .staff-avatar {
+    width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: 1.05rem; flex-shrink: 0; color: #fff;
+  }
+  .staff-avatar.doctor { background: linear-gradient(135deg, #3b82f6, #0a2240); }
+  .staff-avatar.nurse  { background: linear-gradient(135deg, #10b981, #065f46); }
+  .staff-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1rem; margin: 0; }
+  .staff-username { color: var(--muted); font-size: 0.8rem; margin: 0; }
+  .staff-meta { font-size: 0.82rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+  .role-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.68rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; width: fit-content;
+  }
+  .role-badge.doctor { background: #dbeafe; color: #0a2240; }
+  .role-badge.nurse  { background: #d1fae5; color: #065f46; }
+  .status-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.68rem;
+    font-weight: 700; width: fit-content;
+  }
+  .status-badge.active   { background: #d1fae5; color: #065f46; }
+  .status-badge.inactive { background: #fee2e2; color: #991b1b; }
+  .staff-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+  .icon-btn {
+    flex: 1; border: 1px solid var(--border); background: #fff; border-radius: 8px;
+    padding: 0.45rem 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: inherit; color: var(--text);
+  }
+  .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
+  .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state {
+    text-align: center; padding: 3rem 1rem; color: var(--muted);
+    background: var(--surface); border-radius: 14px; border: 1px dashed var(--border);
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,34,68,0.45);
+    align-items: center; justify-content: center; z-index: 999; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 440px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { font-family: 'Fraunces', serif; margin: 0 0 0.3rem; color: var(--primary-dark); }
+  .modal .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 1.25rem; }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text); }
+  .field input, .field select {
+    width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.92rem; font-family: inherit; background: #f8fbff; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--primary); }
+  .field-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+  .modal-actions { display: flex; gap: 0.6rem; margin-top: 1.5rem; }
+  .btn-secondary {
+    flex: 1; background: #f1f5f9; color: var(--text); border: none; padding: 0.7rem;
+    border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  }
+  .btn-submit {
+    flex: 1; background: var(--primary); color: #fff; border: none; padding: 0.7rem;
+    border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  }
+  .btn-submit:hover { background: var(--primary-dark); }
+  .modal-error {
+    display: none; background: #fee2e2; color: #991b1b; padding: 0.6rem 1rem;
+    border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem;
+  }
+
+  /* RESET PASSWORD MODAL */
+  .cred-box {
+    background: #f0fdf4; border: 1.5px solid #6ee7b7; border-radius: 10px;
+    padding: 1rem 1.2rem; margin: 1rem 0; display: none;
+  }
+  .cred-box.show { display: block; }
+  .cred-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; margin-bottom: 0.5rem;
+  }
+  .cred-row:last-child { margin-bottom: 0; }
+  .cred-label { font-size: 0.75rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: .04em; min-width: 80px; }
+  .cred-val { font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #0a2240; flex: 1; word-break: break-all; }
+  .copy-inline-btn {
+    border: 1px solid #6ee7b7; background: #fff; border-radius: 6px;
+    padding: 3px 9px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+    color: #065f46; transition: all .15s; flex-shrink: 0;
+  }
+  .copy-inline-btn:hover { background: #d1fae5; }
+  .cred-warning {
+    font-size: 0.75rem; color: #92400e; background: #fef3c7;
+    border-radius: 8px; padding: 0.5rem 0.8rem; margin-top: 0.75rem;
+  }
+  /* RESEND MODAL */
+  .resend-preview {
+    background: #f8fbff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.9rem 1.1rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+  .resend-preview strong { color: var(--text); }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--primary-dark);
+    color: #fff; padding: 0.85rem 1.4rem; border-radius: 10px; font-size: 0.9rem;
+    font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.18); z-index: 1100;
+    opacity: 0; transform: translateY(20px); transition: all 0.25s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.err { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="Home_Page.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="../Brand Identity/Pharos HIS Icon2.png" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
+  <nav>
+    <a href="Home_Page.html">Home</a>
+    <a href="EHR_Page.html">EHR System</a>
+    <a href="Admin_Dashboard.html" style="background:rgba(255,255,255,0.18);">Admin Dashboard</a>
+    <span id="navUserBadge" style="
+        display:inline-flex;align-items:center;gap:6px;
+        padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:600;
+        background:var(--primary-light);color:var(--primary-dark);border:1px solid var(--border);
+        white-space:nowrap;cursor:default;user-select:none;">
+      <span id="navRoleIcon">🔐</span>
+      <span id="navUserName">…</span>
+      <span id="navRoleBadge" style="
+          padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;
+          text-transform:uppercase;letter-spacing:0.04em;background:#fef3c7;color:#92400e;">
+        …
+      </span>
+    </span>
+    <button class="lang-btn" onclick="adminLogout()" title="Sign out" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;">🚪 Logout</button>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🔐 ADMIN CONTROL PANEL</div>
+  <h2>Staff Directory &amp; Access Management</h2>
+  <p id="heroSub">Manage doctor and nurse accounts for your hospital.</p>
+</section>
+
+<main>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="hospital-pill">🏥 <span id="hospitalName">Loading…</span></span>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">All Staff</button>
+        <button class="filter-tab" data-filter="doctor" onclick="setFilter('doctor')">🩺 Doctors</button>
+        <button class="filter-tab" data-filter="nurse" onclick="setFilter('nurse')">💉 Nurses</button>
+        <button class="filter-tab" data-filter="logs" onclick="setFilter('logs')">📜 Audit Logs</button>
+        <button class="filter-tab" data-filter="requests" onclick="setFilter('requests')" id="reqTabBtn">
+          🔔 Pending Requests<span id="reqBadge" style="display:none;margin-left:6px;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.7rem;font-weight:700;">0</span>
+        </button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="openAddModal()">+ Add Staff Member</button>
+  </div>
+
+  <div id="staffGrid" class="staff-grid"></div>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="icon">👥</div>
+    <div style="font-weight:700; margin-bottom:0.25rem;">No staff members found</div>
+    <div style="font-size:0.85rem;">Add a doctor or nurse to get started.</div>
+  </div>
+
+  <!-- AUDIT LOG PANEL -->
+  <div id="auditLogPanel" style="display:none;">
+    <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <thead>
+        <tr style="background:#f1f5f9; text-align:left; font-size:0.8rem; color:#475569;">
+          <th style="padding:10px 14px;">User</th>
+          <th style="padding:10px 14px;">Role</th>
+          <th style="padding:10px 14px;">Action</th>
+          <th style="padding:10px 14px;">IP Address</th>
+          <th style="padding:10px 14px;">Date</th>
+        </tr>
+      </thead>
+      <tbody id="auditLogBody">
+        <tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PENDING PROFILE CHANGE REQUESTS PANEL -->
+  <div id="requestsPanel" style="display:none;">
+    <div id="requestsList"></div>
+    <div id="requestsEmpty" style="display:none; text-align:center; padding:3rem 1rem; color:var(--muted);">
+      <div style="font-size:2.5rem; margin-bottom:0.5rem;">✅</div>
+      <div style="font-weight:700; margin-bottom:0.25rem;">No pending requests</div>
+      <div style="font-size:0.85rem;">Profile change requests from staff will appear here.</div>
+    </div>
+  </div>
+</main>
+
+<!-- ADD STAFF MODAL -->
+<div class="modal-overlay" id="addModalOverlay">
+  <div class="modal">
+    <h3>Add Staff Member</h3>
+    <p class="sub" id="addModalHospitalHint">This account will be created at your hospital.</p>
+    <div class="modal-error" id="addModalError"></div>
+    <form id="addStaffForm">
+      <div class="field">
+        <label>Role</label>
+        <select id="newRole" required>
+          <option value="doctor">🩺 Doctor</option>
+          <option value="nurse">💉 Nurse</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="newFullName" placeholder="Dr. Jane Doe" required>
+      </div>
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="newUsername" placeholder="jane_doe" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Specialty <span style="color:#94a3b8; font-weight:400;">(optional)</span></label>
+        <select id="newSpecialty">
+          <option value="">— None —</option>
+          <option value="General Medicine">General Medicine</option>
+          <option value="Internal Medicine">Internal Medicine</option>
+          <option value="Pediatrics">Pediatrics</option>
+          <option value="Obstetrics &amp; Gynecology">Obstetrics &amp; Gynecology</option>
+          <option value="Cardiology">Cardiology</option>
+          <option value="Neurology">Neurology</option>
+          <option value="Nephrology">Nephrology</option>
+          <option value="Pulmonology">Pulmonology</option>
+          <option value="Gastroenterology">Gastroenterology</option>
+          <option value="Endocrinology">Endocrinology</option>
+          <option value="Oncology">Oncology</option>
+          <option value="Orthopedics">Orthopedics</option>
+          <option value="Dermatology">Dermatology</option>
+          <option value="Psychiatry">Psychiatry</option>
+          <option value="Radiology">Radiology</option>
+          <option value="Anesthesiology">Anesthesiology</option>
+          <option value="Emergency Medicine">Emergency Medicine</option>
+          <option value="ICU / Critical Care">ICU / Critical Care</option>
+          <option value="Surgery — General">Surgery — General</option>
+          <option value="Ophthalmology">Ophthalmology</option>
+          <option value="ENT (Otolaryngology)">ENT (Otolaryngology)</option>
+          <option value="Urology">Urology</option>
+          <option value="Other">Other (type below)</option>
+        </select>
+        <input type="text" id="newSpecialtyOther" placeholder="Enter specialty" autocomplete="off"
+               style="display:none; margin-top:0.5rem;">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="newEmail" placeholder="jane.doe@hospital.com" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Temporary Password</label>
+        <input type="password" id="newPassword" placeholder="Min. 8 characters" required minlength="8" autocomplete="new-password">
+        <div class="field-hint">Share this with the staff member — they should change it after first login.</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+        <button type="submit" class="btn-submit" id="addStaffBtn">Create Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM DEACTIVATE MODAL -->
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="confirmTitle">Deactivate account?</h3>
+    <p class="sub" id="confirmBody">This will prevent them from logging in. You can reactivate later.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn-submit" id="confirmActionBtn" style="background:var(--danger);">Deactivate</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- EDIT SPECIALTY MODAL -->
+<div class="modal-overlay" id="specialtyModalOverlay">
+  <div class="modal" style="max-width:420px;">
+    <h3>Set Specialty</h3>
+    <p class="sub" id="specialtyModalSub">Choose the category that best describes this staff member's specialty.</p>
+    <div class="field">
+      <label>Specialty</label>
+      <select id="editSpecialtySelect">
+        <option value="">— None —</option>
+        <option value="General Medicine">General Medicine</option>
+        <option value="Internal Medicine">Internal Medicine</option>
+        <option value="Pediatrics">Pediatrics</option>
+        <option value="Obstetrics &amp; Gynecology">Obstetrics &amp; Gynecology</option>
+        <option value="Cardiology">Cardiology</option>
+        <option value="Neurology">Neurology</option>
+        <option value="Nephrology">Nephrology</option>
+        <option value="Pulmonology">Pulmonology</option>
+        <option value="Gastroenterology">Gastroenterology</option>
+        <option value="Endocrinology">Endocrinology</option>
+        <option value="Oncology">Oncology</option>
+        <option value="Orthopedics">Orthopedics</option>
+        <option value="Dermatology">Dermatology</option>
+        <option value="Psychiatry">Psychiatry</option>
+        <option value="Radiology">Radiology</option>
+        <option value="Anesthesiology">Anesthesiology</option>
+        <option value="Emergency Medicine">Emergency Medicine</option>
+        <option value="ICU / Critical Care">ICU / Critical Care</option>
+        <option value="Surgery — General">Surgery — General</option>
+        <option value="Ophthalmology">Ophthalmology</option>
+        <option value="ENT (Otolaryngology)">ENT (Otolaryngology)</option>
+        <option value="Urology">Urology</option>
+        <option value="Other">Other (type below)</option>
+      </select>
+      <input type="text" id="editSpecialtyOther" placeholder="Enter specialty" autocomplete="off"
+             style="display:none; margin-top:0.5rem;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeSpecialtyModal()">Cancel</button>
+      <button class="btn-submit" id="specialtySaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPERVISED PATIENTS MODAL -->
+<div class="modal-overlay" id="patientsModalOverlay">
+  <div class="modal" style="max-width:560px;">
+    <h3 id="patientsModalTitle">Patients</h3>
+    <p class="sub" id="patientsModalSub"></p>
+    <div id="patientsModalBody" style="max-height:50vh; overflow-y:auto; margin-top:0.75rem;"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closePatientsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="resetModalOverlay">
+  <div class="modal" style="max-width:440px;">
+    <h3>🔑 Reset Password</h3>
+    <p class="sub" id="resetModalSub">Reset password for this staff member.</p>
+    <div class="modal-error" id="resetModalError"></div>
+    <div id="resetFormSection">
+      <div class="resend-preview" id="resetPreview"></div>
+    </div>
+    <div id="resetSuccessBox" class="cred-box" style="display:none;">
+      <div style="font-size:0.88rem; color:#065f46; font-weight:600;">
+        ✅ A new password has been generated and emailed directly to the staff member.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeResetModal()">Cancel</button>
+      <button class="btn-submit" id="resetConfirmBtn" onclick="doResetPassword()">Reset &amp; Email New Password</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+const API = '../Back End/EHR_System.php';
+
+let allStaff   = [];
+let currentFilter = 'all';
+let pendingDeactivateId = null;
+
+// ─── TOAST ──────────────────────────────────────────────────────────────
+function showToast(msg, ok = true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = ok ? 'show' : 'show err';
+  setTimeout(() => { t.className = ''; }, 2600);
+}
+
+// ─── API HELPER ─────────────────────────────────────────────────────────
+async function api(params, method = 'GET', body = null) {
+  let url = API + '?' + new URLSearchParams(params).toString();
+  const opts = { method, credentials: 'include' };
+  if (body) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const data = await res.json().catch(() => ({ success: false, message: 'Invalid server response' }));
+  if (res.status === 401) { handleUnauthorized(); throw new Error('unauthorized'); }
+  return data;
+}
+
+function handleUnauthorized() {
+  showToast('⚠ Session expired — please sign in again.', false);
+  setTimeout(() => { window.location.replace('Home_Page.html'); }, 1200);
+}
+
+async function adminLogout() {
+  try { await fetch(API + '?action=logout', { method: 'POST', credentials: 'include' }); }
+  catch (e) {}
+  localStorage.removeItem('ehr_user');
+  window.location.replace('Home_Page.html');
+}
+
+// ─── INIT ───────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const who = await api({ action: 'whoami' });
+    if (!who.success || !who.logged_in) { handleUnauthorized(); return; }
+
+    // ── Role gate: admins (full access) and managers (view-only) ──────
+    if (who.role !== 'admin' && who.role !== 'manager') {
+      showToast('⛔ Admin access only — redirecting to EHR System…', false);
+      setTimeout(() => { window.location.replace('EHR_Page.html'); }, 1200);
+      return;
+    }
+
+    window.EHR_USER = { name: who.name, role: who.role, hospital: who.hospital };
+    localStorage.setItem('ehr_user', JSON.stringify(window.EHR_USER));
+    setupNavBadge();
+
+    document.getElementById('hospitalName').textContent = who.hospital || 'Unknown Hospital';
+    document.getElementById('heroSub').textContent =
+      `Manage doctor and nurse accounts for ${who.hospital || 'your hospital'}.`;
+    document.getElementById('addModalHospitalHint').textContent =
+      `This account will be created at ${who.hospital || 'your hospital'}.`;
+
+    // ── Manager: view-only — hide Add Staff and any mutation controls ──
+    if (who.role === 'manager') {
+      window._dashReadOnly = true;
+      const addBtn = document.querySelector('.toolbar button.btn-primary');
+      if (addBtn) addBtn.style.display = 'none';
+      document.querySelector('.hero-badge').textContent = '👁️ VIEW-ONLY ACCESS';
+      // Approving requests is admin-only — hide tab for managers
+      const reqTab = document.getElementById('reqTabBtn');
+      if (reqTab) reqTab.style.display = 'none';
+    } else {
+      // Show pending request count badge for admins on page load
+      checkPendingRequestsBadge();
+    }
+
+  } catch (e) {
+    showToast('⚠ Network error: ' + e.message, false);
+    return;
+  }
+  await loadStaff();
+}
+
+function setupNavBadge() {
+  const u = window.EHR_USER || {};
+  document.getElementById('navUserName').textContent = u.name || 'Admin';
+}
+
+// ─── LOAD STAFF ─────────────────────────────────────────────────────────
+async function loadStaff() {
+  const res = await api({ action: 'get_users' });
+  if (!res.success) { showToast('⚠ Could not load staff: ' + (res.message || ''), false); return; }
+  allStaff = res.data || [];
+  renderStaff();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+
+  const grid  = document.getElementById('staffGrid');
+  const empty = document.getElementById('emptyState');
+  const logs  = document.getElementById('auditLogPanel');
+  const reqs  = document.getElementById('requestsPanel');
+  const addBtn = document.querySelector('.toolbar button.btn-primary');
+
+  // Hide everything first
+  grid.style.display = 'none';
+  empty.style.display = 'none';
+  logs.style.display = 'none';
+  if (reqs) reqs.style.display = 'none';
+  if (addBtn) addBtn.style.display = 'none';
+
+  if (f === 'logs') {
+    logs.style.display = 'block';
+    loadAuditLog();
+    return;
+  }
+  if (f === 'requests') {
+    if (reqs) reqs.style.display = 'block';
+    loadPendingRequests();
+    return;
+  }
+  // staff tabs
+  grid.style.display = '';
+  if (addBtn && !window._dashReadOnly) addBtn.style.display = '';
+  renderStaff();
+}
+
+async function loadAuditLog() {
+  const tbody = document.getElementById('auditLogBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">Loading…</td></tr>';
+  try {
+    const res = await fetch(API + '?action=get_audit_log&limit=100', { credentials: 'include' });
+    const data = await res.json();
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:14px; text-align:center; color:#ef4444;">${escapeHtml(data.message || 'Failed to load logs.')}</td></tr>`;
+      return;
+    }
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:14px; text-align:center; color:#94a3b8;">No audit events found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(row => {
+      const actionColor = row.action === 'login' ? '#16a34a' : '#dc2626';
+      const date = new Date(row.created_at).toLocaleString();
+      return `
+        <tr style="border-top:1px solid #f1f5f9; font-size:0.85rem;">
+          <td style="padding:10px 14px;">${escapeHtml(row.full_name || row.username)}</td>
+          <td style="padding:10px 14px; text-transform:capitalize;">${escapeHtml(row.role)}</td>
+          <td style="padding:10px 14px; color:${actionColor}; font-weight:600; text-transform:uppercase; font-size:0.75rem;">${escapeHtml(row.action)}</td>
+          <td style="padding:10px 14px; color:#64748b;">${escapeHtml(row.ip_address || '—')}</td>
+          <td style="padding:10px 14px; color:#64748b;">${date}</td>
+        </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:14px; text-align:center; color:#ef4444;">Error loading audit log.</td></tr>';
+  }
+}
+
+function renderStaff() {
+  const grid  = document.getElementById('staffGrid');
+  const empty = document.getElementById('emptyState');
+
+  let list = allStaff;
+  if (currentFilter !== 'all') list = list.filter(u => u.role === currentFilter);
+
+  if (list.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = list.map(u => {
+    const initials = (u.full_name || u.username).split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+    const active = Number(u.is_active) === 1;
+    const roleIcon = u.role === 'doctor' ? '🩺' : '💉';
+    return `
+      <div class="staff-card ${active ? '' : 'inactive'}">
+        <div class="staff-top">
+          <div class="staff-avatar ${u.role}">${initials}</div>
+          <div>
+            <p class="staff-name">${escapeHtml(u.full_name || u.username)}</p>
+            <p class="staff-username">@${escapeHtml(u.username)}</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <span class="role-badge ${u.role}">${roleIcon} ${u.role}</span>
+          <span class="status-badge ${active ? 'active' : 'inactive'}">${active ? '● Active' : '○ Inactive'}</span>
+          ${u.specialty ? `<span class="role-badge" style="background:#fef3c7; color:#92400e;">🏷️ ${escapeHtml(u.specialty)}</span>` : ''}
+        </div>
+        <div class="staff-meta">
+          <span>✉️ ${escapeHtml(u.email)}</span>
+          <span>📅 Joined ${formatDate(u.created_at)}</span>
+        </div>
+        <div class="staff-actions">
+          <button class="icon-btn" onclick="openPatientsModal(${u.id}, '${escapeHtml((u.full_name || u.username).replace(/'/g, "\\'"))}')">
+            🩺 Patients
+          </button>
+          ${window._dashReadOnly ? '' : `<button class="icon-btn" onclick="editSpecialty(${u.id}, '${escapeHtml((u.specialty || '').replace(/'/g, "\\'"))}')">
+                 🏷️ Specialty
+               </button>`}
+          ${window._dashReadOnly ? '' : (active
+            ? `<button class="icon-btn danger" onclick="confirmDeactivate(${u.id}, '${escapeHtml(u.full_name || u.username)}')">
+                 🚫 Deactivate
+               </button>`
+            : `<button class="icon-btn" style="color:#fff; background:#16a34a; border-color:#16a34a;" onclick="reactivateUser(${u.id})">
+                 ✅ Reactivate
+               </button>`
+          )}
+        </div>
+        ${window._dashReadOnly ? '' : `
+        <div class="staff-actions" style="margin-top:0.25rem;">
+          <button class="icon-btn" onclick="copyUsername('${escapeHtml(u.username)}', this)" title="Copy username to clipboard">
+            📋 Copy Username
+          </button>
+          <button class="icon-btn" onclick="openResetModal(${u.id}, '${escapeHtml((u.full_name || u.username).replace(/'/g, "\\'"))}', '${escapeHtml(u.username)}', '${escapeHtml(u.email)}')">
+            🔑 Reset Password
+          </button>
+
+        </div>`}
+      </div>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(s) {
+  if (!s) return '—';
+  const d = new Date(s.replace(' ', 'T'));
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ─── ADD STAFF MODAL ────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('addStaffForm').reset();
+  document.getElementById('addModalError').style.display = 'none';
+  document.getElementById('newSpecialtyOther').style.display = 'none';
+  document.getElementById('addModalOverlay').classList.add('open');
+}
+function closeAddModal() {
+  document.getElementById('addModalOverlay').classList.remove('open');
+}
+document.getElementById('addModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'addModalOverlay') closeAddModal();
+});
+document.getElementById('newSpecialty').addEventListener('change', e => {
+  document.getElementById('newSpecialtyOther').style.display = (e.target.value === 'Other') ? 'block' : 'none';
+});
+
+document.getElementById('addStaffForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl = document.getElementById('addModalError');
+  errEl.style.display = 'none';
+
+  const specialtySelect = document.getElementById('newSpecialty').value;
+  const specialty = (specialtySelect === 'Other')
+    ? document.getElementById('newSpecialtyOther').value.trim()
+    : specialtySelect;
+
+  const body = {
+    role:      document.getElementById('newRole').value,
+    full_name: document.getElementById('newFullName').value.trim(),
+    username:  document.getElementById('newUsername').value.trim(),
+    email:     document.getElementById('newEmail').value.trim(),
+    specialty: specialty,
+    password:  document.getElementById('newPassword').value,
+  };
+
+  const btn = document.getElementById('addStaffBtn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+
+  try {
+    const res = await api({ action: 'create_user' }, 'POST', body);
+    if (res.success) {
+      showToast(`✅ ${body.role === 'doctor' ? 'Doctor' : 'Nurse'} account created.`);
+      closeAddModal();
+      await loadStaff();
+    } else {
+      errEl.textContent = res.message || 'Could not create account.';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+});
+
+// ─── DEACTIVATE ─────────────────────────────────────────────────────────
+function confirmDeactivate(id, name) {
+  pendingDeactivateId = id;
+  document.getElementById('confirmBody').textContent =
+    `${name} will no longer be able to log in. This can be reversed by an admin later.`;
+  document.getElementById('confirmModalOverlay').classList.add('open');
+}
+function closeConfirmModal() {
+  document.getElementById('confirmModalOverlay').classList.remove('open');
+  pendingDeactivateId = null;
+}
+document.getElementById('confirmModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'confirmModalOverlay') closeConfirmModal();
+});
+document.getElementById('confirmActionBtn').addEventListener('click', async () => {
+  if (!pendingDeactivateId) return;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.disabled = true; btn.textContent = 'Deactivating…';
+  try {
+    const res = await api({ action: 'deactivate_user' }, 'POST', { id: pendingDeactivateId });
+    if (res.success) {
+      showToast('✅ Account deactivated.');
+      closeConfirmModal();
+      await loadStaff();
+    } else {
+      showToast('⚠ ' + (res.message || 'Could not deactivate.'), false);
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Deactivate';
+  }
+});
+
+// ─── EDIT SPECIALTY ─────────────────────────────────────────────────────
+const SPECIALTY_OPTIONS = Array.from(document.querySelectorAll('#editSpecialtySelect option')).map(o => o.value);
+let pendingSpecialtyId = null;
+
+function editSpecialty(id, current) {
+  pendingSpecialtyId = id;
+  const select = document.getElementById('editSpecialtySelect');
+  const other  = document.getElementById('editSpecialtyOther');
+  if (current && SPECIALTY_OPTIONS.includes(current)) {
+    select.value = current;
+    other.style.display = 'none';
+    other.value = '';
+  } else if (current) {
+    select.value = 'Other';
+    other.style.display = 'block';
+    other.value = current;
+  } else {
+    select.value = '';
+    other.style.display = 'none';
+    other.value = '';
+  }
+  document.getElementById('specialtyModalOverlay').classList.add('open');
+}
+function closeSpecialtyModal() {
+  document.getElementById('specialtyModalOverlay').classList.remove('open');
+  pendingSpecialtyId = null;
+}
+document.getElementById('specialtyModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'specialtyModalOverlay') closeSpecialtyModal();
+});
+document.getElementById('editSpecialtySelect').addEventListener('change', e => {
+  document.getElementById('editSpecialtyOther').style.display = (e.target.value === 'Other') ? 'block' : 'none';
+});
+document.getElementById('specialtySaveBtn').addEventListener('click', async () => {
+  if (!pendingSpecialtyId) return;
+  const select = document.getElementById('editSpecialtySelect').value;
+  const specialty = (select === 'Other')
+    ? document.getElementById('editSpecialtyOther').value.trim()
+    : select;
+
+  const btn = document.getElementById('specialtySaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await api({ action: 'update_user' }, 'POST', { id: pendingSpecialtyId, specialty });
+    if (res.success) {
+      showToast('✅ Specialty updated.');
+      closeSpecialtyModal();
+      await loadStaff();
+    } else {
+      showToast('⚠ ' + (res.message || 'Could not update specialty.'), false);
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
+
+
+async function reactivateUser(id) {
+  const res = await api({ action: 'update_user' }, 'POST', { id, is_active: 1 });
+  if (res.success) {
+    showToast('✅ Account reactivated.');
+    await loadStaff();
+  } else {
+    showToast('⚠ ' + (res.message || 'Could not reactivate.'), false);
+  }
+}
+
+// ─── SUPERVISED PATIENTS ────────────────────────────────────────────────
+async function openPatientsModal(staffId, fullName) {
+  const overlay = document.getElementById('patientsModalOverlay');
+  const title   = document.getElementById('patientsModalTitle');
+  const sub     = document.getElementById('patientsModalSub');
+  const body    = document.getElementById('patientsModalBody');
+
+  title.textContent = `Patients supervised by ${fullName}`;
+  sub.textContent = 'Loading…';
+  body.innerHTML = '';
+  overlay.classList.add('open');
+
+  try {
+    const res = await fetch(API + '?action=get_staff_patients&staff_id=' + encodeURIComponent(staffId), { credentials: 'include' });
+    const data = await res.json();
+    if (!data.success) {
+      sub.textContent = data.message || 'Could not load patients.';
+      return;
+    }
+    if (!data.data || data.data.length === 0) {
+      sub.textContent = 'No patients currently assigned.';
+      return;
+    }
+    sub.textContent = `${data.count} patient${data.count === 1 ? '' : 's'} assigned.`;
+    body.innerHTML = data.data.map(p => `
+      <div style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:0.85rem;">
+        <div style="font-weight:600;">${escapeHtml(p.first_name + ' ' + p.last_name)}
+          <span style="font-size:0.7rem; color:#64748b; font-weight:400;">(${escapeHtml(p.patient_id)})</span>
+        </div>
+        <div style="color:#64748b; font-size:0.8rem;">
+          ${escapeHtml(p.gender || '—')} · DOB ${formatDate(p.dob)}
+          ${p.status ? ' · ' + escapeHtml(p.status) : ''}
+          ${p.next_appt ? ' · Next: ' + escapeHtml(p.next_appt) : ''}
+        </div>
+        ${p.conditions ? `<div style="color:#94a3b8; font-size:0.78rem; margin-top:2px;">${escapeHtml(p.conditions)}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    sub.textContent = 'Error loading patients.';
+  }
+}
+function closePatientsModal() {
+  document.getElementById('patientsModalOverlay').classList.remove('open');
+}
+document.getElementById('patientsModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'patientsModalOverlay') closePatientsModal();
+});
+
+
+// ─── COPY USERNAME ──────────────────────────────────────────────────────
+function copyUsername(username, btn) {
+  copyText(username, btn);
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    btn.style.background = '#d1fae5';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+    }, 1800);
+  }).catch(() => {
+    showToast('⚠ Could not copy to clipboard.', false);
+  });
+}
+
+// ─── RESET PASSWORD MODAL ───────────────────────────────────────────────
+let pendingResetId = null;
+let pendingResetUsername = null;
+
+function openResetModal(id, name, username, email) {
+  pendingResetId = id;
+  pendingResetUsername = username;
+  document.getElementById('resetModalSub').textContent = `Reset password for ${name} (@${username})`;
+  document.getElementById('resetModalError').style.display = 'none';
+  document.getElementById('resetSuccessBox').style.display = 'none';
+  document.getElementById('resetFormSection').style.display = 'block';
+  document.getElementById('resetPreview').innerHTML =
+    `A new random password will be generated for <strong>${escapeHtml(name)}</strong> and emailed directly to:<br><br>` +
+    `<strong style="color:var(--primary);">\u2709\ufe0f ${escapeHtml(email)}</strong><br><br>` +
+    `<span style="color:var(--danger); font-size:0.8rem;">The old password will stop working immediately.</span>`;
+  const btn = document.getElementById('resetConfirmBtn');
+  btn.style.display = '';
+  btn.disabled = false;
+  btn.textContent = 'Reset & Email New Password';
+  btn.style.background = '';
+  document.getElementById('resetModalOverlay').classList.add('open');
+}
+
+function closeResetModal() {
+  document.getElementById('resetModalOverlay').classList.remove('open');
+  pendingResetId = null;
+  pendingResetUsername = null;
+}
+
+document.getElementById('resetModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'resetModalOverlay') closeResetModal();
+});
+
+function generatePassword(length = 12) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+  let pass = '';
+  const arr = new Uint32Array(length);
+  crypto.getRandomValues(arr);
+  for (let i = 0; i < length; i++) pass += chars[arr[i] % chars.length];
+  return pass;
+}
+
+async function doResetPassword() {
+  if (!pendingResetId) return;
+  const btn = document.getElementById('resetConfirmBtn');
+  const errEl = document.getElementById('resetModalError');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const newPassword = generatePassword();
+
+  try {
+    const res = await api({ action: 'reset_password' }, 'POST', { id: pendingResetId, new_password: newPassword });
+    if (res.success) {
+      document.getElementById('resetFormSection').style.display = 'none';
+      document.getElementById('resetSuccessBox').style.display = 'block';
+      btn.style.display = 'none';
+      document.querySelector('#resetModalOverlay .btn-secondary').textContent = 'Close';
+      showToast('✅ Password reset and emailed to staff member.');
+    } else {
+      errEl.textContent = res.message || 'Could not reset password.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Reset & Email New Password';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Reset & Email New Password';
+  }
+}
+
+
+// ─── PENDING PROFILE CHANGE REQUESTS ───────────────────────────────────────
+async function checkPendingRequestsBadge() {
+  try {
+    const res = await api({ action: 'get_profile_requests', status: 'pending' });
+    const badge = document.getElementById('reqBadge');
+    if (!badge) return;
+    const count = (res.success && res.data) ? res.data.length : 0;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-block' : 'none';
+  } catch (e) {}
+}
+
+async function loadPendingRequests() {
+  const list  = document.getElementById('requestsList');
+  const empty = document.getElementById('requestsEmpty');
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;">Loading...</div>';
+  empty.style.display = 'none';
+  try {
+    const res = await api({ action: 'get_profile_requests', status: 'pending' });
+    if (!res.success) {
+      list.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">' + escapeHtml(res.message || 'Failed to load.') + '</div>';
+      return;
+    }
+    if (!res.data || !res.data.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      checkPendingRequestsBadge();
+      return;
+    }
+    const roleIcons = { doctor: '&#x1F9BA;', nurse: '&#x1F489;', manager: '&#x1F454;' };
+    list.innerHTML = res.data.map(r => {
+      const fieldLabel = r.field === 'full_name' ? 'Full Name' : 'Specialty';
+      const date = new Date(r.created_at).toLocaleString();
+      const icon = roleIcons[r.role] || '&#x1F464;';
+      return `
+        <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:0.9rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700;font-size:0.95rem;color:var(--text);">${icon} ${escapeHtml(r.full_name || r.username)}
+                <span style="font-weight:500;font-size:0.78rem;color:var(--muted);text-transform:capitalize;">(${escapeHtml(r.role)})</span>
+              </div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">@${escapeHtml(r.username)} &middot; ${escapeHtml(date)}</div>
+            </div>
+            <span style="background:#fef3c7;color:#92400e;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;">Pending</span>
+          </div>
+          <div style="margin-top:0.9rem;background:#f8fafc;border-radius:8px;padding:0.7rem 0.9rem;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.04em;">${escapeHtml(fieldLabel)} Change</div>
+            <div style="font-size:0.88rem;margin-top:4px;">
+              <span style="color:#94a3b8;text-decoration:line-through;">${escapeHtml(r.old_value || '(empty)')}</span>
+              <span style="margin:0 8px;color:var(--muted);">&rarr;</span>
+              <span style="color:#123a66;font-weight:700;">${escapeHtml(r.new_value)}</span>
+            </div>
+          </div>
+          <div style="margin-top:0.9rem;display:flex;gap:0.6rem;justify-content:flex-end;">
+            <button class="icon-btn danger" onclick="reviewRequest(${r.id}, 'reject')">&#x2715; Reject</button>
+            <button class="icon-btn" style="color:#fff;background:#16a34a;border-color:#16a34a;" onclick="reviewRequest(${r.id}, 'approve')">&#x2713; Approve</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;">Network error.</div>';
+  }
+}
+
+async function reviewRequest(id, decision) {
+  try {
+    const res = await api({ action: 'review_profile_request' }, 'POST', { id, decision });
+    if (res.success) {
+      showToast(decision === 'approve' ? '✅ Request approved — profile updated.' : '🚫 Request rejected.');
+      loadPendingRequests();
+      checkPendingRequestsBadge();
+      if (decision === 'approve') loadStaff();
+    } else {
+      showToast('⚠ ' + (res.message || 'Could not process.'), false);
+    }
+  } catch (e) {
+    showToast('⚠ Network error.', false);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
