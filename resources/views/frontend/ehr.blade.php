@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ── EHR SESSION GUARD ──────────────────────────────────────────────
+       Must run before anything else. If the user has no local session
+       record, bounce them back to the landing page / login modal. -->
+  <script>
+    // ── RBAC SESSION GUARD ──────────────────────────────────────────────────
+    // Runs synchronously before any render. Bounces to login if no local
+    // session. Also exposes window.EHR_USER so the rest of the page can
+    // gate UI elements by role without an extra async round-trip.
+    (function () {
+      var raw = localStorage.getItem('ehr_user');
+      if (!raw) {
+        window.location.replace('Home_Page.html');
+        throw new Error('Not authenticated — redirecting to login.');
+      }
+      try {
+        var u = JSON.parse(raw);
+        if (!u || !u.role) throw new Error('bad session');
+        window.EHR_USER = u;   // { name, role }
+      } catch (e) {
+        localStorage.removeItem('ehr_user');
+        window.location.replace('Home_Page.html');
+        throw new Error('Invalid session — redirecting to login.');
+      }
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electronic Health Records – Pharos HIS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f0f6ff;
+      --surface: #ffffff;
+      --primary: #123a66;
+      --primary-dark: #0a2240;
+      --primary-light: #eaf1fb;
+      --accent: #c9a84c;
+      --accent2: #2bb8a8;
+      --text: #1f2937;
+      --muted: #5b6b7b;
+      --border: #dbe4f0;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff; padding: 1.5rem 2rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+      overflow:visible;
+}
+    .logo { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; margin: 0; }
+    nav { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; flex: 1; }
+    nav a {
+      color: #fff; text-decoration: none; padding: 8px 14px;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+      background: rgba(255,255,255,0.1); font-size: 0.9rem; font-weight: 600; transition: background 0.2s;
+    }
+    nav a:hover { background: rgba(255,255,255,0.22); }
+    nav a.active-link { background: rgba(255,255,255,0.28); border-color: #fff; }
+    .lang-btn {
+      padding: 8px 14px; background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 8px;
+      cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+    }
+    .lang-btn.active { background: #fff; color: var(--primary); }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, #0a2240 0%, #123a66 60%, #c9a84c 100%);
+      color: #fff; padding: 3.5rem 2rem 4.5rem; text-align: center; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge {
+      display: inline-block; background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 999px;
+      padding: 6px 18px; font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.2rem;
+    }
+    .hero h2 { font-family: 'Fraunces', serif; font-size: clamp(1.8rem,4vw,3rem); font-weight: 700; margin: 0 0 1rem; line-height: 1.2; }
+    .hero p { max-width: 680px; margin: 0 auto 2rem; font-size: 1.05rem; opacity: 0.92; line-height: 1.7; }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: #fff; color: var(--primary-dark); padding: 0.85rem 1.8rem;
+      border-radius: 999px; font-weight: 700; font-size: 1rem; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.24); }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+      background: #fff; border-bottom: 1px solid var(--border); box-shadow: 0 4px 14px rgba(23,43,77,0.07);
+    }
+    .stat-item { padding: 1.4rem 1.5rem; text-align: center; border-right: 1px solid var(--border); }
+    .stat-item:last-child { border-right: none; }
+    .stat-num { font-family: 'Fraunces', serif; font-size: 1.9rem; font-weight: 700; color: var(--primary); display: block; }
+    .stat-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+    /* MAIN */
+    main { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    section { margin-bottom: 3rem; }
+    .section-header { margin-bottom: 1.5rem; }
+    .section-header h3 {
+      font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 700;
+      color: var(--primary-dark); margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    /* FEATURE CARDS */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.1rem; }
+    .feature-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem;
+      box-shadow: 0 6px 20px rgba(23,43,77,0.06); transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--card-accent, var(--primary)); border-radius: 16px 16px 0 0;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(23,43,77,0.12); }
+    .feature-icon {
+      width: 48px; height: 48px; background: var(--primary-light); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;
+    }
+    .feature-card h4 { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.5rem; color: var(--primary-dark); }
+    .feature-card p { margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+
+    /* PATIENT LIST */
+    .patient-list-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .patient-list-card {
+      background: #fff; border: 2px solid var(--border); border-radius: 14px;
+      padding: 1.1rem 1.3rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 1rem;
+    }
+    .patient-list-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(26,115,232,0.13); }
+    .patient-list-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .plc-avatar {
+      width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 1.2rem; color: #fff; flex-shrink: 0;
+    }
+    .plc-info { flex: 1; min-width: 0; }
+    .plc-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .plc-sub  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .plc-badge { flex-shrink: 0; }
+
+    /* NO RESULTS */
+    .no-results { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.95rem; display: none; }
+
+    /* DEMO PANEL */
+    .demo-panel {
+      background: #fff; border: 1px solid var(--border); border-radius: 20px;
+      box-shadow: 0 8px 28px rgba(23,43,77,0.08); overflow: hidden;
+    }
+    .demo-tabs {
+      display: flex; border-bottom: 1px solid var(--border); background: #f8fbff; overflow-x: auto;
+    }
+    .demo-tab {
+      padding: 0.9rem 1.4rem; font-size: 0.9rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.2s;
+      background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .demo-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: #fff; }
+    .demo-tab:hover:not(.active) { color: var(--text); background: rgba(0,0,0,0.03); }
+    .demo-content { display: none; padding: 1.8rem; animation: fadeIn 0.25s ease; }
+    .demo-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* PATIENT HEADER */
+    .patient-header {
+      display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1.5rem;
+      padding-bottom: 1.2rem; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .patient-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; color: #fff; flex-shrink: 0;
+    }
+    .patient-meta h4 { font-family: 'Fraunces', serif; margin: 0 0 0.3rem; font-size: 1.1rem; }
+    .patient-meta span { font-size: 0.85rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+    .badge-active  { background: #d1fae5; color: #065f46; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-danger  { background: #fee2e2; color: #991b1b; }
+    .badge-info    { background: var(--primary-light); color: var(--primary-dark); }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; margin-bottom: 1.5rem; min-width: 0; }
+    .info-grid > * { min-width: 0; }
+    .info-item label { display: block; font-size: 0.78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .info-item span { font-size: 0.95rem; font-weight: 500; }
+
+    /* VITALS */
+    .vitals-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .vital-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+    .vital-val  { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .vital-unit { font-size: 0.75rem; color: var(--muted); }
+    .vital-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* TIMELINE */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .tl-item { position: relative; margin-bottom: 1.2rem; }
+    .tl-dot { position: absolute; left: -1.5rem; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--primary); }
+    .tl-dot.warn { background: var(--accent2); box-shadow: 0 0 0 2px var(--accent2); }
+    .tl-dot.ok   { background: var(--success);  box-shadow: 0 0 0 2px var(--success); }
+    .tl-dot.red  { background: var(--danger);   box-shadow: 0 0 0 2px var(--danger); }
+    .tl-date { font-size: 0.78rem; color: var(--muted); margin-bottom: 3px; }
+    .tl-text { font-size: 0.92rem; }
+
+    /* MEDICATIONS TABLE */
+    .med-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .med-table th { background: var(--bg); text-align: left; padding: 10px 12px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .med-table td { padding: 11px 12px; border-top: 1px solid var(--border); }
+    .med-table tr:hover td { background: #f8fbff; }
+
+    /* LAB RESULTS */
+    .lab-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; gap: 0.5rem; flex-wrap: wrap; }
+    .lab-row:last-child { border-bottom: none; }
+    .lab-bar-wrap { width: 120px; background: var(--border); border-radius: 999px; height: 6px; flex-shrink: 0; }
+    .lab-bar { height: 6px; border-radius: 999px; }
+    .lab-bar.ok  { background: var(--success); }
+    .lab-bar.hi  { background: var(--danger); }
+    .lab-bar.med { background: var(--accent2); }
+
+    /* LAB QUICK PICK BUTTONS */
+    .lab-quick-btn {
+      padding: 5px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+      border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .lab-quick-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .lab-quick-btn.selected { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+    /* SEARCH & BUTTONS */
+    .search-box { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .search-box input {
+      flex: 1; min-width: 200px; padding: 11px 16px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 0.95rem; background: #fff; outline: none; transition: border-color 0.2s;
+    }
+    .search-box input:focus { border-color: var(--primary); }
+    .btn-primary { padding: 11px 20px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { padding: 11px 18px; background: #fff; color: var(--primary); border: 1px solid var(--primary); border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+    .btn-outline:hover { background: var(--primary-light); }
+    .btn-sm { padding: 7px 13px; font-size: 0.82rem; }
+
+    /* WORKFLOW */
+    .workflow { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; counter-reset: wf; }
+    .wf-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem; counter-increment: wf; }
+    .wf-card::before { content: counter(wf, decimal-leading-zero); font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--primary-light); display: block; line-height: 1; margin-bottom: 0.5rem; }
+    .wf-card h4 { font-family: 'Fraunces', serif; font-size: 0.92rem; margin: 0 0 0.4rem; color: var(--primary-dark); }
+    .wf-card p  { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+
+    /* ALERTS */
+    .alerts-panel { background: #fff; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(23,43,77,0.06); }
+    .alert-row {
+      display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.4rem;
+      border-bottom: 1px solid var(--border); font-size: 0.9rem;
+      animation: alertSlideIn 0.35s ease; transition: opacity 0.3s, transform 0.3s;
+    }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-row[style*='cursor: pointer']:hover { background: var(--primary-light); border-radius: 8px; }
+    .alert-row.dismissing { opacity: 0; transform: translateX(20px); pointer-events: none; }
+    @keyframes alertSlideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+    .alert-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .alert-body { flex: 1; }
+    .alert-body strong { display: block; margin-bottom: 2px; }
+    .alert-body span   { color: var(--muted); font-size: 0.83rem; }
+    .alert-time { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+    .alert-dismiss {
+      background: none; border: none; color: #b0bec5; font-size: 1.1rem; cursor: pointer;
+      padding: 2px 5px; border-radius: 6px; transition: color 0.2s, background 0.2s; flex-shrink: 0; line-height: 1;
+    }
+    .alert-dismiss:hover { color: var(--danger); background: #fee2e2; }
+
+    /* ALERTS TOOLBAR */
+    .alerts-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 1.4rem; border-bottom: 1px solid var(--border);
+      background: #f8fbff; gap: 0.75rem; flex-wrap: wrap;
+    }
+    .alert-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .filter-chip {
+      padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+      border: 1px solid var(--border); background: #fff; color: var(--muted);
+      cursor: pointer; transition: all 0.18s;
+    }
+    .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .filter-chip.critical.active { background: var(--danger); border-color: var(--danger); }
+    .filter-chip.warning.active  { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+    .filter-chip.info.active     { background: var(--primary); border-color: var(--primary); }
+    .filter-chip.success.active  { background: var(--success); border-color: var(--success); }
+
+    .alerts-actions { display: flex; gap: 0.5rem; }
+    .btn-refresh {
+      padding: 6px 14px; background: var(--primary); color: #fff; border: none;
+      border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 5px; transition: background 0.2s;
+    }
+    .btn-refresh:hover { background: var(--primary-dark); }
+    .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-clear-all {
+      padding: 6px 12px; background: #fff; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-clear-all:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ALERTS EMPTY / LOADING */
+    .alerts-empty {
+      text-align: center; padding: 2.5rem 1rem; color: var(--muted);
+      font-size: 0.92rem; display: none;
+    }
+    .alerts-empty .ae-icon { font-size: 2.2rem; margin-bottom: 0.5rem; }
+    .alerts-loading {
+      text-align: center; padding: 2rem 1rem; color: var(--muted);
+      font-size: 0.9rem; display: none; align-items: center; justify-content: center; gap: 0.6rem;
+    }
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid var(--border);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.75s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .alerts-footer {
+      padding: 0.6rem 1.4rem; background: #f8fbff;
+      border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .alerts-footer .af-count { font-weight: 600; color: var(--primary-dark); }
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success); margin-right: 5px;
+      box-shadow: 0 0 0 0 rgba(16,185,129,0.5); animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+      70%  { box-shadow: 0 0 0 7px rgba(16,185,129,0); }
+      100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+    }
+
+    /* INTEGRATIONS */
+    .integration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; }
+    .int-tile { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow 0.2s; text-decoration: none; color: var(--text); }
+    .int-tile:hover { box-shadow: 0 6px 20px rgba(23,43,77,0.1); }
+    .int-tile-icon { font-size: 2rem; flex-shrink: 0; }
+    .int-tile strong { display: block; font-size: 0.92rem; margin-bottom: 2px; }
+    .int-tile span { font-size: 0.8rem; color: var(--muted); }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #fff; border-radius: 20px; padding: 2rem;
+      width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(15,23,42,0.2);
+      transform: translateY(20px); transition: transform 0.25s;
+    }
+    .modal-overlay.open .modal { transform: none; }
+    .modal h3 { font-family: 'Fraunces', serif; margin: 0 0 1.5rem; color: var(--primary-dark); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.82rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 10px 13px; border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.92rem; font-family: inherit; background: #f8fbff; color: var(--text); outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+    .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
+    .btn-cancel { padding: 10px 18px; background: #f1f5f9; color: var(--text); border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-cancel:hover { background: #e2e8f0; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+    .empty-state .es-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .empty-state p { margin: 0; font-size: 0.95rem; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1f2937; color: #fff;
+      padding: 0.85rem 1.4rem; border-radius: 12px; font-size: 0.9rem; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000;
+      transform: translateY(80px); opacity: 0; transition: all 0.3s ease;
+    }
+    .toast.show { transform: none; opacity: 1; }
+    .toast.success { background: var(--success); }
+
+
+    /* EDIT PATIENT MODAL TABS */
+    .epm-tab {
+      padding: 9px 16px; font-size: 0.83rem; font-weight: 600;
+      border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -2px;
+      color: var(--muted); white-space: nowrap; transition: all 0.15s;
+    }
+    .epm-tab:hover { color: var(--text); }
+    .epm-tab.epm-tab-active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* FLOATING PROFILE BUTTON */
+    #profileFab {
+      position:fixed; bottom:28px; right:28px; z-index:500;
+      width:56px; height:56px; border-radius:50%; border:none;
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff; font-size:1.4rem; cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,0.22);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .15s,box-shadow .15s;
+    }
+    #profileFab:hover { transform:translateY(-3px) scale(1.05); box-shadow:0 10px 24px rgba(0,0,0,0.28); }
+    #profileFab .fab-dot {
+      position:absolute; top:4px; right:4px; width:13px; height:13px;
+      border-radius:50%; background:#2bb8a8; border:2px solid #fff; display:none;
+    }
+    #profileFab .fab-dot.show { display:block; }
+    .pr-row {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:0.6rem; padding:0.7rem 0.9rem; border:1px solid var(--border);
+      border-radius:10px; margin-bottom:0.6rem; background:#fff;
+    }
+    .pr-field-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.04em; }
+    .pr-current { font-size:0.95rem; font-weight:600; color:var(--text); margin-top:2px; }
+    .pr-status-pill { font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; }
+    .pr-status-pending  { background:#fef3c7; color:#92400e; }
+    .pr-status-approved { background:#d1fae5; color:#065f46; }
+    .pr-status-rejected { background:#fee2e2; color:#991b1b; }
+    .pr-history-item { font-size:0.8rem; padding:0.55rem 0; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+    .pr-history-item:last-child { border-bottom:none; }
+
+    footer { background: #0f172a; color: #cbd5e1; text-align: center; padding: 1.5rem 1rem; font-size: 0.9rem; }
+    @media (max-width: 640px) {
+      header { justify-content: center; text-align: center; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="Home_Page.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;position:relative;"><div style="position:relative;flex-shrink:0;margin-top:-50px;margin-bottom:-50px;"><img src="{{ asset('images/pharos-his-icon2.png') }}" alt="Pharos HIS" style="height:140px;width:auto;object-fit:contain;display:block;margin-right:-35px;"></div><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:0.02em;white-space:nowrap;"><span style="color:#3b9fd4;">Pharos</span><span style="color:#c9a84c;"> HIS</span></span></a>
+  <nav>
+    <a href="Home_Page.html">Home</a>
+    <a href="Online_Consultation_Page.html">Review Appointments</a>
+    <a href="EHR_Page.html" class="active-link">EHR System</a>
+    <a href="ERP_Pharmacy_Sign_in_Page.html">ERP Pharmacy</a>
+    <a href="Health_Chatbot.html">Chatbot</a>
+    <button class="lang-btn active">English</button>
+    <button class="lang-btn">العربية</button>
+    <span style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <span id="navUserBadge" style="
+          display:inline-flex;align-items:center;gap:6px;
+          padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:600;
+          background:var(--primary-light);color:var(--primary-dark);border:1px solid var(--border);
+          white-space:nowrap;cursor:default;user-select:none;">
+        <span id="navRoleIcon">👤</span>
+        <span id="navUserName" style="display:inline-block;min-width:130px;">…</span>
+        <span id="navRoleBadge" style="
+            padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.04em;background:#e0e7ff;color:#3730a3;
+            display:inline-block;min-width:48px;text-align:center;">
+          …
+        </span>
+      </span>
+      <button class="lang-btn" onclick="ehrLogout()" title="Sign out" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;width:100%;">🚪 Logout</button>
+    </span>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🏥 Electronic Health Records</div>
+  <h2>Unified Patient Records,<br>Smarter Clinical Decisions</h2>
+  <p>A centralised EHR platform that brings together patient history, vitals, medications, lab results, and care plans — giving every clinician a complete, real-time picture of patient health.</p>
+  <a href="#ehr-demo" class="hero-cta">▶ View Patient Records</a>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item"><span class="stat-num" id="stat-patients">8</span><span class="stat-label">Registered Patients</span></div>
+  <div class="stat-item"><span class="stat-num">9</span><span class="stat-label">Core EHR Modules</span></div>
+  <div class="stat-item"><span class="stat-num">24/7</span><span class="stat-label">Secure Access</span></div>
+  <div class="stat-item"><span class="stat-num">HIPAA</span><span class="stat-label">Compliant</span></div>
+  <div class="stat-item"><span class="stat-num">↓ 60%</span><span class="stat-label">Admin Time Saved</span></div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="section-header">
+      <h3>🗂️ Core EHR Features</h3>
+      <p>Everything a modern healthcare facility needs — from patient intake to discharge summaries.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card" style="--card-accent:#123a66"><div class="feature-icon">📁</div><h4>Patient Record Management</h4><p>Centralized, structured patient profiles with demographics, insurance, and full clinical history in one place.</p></div>
+      <div class="feature-card" style="--card-accent:#c9a84c"><div class="feature-icon">🔬</div><h4>Lab & Diagnostic Analytics</h4><p>Automatically import lab results, trend key biomarkers, and flag abnormal values for immediate review.</p></div>
+      <div class="feature-card" style="--card-accent:#2bb8a8"><div class="feature-icon">🔔</div><h4>Smart Reminders</h4><p>Automated alerts for follow-up appointments, medication refills, overdue screenings, and care plan tasks.</p></div>
+      <div class="feature-card" style="--card-accent:#10b981"><div class="feature-icon">💳</div><h4>Payment Management</h4><p>Integrated billing with insurance claim tracking, co-pay collection, and itemised invoicing.</p></div>
+      <div class="feature-card" style="--card-accent:#8b5cf6"><div class="feature-icon">📋</div><h4>Task Management</h4><p>Assign clinical tasks to care team members with priority levels, due dates, and completion tracking.</p></div>
+      <div class="feature-card" style="--card-accent:#ec4899"><div class="feature-icon">🗣️</div><h4>Secure Communication</h4><p>HIPAA-compliant messaging between providers, staff, and patients — keeping conversations in the record.</p></div>
+      <div class="feature-card" style="--card-accent:#ef4444"><div class="feature-icon">💊</div><h4>E-Prescribing</h4><p>Send prescriptions directly to pharmacies with drug–drug interaction checks and allergy alerts built in.</p></div>
+      <div class="feature-card" style="--card-accent:#0a2240"><div class="feature-icon">📜</div><h4>Medical History</h4><p>Chronological records of diagnoses, procedures, vaccinations, allergies, and family history.</p></div>
+      <div class="feature-card" style="--card-accent:#06b6d4"><div class="feature-icon">🖥️</div><h4>Customised Templates</h4><p>Specialty-specific note templates and encounter forms to speed up documentation without sacrificing quality.</p></div>
+    </div>
+  </section>
+
+  <!-- PATIENT RECORDS DEMO -->
+  <section id="ehr-demo">
+    <div class="section-header">
+      <h3>📂 Patient Records</h3>
+      <p>Search, select, or add patients — all data updates dynamically.</p>
+    </div>
+
+    <!-- Search + New Patient -->
+    <div class="search-box">
+      <input type="text" id="patientSearch" placeholder="🔍  Search by name, ID, condition, or date of birth…" oninput="filterPatients()" />
+      <button class="btn-outline" onclick="clearSearch()">Clear</button>
+      <button class="btn-primary" onclick="openNewPatientModal()">＋ New Patient</button>
+    </div>
+
+    <!-- Patient List -->
+    <div class="patient-list-grid" id="patientListGrid"></div>
+    <div class="no-results" id="noResults">No patients match your search. Try a different name or ID.</div>
+
+    <!-- Record Panel -->
+    <div class="demo-panel" id="recordPanel" style="display:none;">
+      <div class="demo-tabs">
+        <button class="demo-tab active" onclick="switchTab(this,'tab-overview')">Overview</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-vitals')">Vitals</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-history')">Medical History</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-meds')">Medications</button>
+        <button class="demo-tab" onclick="switchTab(this,'tab-labs')">Lab Results</button>
+      </div>
+      <div class="demo-content active" id="tab-overview"></div>
+      <div class="demo-content" id="tab-vitals"></div>
+      <div class="demo-content" id="tab-history"></div>
+      <div class="demo-content" id="tab-meds"></div>
+      <div class="demo-content" id="tab-labs"></div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="es-icon">👆</div>
+      <p>Select a patient above to view their full health record.</p>
+    </div>
+  </section>
+
+  <!-- ALERTS -->
+  <section id="alerts-section">
+    <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h3>🔔 Active Clinical Alerts</h3>
+        <p>Real-time notifications keeping the care team informed and proactive.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;padding-top:0.25rem;">
+        <span style="font-size:0.78rem;color:var(--muted);"><span class="live-dot"></span>AI-Powered · Live</span>
+      </div>
+    </div>
+    <div class="alerts-panel" id="alertsPanel">
+
+      <!-- Toolbar -->
+      <div class="alerts-toolbar">
+        <div class="alert-filters">
+          <button class="filter-chip active" data-filter="all" onclick="setAlertFilter('all',this)">All</button>
+          <button class="filter-chip critical" data-filter="critical" onclick="setAlertFilter('critical',this)">🔴 Critical</button>
+          <button class="filter-chip warning" data-filter="warning" onclick="setAlertFilter('warning',this)">🟡 Warning</button>
+          <button class="filter-chip info" data-filter="info" onclick="setAlertFilter('info',this)">🔵 Info</button>
+          <button class="filter-chip success" data-filter="resolved" onclick="setAlertFilter('resolved',this)">🟢 Resolved</button>
+        </div>
+        <div class="alerts-actions">
+          <button class="btn-clear-all" id="clearAllBtn" onclick="clearAllAlerts()" title="Dismiss all visible alerts">Clear All</button>
+          <button class="btn-refresh" id="refreshAlertsBtn" onclick="refreshAlerts()">
+            <span id="refreshIcon">⟳</span> Refresh
+          </button>
+          <button class="btn-refresh" id="reseedRulesBtn" onclick="reseedAndRefresh()" title="Re-seed CDSS rules and clear stale suppression windows" style="background:#6366f1;border-color:#4f46e5;">
+            🔧 Fix Rules
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div class="alerts-loading" id="alertsLoading" style="display:none;">
+        <div class="spinner"></div>
+        <span>Generating clinical alerts…</span>
+      </div>
+
+      <!-- Alert list -->
+      <div id="alertsList"></div>
+
+      <!-- Empty state -->
+      <div class="alerts-empty" id="alertsEmpty">
+        <div class="ae-icon">✅</div>
+        <div style="font-weight:600;color:var(--text);margin-bottom:4px;">No active alerts</div>
+        <div>All clinical alerts have been reviewed or dismissed.</div>
+      </div>
+
+      <!-- Footer -->
+      <div class="alerts-footer" id="alertsFooter" style="display:none;">
+        <span><span class="af-count" id="alertsCount">0</span> alert(s) shown</span>
+        <span id="alertsLastUpdated" style="font-size:0.75rem;color:var(--muted);">—</span>
+      </div>
+
+    </div>
+  </section>
+
+
+</main>
+
+<!-- WORKFLOW (moved to bottom) -->
+<section style="background:#fff;border-top:1px solid var(--border);padding:3rem 1.5rem;">
+  <div style="max-width:1080px;margin:0 auto;">
+    <div class="section-header">
+      <h3>⚙️ How the EHR Workflow Works</h3>
+      <p>From patient registration to discharge — every step is captured and accessible.</p>
+    </div>
+    <div class="workflow">
+      <div class="wf-card"><h4>Patient Registration</h4><p>Demographics, insurance, and consent forms captured digitally at check-in.</p></div>
+      <div class="wf-card"><h4>Triage & Vitals</h4><p>Nursing staff record vitals directly into the chart; abnormals are flagged instantly.</p></div>
+      <div class="wf-card"><h4>Provider Encounter</h4><p>Physicians document visit notes using templates, link diagnoses with ICD-10 codes.</p></div>
+      <div class="wf-card"><h4>Orders & Prescriptions</h4><p>Lab, imaging, and medication orders sent electronically to the respective departments.</p></div>
+      <div class="wf-card"><h4>Results & Review</h4><p>Results auto-import into the record; providers are notified for critical values.</p></div>
+      <div class="wf-card"><h4>Billing & Discharge</h4><p>Encounter is coded, claims generated, and the patient's record is complete for next visit.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 Pharos HIS · Electronic Health Records Module · Empowering Healthy Living</p>
+</footer>
+
+<!-- NEW PATIENT MODAL -->
+<div class="modal-overlay" id="newPatientModal">
+  <div class="modal">
+    <h3>➕ Register New Patient</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name *</label><input type="text" id="np-fname" placeholder="e.g. Sara" /></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="np-lname" placeholder="e.g. Ahmed" /></div>
+      <div class="form-group"><label>Date of Birth *</label><input type="date" id="np-dob" /></div>
+      <div class="form-group"><label>Gender *</label>
+        <select id="np-gender"><option value="">Select…</option><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="form-group"><label>Blood Type</label>
+        <select id="np-blood"><option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+      </div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="np-phone" placeholder="+20 100 000 0000" /></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="np-email" placeholder="patient@email.com" /></div>
+      <div class="form-group"><label>Insurance Provider</label><input type="text" id="np-insurance" placeholder="e.g. MediCare Plus" /></div>
+      <div class="form-group"><label>Primary Physician</label><input type="text" id="np-physician" placeholder="e.g. Dr. Sara Nour" /></div>
+      <div class="form-group full"><label>Known Allergies</label><input type="text" id="np-allergies" placeholder="e.g. Penicillin, Sulfa Drugs (comma separated)" /></div>
+      <div class="form-group full"><label>Active Conditions</label><input type="text" id="np-conditions" placeholder="e.g. Hypertension, Asthma" /></div>
+      <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem;">
+        <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;font-weight:700;color:var(--primary-dark);margin-bottom:0.75rem;">📋 Medical History</div>
+        <div class="form-grid" style="margin:0;">
+          <div class="form-group full"><label>Past Medical History</label><textarea id="np-pmh" rows="2" placeholder="e.g. Appendectomy 2015, Fracture left tibia 2018…" style="resize:vertical;"></textarea></div>
+          <div class="form-group full"><label>Family Medical History</label><textarea id="np-fmh" rows="2" placeholder="e.g. Father: Hypertension, Diabetes; Mother: Breast Cancer…" style="resize:vertical;"></textarea></div>
+          <div class="form-group full"><label>Surgical History</label><textarea id="np-surgical" rows="2" placeholder="e.g. Cholecystectomy 2010, Knee replacement 2020…" style="resize:vertical;"></textarea></div>
+          <div class="form-group"><label>Smoking Status</label>
+            <select id="np-smoking">
+              <option value="Non-smoker">Non-smoker</option>
+              <option value="Current smoker">Current smoker</option>
+              <option value="Ex-smoker">Ex-smoker</option>
+              <option value="Not recorded">Not recorded</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Alcohol Use</label>
+            <select id="np-alcohol">
+              <option value="None">None</option>
+              <option value="Occasional">Occasional</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Heavy">Heavy</option>
+              <option value="Not recorded">Not recorded</option>
+            </select>
+          </div>
+          <div class="form-group full"><label>Immunisations / Vaccinations</label><input type="text" id="np-vaccines" placeholder="e.g. COVID-19 (2022), Flu vaccine (2025), Hepatitis B series…" /></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveNewPatient()">💾 Save Patient</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- EDIT PATIENT MODAL -->
+<div class="modal-overlay" id="editPatientModal">
+  <div class="modal" style="max-width:620px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <h3 style="margin:0;">✏️ Edit Patient Record</h3>
+      <span id="ep2-patient-id-badge" style="font-size:0.82rem;color:var(--muted);background:var(--bg);padding:4px 12px;border-radius:999px;border:1px solid var(--border);"></span>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1.5rem;overflow-x:auto;" id="editModalTabBar">
+      <button class="epm-tab epm-tab-active" onclick="switchEditTab(this,'epm-basic')"   >👤 Basic Info</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-contact')" >📞 Contact</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-clinical')">🩺 Clinical</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-history')" >📋 History</button>
+      <button class="epm-tab" onclick="switchEditTab(this,'epm-status')"  >⚙️ Status</button>
+    </div>
+
+    <div id="epm-basic" class="epm-section">
+      <div class="form-grid">
+        <div class="form-group"><label>First Name *</label><input type="text" id="epm-fname" /></div>
+        <div class="form-group"><label>Last Name *</label><input type="text" id="epm-lname" /></div>
+        <div class="form-group"><label>Blood Type</label>
+          <select id="epm-blood"><option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+        </div>
+        <div class="form-group"><label>Primary Physician</label><input type="text" id="epm-physician" /></div>
+        <div class="form-group"><label>Insurance Provider</label><input type="text" id="epm-insurance" /></div>
+        <div class="form-group"><label>Last Visit</label><input type="text" id="epm-lastvisit" placeholder="e.g. 01 Jun 2026" /></div>
+        <div class="form-group full">
+          <label>Next Appointment</label>
+          <div style="display:flex;gap:0.6rem;align-items:center;">
+            <input type="date" id="epm-nextappt-date"
+                   style="flex:1;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;
+                          font-size:0.95rem;font-family:'Inter',sans-serif;color:var(--text);
+                          background:var(--bg);cursor:pointer;outline:none;transition:border-color .2s,box-shadow .2s;"
+                   onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(26,115,232,.15)'"
+                   onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
+            <span style="color:var(--muted);font-weight:600;font-size:1rem;flex-shrink:0;">at</span>
+            <input type="time" id="epm-nextappt-time"
+                   style="width:130px;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;
+                          font-size:0.95rem;font-family:'Inter',sans-serif;color:var(--text);
+                          background:var(--bg);cursor:pointer;outline:none;transition:border-color .2s,box-shadow .2s;"
+                   onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(26,115,232,.15)'"
+                   onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'" />
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:5px;">
+            📅 Pick a date and time — leave both empty if no appointment is scheduled.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="epm-contact" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group"><label>Phone</label><input type="tel" id="epm-phone" placeholder="+20 100 000 0000" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="epm-email" /></div>
+      </div>
+    </div>
+
+    <div id="epm-clinical" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group full"><label>Known Allergies <span style="font-weight:400;text-transform:none;">(comma-separated)</span></label><input type="text" id="epm-allergies" placeholder="e.g. Penicillin, Sulfa Drugs" /></div>
+        <div class="form-group full"><label>Active Conditions</label><input type="text" id="epm-conditions" placeholder="e.g. Hypertension, Asthma" /></div>
+        <div class="form-group"><label>Smoking Status</label>
+          <select id="epm-smoking">
+            <option value="Non-smoker">Non-smoker</option>
+            <option value="Ex-smoker">Ex-smoker</option>
+            <option value="Current smoker">Current smoker</option>
+            <option value="Not recorded">Not recorded</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Alcohol Use</label>
+          <select id="epm-alcohol">
+            <option value="None">None</option>
+            <option value="Occasional">Occasional</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Heavy">Heavy</option>
+            <option value="Not recorded">Not recorded</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Vaccinations / Immunisations</label><input type="text" id="epm-vaccines" placeholder="e.g. COVID-19 (2022), Flu (2025)…" /></div>
+      </div>
+    </div>
+
+    <div id="epm-history" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group full"><label>Past Medical History</label><textarea id="epm-pmh" rows="3" style="resize:vertical;"></textarea></div>
+        <div class="form-group full"><label>Family Medical History</label><textarea id="epm-fmh" rows="3" style="resize:vertical;"></textarea></div>
+        <div class="form-group full"><label>Surgical History</label><textarea id="epm-surgical" rows="3" style="resize:vertical;"></textarea></div>
+      </div>
+    </div>
+
+    <div id="epm-status" class="epm-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group"><label>Patient Status</label>
+          <select id="epm-status-val">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:end;">
+          <div style="background:#fef3c7;border:1px solid #2bb8a8;border-radius:10px;padding:0.75rem;font-size:0.82rem;color:#92400e;">
+            ⚠️ Setting to <strong>Inactive</strong> hides the patient from active lists.
+          </div>
+        </div>
+        <div class="form-group full" style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem;">
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Danger Zone</div>
+          <button onclick="deletePatientRecord()" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:10px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:0.88rem;width:100%;transition:background 0.2s;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">🗑 Permanently Delete This Patient Record</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEditPatientModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveEditedPatient()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- E-PRESCRIBE MODAL -->
+<div class="modal-overlay" id="ePrescribeModal">
+  <div class="modal" style="max-width:520px;">
+    <h3>💊 E-Prescribe New Medication</h3>
+    <div class="form-grid">
+      <div class="form-group full"><label>Medication Name *</label><input type="text" id="ep-name" placeholder="e.g. Amoxicillin" /></div>
+      <div class="form-group"><label>Dose *</label><input type="text" id="ep-dose" placeholder="e.g. 500 mg" /></div>
+      <div class="form-group"><label>Frequency *</label><input type="text" id="ep-freq" placeholder="e.g. Three times daily" /></div>
+      <div class="form-group"><label>Route</label>
+        <select id="ep-route">
+          <option>Oral</option><option>Inhaled</option><option>Topical</option>
+          <option>IV</option><option>IM</option><option>Subcutaneous</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Duration</label><input type="text" id="ep-duration" placeholder="e.g. 7 days / Ongoing" /></div>
+      <div class="form-group full"><label>Prescribed By *</label><input type="text" id="ep-physician" placeholder="e.g. Dr. Sara Nour" /></div>
+      <div class="form-group full"><label>Notes / Instructions</label><textarea id="ep-notes" rows="2" placeholder="e.g. Take with food. Avoid alcohol." style="resize:vertical;"></textarea></div>
+      <div class="form-group full">
+        <div style="background:#fef3c7;border:1px solid #2bb8a8;border-radius:10px;padding:0.75rem;font-size:0.83rem;color:#92400e;">
+          ⚠️ Drug interactions and allergy checks are simulated. Always verify against the patient's allergy list before prescribing.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEPrescribeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveEPrescription()">📤 Send Prescription</button>
+    </div>
+  </div>
+</div>
+
+<!-- REQUEST REFILL MODAL -->
+<div class="modal-overlay" id="refillModal">
+  <div class="modal" style="max-width:480px;">
+    <h3>🔄 Request Medication Refill</h3>
+    <p style="color:var(--muted);font-size:0.88rem;margin:0 0 1.2rem;">Select a current medication to request a refill.</p>
+    <div class="form-grid">
+      <div class="form-group full"><label>Medication *</label>
+        <select id="rf-med"><option value="">— Select medication —</option></select>
+      </div>
+      <div class="form-group"><label>Quantity / Days Supply</label><input type="text" id="rf-qty" placeholder="e.g. 30 days" /></div>
+      <div class="form-group"><label>Send To Pharmacy</label><input type="text" id="rf-pharmacy" placeholder="e.g. Pharos HIS Pharmacy" /></div>
+      <div class="form-group full"><label>Refill Notes</label><textarea id="rf-notes" rows="2" placeholder="Additional notes for the pharmacist…" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeRefillModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveRefill()">✅ Confirm Refill Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT LAB RESULT MODAL -->
+<div class="modal-overlay" id="labModal">
+  <div class="modal" style="max-width:520px;">
+    <h3 id="labModalTitle">➕ Add Lab Result</h3>
+
+    <!-- Smart Test Picker -->
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Quick Select Common Test</label>
+      <div id="labQuickPicks" style="display:flex;flex-wrap:wrap;gap:6px;">
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('HbA1c')">HbA1c</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('Glucose')">Glucose</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('Total Cholesterol')">Cholesterol</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('LDL')">LDL</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('HDL')">HDL</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('Creatinine')">Creatinine</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('eGFR')">eGFR</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('Hemoglobin')">Hemoglobin</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('TSH')">TSH</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('ALT')">ALT</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('WBC')">WBC</button>
+        <button type="button" class="lab-quick-btn" onclick="applyPreset('Sodium')">Sodium</button>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Test Name *</label>
+        <input type="text" id="lab-name" placeholder="e.g. HbA1c" oninput="onLabInputChange()" />
+      </div>
+      <div class="form-group">
+        <label>Value *</label>
+        <input type="text" id="lab-value" placeholder="e.g. 7.4" oninput="onLabInputChange()" />
+      </div>
+      <div class="form-group">
+        <label>Reference Range *</label>
+        <input type="text" id="lab-ref" placeholder="e.g. &lt;7%" oninput="onLabInputChange()" />
+      </div>
+      <div class="form-group full"><label>Panel Date</label><input type="date" id="lab-date" /></div>
+    </div>
+
+    <!-- Live Preview Card -->
+    <div id="labPreviewCard" style="display:none;margin-top:0.5rem;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;padding:1rem 1.2rem;transition:all 0.3s;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.7rem;">📊 Auto-computed Result Preview</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.6rem;">
+        <span id="prev-name" style="font-weight:700;font-size:0.95rem;"></span>
+        <span id="prev-badge" class="badge"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+        <span id="prev-value" style="font-weight:700;font-size:1.1rem;"></span>
+        <span style="font-size:0.78rem;color:var(--muted);">Ref: <span id="prev-ref"></span></span>
+      </div>
+      <!-- Bar -->
+      <div style="position:relative;margin-bottom:0.35rem;">
+        <div style="background:var(--border);border-radius:999px;height:8px;overflow:hidden;">
+          <div id="prev-bar" style="height:8px;border-radius:999px;transition:width 0.5s cubic-bezier(.4,0,.2,1),background 0.4s;width:0%;background:var(--success);"></div>
+        </div>
+        <div id="prev-bar-marker" style="position:absolute;top:-3px;width:2px;height:14px;background:#1f2937;border-radius:2px;transition:left 0.5s;display:none;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);">
+        <span>0</span><span id="prev-ref-marker" style="font-weight:600;color:var(--text);"></span><span>Max</span>
+      </div>
+      <!-- Clinical Tip -->
+      <div id="prev-tip" style="margin-top:0.75rem;font-size:0.8rem;color:#374151;background:#fff;border-left:3px solid var(--primary);border-radius:0 8px 8px 0;padding:0.5rem 0.75rem;display:none;line-height:1.55;"></div>
+    </div>
+
+    <!-- Hidden computed fields -->
+    <input type="hidden" id="lab-pct" />
+    <input type="hidden" id="lab-lbl" />
+    <input type="hidden" id="lab-status" />
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeLabModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveLabResult()">💾 Save Result</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ADD TIMELINE ENTRY MODAL -->
+<div class="modal-overlay" id="timelineModal">
+  <div class="modal" style="max-width:500px;">
+    <h3>🕐 Add Timeline Entry</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Date *</label><input type="date" id="tl-date" /></div>
+      <div class="form-group"><label>Indicator</label>
+        <select id="tl-dot">
+          <option value="">Default (Blue)</option>
+          <option value="ok">✅ Green — Normal / Resolved</option>
+          <option value="warn">⚠️ Yellow — Warning / Elevated</option>
+          <option value="red">🔴 Red — Emergency / Critical</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Title *</label><input type="text" id="tl-title" placeholder="e.g. Cardiology Follow-up" /></div>
+      <div class="form-group full"><label>Details</label><textarea id="tl-details" rows="3" placeholder="e.g. LDL still above target despite statin therapy. Dose escalation discussed." style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeTimelineModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTimelineEntry()">💾 Add Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT VITALS MODAL -->
+<div class="modal-overlay" id="vitalsModal">
+  <div class="modal" style="max-width:580px;">
+    <h3 id="vitalsModalTitle">🩺 Record Vitals</h3>
+
+    <!-- Triage info banner -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:0.85rem 1rem;font-size:0.82rem;color:#1e40af;margin-bottom:1.2rem;display:flex;align-items:flex-start;gap:0.5rem;">
+      <span>📋</span>
+      <span>All vitals are recorded with timestamp and nurse name. Abnormal values will be automatically flagged. Fields marked * are required.</span>
+    </div>
+
+    <div class="form-grid">
+      <!-- BP -->
+      <div class="form-group">
+        <label>Blood Pressure * <span style="font-weight:400;text-transform:none;letter-spacing:0;">(mmHg)</span></label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="vt-bp-sys" placeholder="Systolic" min="60" max="250" style="flex:1;" oninput="onVitalsChange()" />
+          <span style="color:var(--muted);font-weight:700;">/</span>
+          <input type="number" id="vt-bp-dia" placeholder="Diastolic" min="40" max="150" style="flex:1;" oninput="onVitalsChange()" />
+        </div>
+        <div id="vt-bp-flag" style="font-size:0.76rem;margin-top:3px;display:none;"></div>
+      </div>
+
+      <!-- Heart Rate -->
+      <div class="form-group">
+        <label>Heart Rate * <span style="font-weight:400;text-transform:none;letter-spacing:0;">(bpm)</span></label>
+        <input type="number" id="vt-hr" placeholder="e.g. 72" min="30" max="250" oninput="onVitalsChange()" />
+        <div id="vt-hr-flag" style="font-size:0.76rem;margin-top:3px;display:none;"></div>
+      </div>
+
+      <!-- Temperature -->
+      <div class="form-group">
+        <label>Temperature * <span style="font-weight:400;text-transform:none;letter-spacing:0;">(°C)</span></label>
+        <input type="number" id="vt-temp" placeholder="e.g. 37.0" min="34" max="42" step="0.1" oninput="onVitalsChange()" />
+        <div id="vt-temp-flag" style="font-size:0.76rem;margin-top:3px;display:none;"></div>
+      </div>
+
+      <!-- SpO2 -->
+      <div class="form-group">
+        <label>SpO₂ * <span style="font-weight:400;text-transform:none;letter-spacing:0;">(%)</span></label>
+        <input type="number" id="vt-spo2" placeholder="e.g. 98" min="70" max="100" oninput="onVitalsChange()" />
+        <div id="vt-spo2-flag" style="font-size:0.76rem;margin-top:3px;display:none;"></div>
+      </div>
+
+      <!-- Respiratory Rate -->
+      <div class="form-group">
+        <label>Resp. Rate * <span style="font-weight:400;text-transform:none;letter-spacing:0;">(/min)</span></label>
+        <input type="number" id="vt-rr" placeholder="e.g. 16" min="8" max="60" oninput="onVitalsChange()" />
+        <div id="vt-rr-flag" style="font-size:0.76rem;margin-top:3px;display:none;"></div>
+      </div>
+
+      <!-- Weight / Height for BMI -->
+      <div class="form-group">
+        <label>Weight <span style="font-weight:400;text-transform:none;letter-spacing:0;">(kg)</span></label>
+        <input type="number" id="vt-weight" placeholder="e.g. 75" min="1" max="300" step="0.1" oninput="onVitalsChange()" />
+      </div>
+      <div class="form-group">
+        <label>Height <span style="font-weight:400;text-transform:none;letter-spacing:0;">(cm)</span></label>
+        <input type="number" id="vt-height" placeholder="e.g. 170" min="50" max="250" oninput="onVitalsChange()" />
+      </div>
+
+      <!-- BMI (auto-computed) -->
+      <div class="form-group">
+        <label>BMI <span style="font-weight:400;text-transform:none;letter-spacing:0;">(auto-computed)</span></label>
+        <input type="text" id="vt-bmi-display" placeholder="—" readonly style="background:#f1f5f9;color:var(--primary-dark);font-weight:700;" />
+      </div>
+
+      <!-- Pain Scale -->
+      <div class="form-group">
+        <label>Pain Score <span style="font-weight:400;text-transform:none;letter-spacing:0;">(0–10)</span></label>
+        <input type="number" id="vt-pain" placeholder="0 = no pain" min="0" max="10" oninput="onVitalsChange()" />
+        <div id="vt-pain-flag" style="font-size:0.76rem;margin-top:3px;display:none;"></div>
+      </div>
+
+      <!-- Nurse -->
+      <div class="form-group">
+        <label>Recorded By *</label>
+        <input type="text" id="vt-nurse" placeholder="e.g. Nurse Sara Nour" />
+      </div>
+
+      <!-- Clinical Note -->
+      <div class="form-group full">
+        <label>Clinical Note</label>
+        <textarea id="vt-note" rows="2" placeholder="e.g. Patient alert and oriented ×3. Mild dyspnea on exertion." style="resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <!-- Live Triage Summary -->
+    <div id="vt-triage-summary" style="display:none;margin-top:0.75rem;border-radius:12px;padding:1rem;border:1.5px solid var(--border);">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.6rem;">🚨 Triage Flags</div>
+      <div id="vt-flags-list" style="display:flex;flex-direction:column;gap:5px;font-size:0.82rem;"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeVitalsModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveVitals()">💾 Save Vitals</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────
+// ── Path to EHR_System.php ───────────────────────────────────────────
+// Your XAMPP structure:
+//   Health Information System/
+//   ├── Front End/
+//   │   └── EHR_Page.html   ← this file (you are here)
+//   └── Back End/
+//       └── EHR_System.php  ← backend
+// We go up one level with ../ then into Back End/
+const API = '../Back End/EHR_System.php';
+
+// ─── STATE ───────────────────────────────────────────────────────────
+let patients = [];
+let activePatientId = null;
+let editingLabId = null;
+
+// ─── API HELPER ──────────────────────────────────────────────────────
+async function api(params, method = 'GET', body = null) {
+  const url = API + '?' + new URLSearchParams(params);
+  const opts = { method, credentials: 'include' };
+  if (body) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  try {
+    const r = await fetch(url, opts);
+
+    if (r.status === 401 || r.status === 403) {
+      handleUnauthorized();
+      return { success: false };
+    }
+
+    const data = await r.json();
+    if (data && data.status === 'Unauthorized access') {
+      handleUnauthorized();
+      return { success: false };
+    }
+    return data;
+  } catch(e) {
+    showToast('⚠ Network error: ' + e.message, false);
+    return { success: false };
+  }
+}
+
+// ─── Wipe local session and bounce to login on any auth failure ────────
+function handleUnauthorized() {
+  localStorage.removeItem('ehr_user');
+  showToast('⚠ Session expired or unauthorized — please sign in again.', false);
+  setTimeout(() => { window.location.replace('Home_Page.html'); }, 1200);
+}
+
+// ─── Manual logout (button click) ───────────────────────────────────────
+async function ehrLogout() {
+  try {
+    await fetch(API + '?action=logout', { method: 'POST', credentials: 'include' });
+  } catch (e) { /* ignore network errors on logout */ }
+  localStorage.removeItem('ehr_user');
+  window.location.replace('Home_Page.html');
+}
+
+// ─── INIT (ping + verify PHP session, then load data) ────────────────
+async function init() {
+  try {
+    const ping = await fetch(API + '?action=ping', { credentials: 'include' });
+    const ct = ping.headers.get('content-type') || '';
+    if (!ct.includes('json')) {
+      showToast('⚠ Cannot reach EHR_System.php — check folder path & XAMPP is running.', false);
+      document.getElementById('patientListGrid').innerHTML =
+        '<div style="grid-column:1/-1;padding:1.5rem;background:#fee2e2;border-radius:12px;color:#991b1b;font-size:0.9rem;">' +
+        '❌ <strong>Backend not found.</strong> Make sure:<br>' +
+        '1. <code>EHR_System.php</code> is inside the <code>Back End/</code> folder.<br>' +
+        '2. XAMPP Apache &amp; MySQL are running.<br>' +
+        '3. Open the page via <code>http://localhost/...</code>, not from the file system.' +
+        '</div>';
+      document.getElementById('noResults').style.display = 'none';
+      return;
+    }
+    const data = await ping.json();
+    if (!data.success) { showToast('⚠ DB error: ' + data.message, false); return; }
+
+    // ── Verify PHP session is still alive & sync role from server ──────────
+    const whoRes = await fetch(API + '?action=whoami', { credentials: 'include' });
+    const whoData = await whoRes.json().catch(() => ({ success: false }));
+    if (!whoData.success || !whoData.logged_in) {
+      handleUnauthorized(); return;
+    }
+
+    // Admins can also access the clinical EHR view (e.g. to use the
+    // Hospital Staff panel). No forced redirect.
+
+    // Sync server-authoritative role back into EHR_USER (guards against
+    // a tampered localStorage value)
+    window.EHR_USER = { name: whoData.name, role: whoData.role, specialty: whoData.specialty ?? null };
+    localStorage.setItem('ehr_user', JSON.stringify(window.EHR_USER));
+
+    // Silently seed CDSS rules (INSERT IGNORE — idempotent, admin will get 200, others 403 which is caught)
+    fetch(API + '?action=reseed_cdss_rules', { credentials: 'include' }).catch(() => {});
+  } catch(e) {
+    showToast('⚠ Network error — is XAMPP running? ' + e.message, false); return;
+  }
+  await loadPatients();
+  applyRbacUi();        // hide/show elements based on role
+  setupNavBadge();      // show user name + role in header
+  setupProfileFab();    // floating profile btn (non-admin only)
+}
+
+// ─── RBAC UI ENFORCEMENT ─────────────────────────────────────────────
+// Called once on init. Uses EHR_USER.role (from localStorage, set at login)
+// to hide or show UI controls that the current role is not permitted to use.
+// Server-side requireRole() is the real security gate; this is UX only.
+function applyRbacUi() {
+  const role = (window.EHR_USER || {}).role || 'nurse';
+
+  // Helper: hide all elements matching a CSS selector
+  function hide(sel) {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.display = 'none';
+      el.dataset.rbacHidden = '1';
+    });
+  }
+  // Helper: disable all matching buttons/inputs with a tooltip
+  function disable(sel, tip) {
+    document.querySelectorAll(sel).forEach(el => {
+      el.disabled    = true;
+      el.title       = tip || 'Not permitted for your role';
+      el.style.opacity = '0.4';
+      el.style.cursor  = 'not-allowed';
+      el.dataset.rbacDisabled = '1';
+    });
+  }
+
+  // ── Manager: view-only access. Hide every action that creates, edits,
+  //    deletes, prescribes, or dismisses anything; leave all viewing/
+  //    navigation/reporting intact. ──────────────────────────────────────
+  if (role === 'manager') {
+    hide('[onclick="deletePatientRecord()"]');
+    hide('[onclick="openEPrescribeModal()"]');
+    hide('[onclick="openNewPatientModal()"]');
+    hide('[onclick="openEditPatientModal()"]');
+    hide('[onclick="openAddVitalsModal()"]');
+    hide('[onclick="openEditVitalsModal()"]');
+    hide('[onclick="openTimelineModal()"]');
+    hide('[onclick="openRefillModal()"]');
+    hide('[onclick="openAddLabModal()"]');
+    hide('#reseedRulesBtn');
+    window._rbacCanPrescribe     = false;
+    window._rbacCanDeleteLab     = false;
+    window._rbacCanDismissAlert  = false;
+    window._rbacReadOnly         = true;
+    window._ehrRole = role;
+    createAdminStaffButton();
+    return;
+  }
+
+  // ── Delete patient: admin only ─────────────────────────────────────
+  if (role !== 'admin') {
+    hide('[onclick="deletePatientRecord()"]');
+  }
+
+  // ── Prescribe & remove medications: admin + doctor only ───────────
+  if (role === 'nurse') {
+    hide('[onclick="openEPrescribeModal()"]');
+    // deleteMed buttons are rendered dynamically — handled in renderMeds()
+    window._rbacCanPrescribe = false;
+  } else {
+    window._rbacCanPrescribe = true;
+  }
+
+  // ── Delete lab results: admin + doctor only ────────────────────────
+  // deleteLab buttons are rendered dynamically — handled in renderLabs()
+  window._rbacCanDeleteLab = (role === 'admin' || role === 'doctor');
+
+  // ── Override / dismiss alerts: admin + doctor only ─────────────────
+  window._rbacCanDismissAlert = (role === 'admin' || role === 'doctor');
+
+  // ── Reseed CDSS rules (Fix Rules button): admin only ───────────────
+  if (role !== 'admin') {
+    hide('#reseedRulesBtn');
+  }
+
+  // ── Review Appointments nav link: admin + doctor only ─────────────
+  if (role === 'nurse') {
+    document.querySelectorAll('a[href="Online_Consultation_Page.html"]').forEach(el => {
+      el.style.opacity = '0.4';
+      el.style.pointerEvents = 'none';
+      el.title = 'Online consultation review is restricted to Doctors and Admins';
+    });
+  }
+
+  // ── Floating "Hospital Staff" + dashboard buttons: admin & manager ──
+  if (role === 'admin' || role === 'manager') {
+    createAdminStaffButton();
+  }
+
+  // Store role globally for dynamic renders
+  window._ehrRole = role;
+}
+
+// ─── ADMIN-ONLY FLOATING STAFF BUTTON ──────────────────────────────────
+// Sticky/floating button visible only to admins. Stays on screen while
+// scrolling. Opens a panel listing doctors/nurses from the admin's own
+// hospital (server enforces hospital scoping via action=get_users).
+function createAdminStaffButton() {
+  if (document.getElementById('adminStaffBtn')) return; // avoid duplicates
+
+  const btn = document.createElement('button');
+  btn.id = 'adminStaffBtn';
+  btn.textContent = '🏥 Hospital Staff';
+  btn.title = 'View doctors & nurses at your hospital';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    padding: 12px 18px;
+    background: #92400e;
+    color: #fef3c7;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    cursor: pointer;
+  `;
+  btn.onclick = openAdminStaffPanel;
+  document.body.appendChild(btn);
+
+  const dashBtn = document.createElement('button');
+  dashBtn.id = 'adminDashboardBtn';
+  dashBtn.textContent = '📊 Access Admin Control Panel';
+  dashBtn.title = 'Go to Admin Dashboard';
+  dashBtn.style.cssText = `
+    position: fixed;
+    bottom: 76px;
+    right: 24px;
+    z-index: 9999;
+    padding: 12px 18px;
+    background: #92400e;
+    color: #fef3c7;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    cursor: pointer;
+  `;
+  dashBtn.onclick = () => { window.location.href = 'Admin_Dashboard.html'; };
+  document.body.appendChild(dashBtn);
+
+  // Panel (hidden by default)
+  const panel = document.createElement('div');
+  panel.id = 'adminStaffPanel';
+  panel.style.cssText = `
+    position: fixed;
+    bottom: 132px;
+    right: 24px;
+    z-index: 9999;
+    width: 340px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    padding: 14px;
+    display: none;
+  `;
+  panel.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <strong style="font-size:15px;">Hospital Staff</strong>
+      <button onclick="document.getElementById('adminStaffPanel').style.display='none'"
+              style="border:none; background:none; cursor:pointer; font-size:16px;">✕</button>
+    </div>
+    <div id="adminStaffList" style="font-size:13px; color:#374151;">Loading…</div>
+  `;
+  document.body.appendChild(panel);
+}
+
+async function openAdminStaffPanel() {
+  const panel = document.getElementById('adminStaffPanel');
+  const list  = document.getElementById('adminStaffList');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  if (!isHidden) return;
+
+  list.textContent = 'Loading…';
+  try {
+    const res  = await fetch(API + '?action=get_users', { credentials: 'include' });
+    const data = await res.json();
+    if (!data.success) {
+      list.textContent = data.message || 'Failed to load staff.';
+      return;
+    }
+    if (!data.data || data.data.length === 0) {
+      list.textContent = 'No staff found for ' + (data.hospital || 'your hospital') + '.';
+      return;
+    }
+    list.innerHTML = '<div style="margin-bottom:6px; color:#6b7280;">' +
+      (data.hospital || '') + '</div>' +
+      data.data.map(u => `
+        <div style="padding:6px 0; border-bottom:1px solid #f3f4f6;">
+          <div style="font-weight:600;">${escapeHtml(u.full_name || u.username)}
+            <span style="font-size:11px; color:${u.role === 'doctor' ? '#123a66' : '#047857'}; text-transform:uppercase;">
+              ${escapeHtml(u.role)}
+            </span>
+          </div>
+          <div style="font-size:12px; color:#6b7280;">${escapeHtml(u.email || '')}
+            ${u.is_active ? '' : ' · <span style="color:#b91c1c;">inactive</span>'}
+          </div>
+        </div>
+      `).join('');
+  } catch (e) {
+    list.textContent = 'Error loading staff list.';
+  }
+}
+
+// Small helper to avoid XSS when injecting user-controlled text into innerHTML
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ─── NAV BADGE ────────────────────────────────────────────────────────
+function setupNavBadge() {
+  const u = window.EHR_USER || {};
+  const roleColors = {
+    admin:  { bg: '#fef3c7', color: '#92400e', icon: '🔐' },
+    doctor: { bg: '#dbeafe', color: '#0a2240', icon: '🩺' },
+    nurse:  { bg: '#d1fae5', color: '#065f46', icon: '💉' },
+  };
+  const meta  = roleColors[u.role] || roleColors.nurse;
+  const badge = document.getElementById('navRoleBadge');
+  const name  = document.getElementById('navUserName');
+  const icon  = document.getElementById('navRoleIcon');
+  if (badge) {
+    badge.textContent     = u.role || '—';
+    badge.style.background = meta.bg;
+    badge.style.color      = meta.color;
+  }
+  if (name)  name.textContent  = u.name  || 'User';
+  if (icon)  icon.textContent  = meta.icon;
+}
+
+// ─── PATIENT LIST ────────────────────────────────────────────────────
+async function loadPatients(q = '') {
+  const params = { action: 'get_patients' };
+  if (q) params.q = q;
+  const res = await api(params);
+  if (res.success) {
+    patients = res.data;
+    document.getElementById('stat-patients').textContent = patients.length;
+    renderPatientList(patients);
+  }
+}
+
+function getInitials(name) {
+  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+function renderPatientList(list) {
+  const grid = document.getElementById('patientListGrid');
+  const noRes = document.getElementById('noResults');
+  if (!list || list.length === 0) {
+    grid.innerHTML = '';
+    noRes.style.display = 'block';
+    return;
+  }
+  noRes.style.display = 'none';
+  grid.innerHTML = list.map(p => `
+    <div class="patient-list-card" id="plc-${p.id}" onclick="selectPatient('${p.id}')">
+      <div class="plc-avatar" style="background:${p.color}">${getInitials(p.name)}</div>
+      <div class="plc-info">
+        <div class="plc-name">${p.name}</div>
+        <div class="plc-sub">${p.id} · ${p.gender} · ${p.age} yrs</div>
+        <div class="plc-sub" style="margin-top:2px;color:#123a66;font-weight:600;">${p.conditions.split(',')[0]}</div>
+      </div>
+      <div class="plc-badge"><span class="badge badge-active">Active</span></div>
+    </div>
+  `).join('');
+}
+
+async function filterPatients() {
+  const q = document.getElementById('patientSearch').value.trim();
+  await loadPatients(q);
+}
+
+async function clearSearch() {
+  document.getElementById('patientSearch').value = '';
+  await loadPatients();
+}
+
+// ─── SELECT PATIENT ──────────────────────────────────────────────────
+async function selectPatient(id) {
+  activePatientId = id;
+  const p = patients.find(x => x.id === id);
+  if (!p) return;
+
+  document.querySelectorAll('.patient-list-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('plc-' + id);
+  if (card) { card.classList.add('selected'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+  document.getElementById('recordPanel').style.display = '';
+  document.getElementById('emptyState').style.display = 'none';
+
+  renderOverview(p);
+
+  // Reset to Overview tab
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('.demo-tab').classList.add('active');
+  document.getElementById('tab-overview').classList.add('active');
+
+  setTimeout(() => document.getElementById('recordPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+  // ── CDSS: reload alerts scoped to the newly selected patient ──────────
+  refreshAlerts();
+}
+
+// ─── SWITCH TAB (lazy-load from DB) ──────────────────────────────────
+async function switchTab(btn, tabId) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+
+  if (!activePatientId) return;
+  const p = patients.find(x => x.id === activePatientId);
+
+  if (tabId === 'tab-vitals')   { const v = await api({ action:'get_vitals', patient_id: activePatientId }); renderVitals(v.data); }
+  if (tabId === 'tab-history')  { await loadAndRenderHistory(p); }
+  if (tabId === 'tab-meds')     { await loadAndRenderMeds(p); }
+  if (tabId === 'tab-labs')     { await loadAndRenderLabs(p); }
+}
+
+// ─── BADGE HELPERS ───────────────────────────────────────────────────
+function badgeHtml(status) {
+  return status === 'active' ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-warning">Inactive</span>';
+}
+function allergyBadges(arr) {
+  if (!arr || arr.length === 0) return '<span style="color:var(--success);font-weight:600;">✓ None known</span>';
+  return arr.map(a => `<span class="badge badge-danger">${a}</span>`).join(' ');
+}
+
+// ─── OVERVIEW TAB ────────────────────────────────────────────────────
+function renderOverview(p) {
+  const insHtml = (p.insurance && p.insurance !== '—')
+    ? `${p.insurance} &nbsp;<span class="badge badge-info">Verified</span>`
+    : `<span style="color:var(--muted);">Not provided</span> &nbsp;<span class="badge badge-warning">Unverified</span>`;
+
+  document.getElementById('tab-overview').innerHTML = `
+    <div class="patient-header">
+      <div class="patient-avatar" style="background:${p.color}">${getInitials(p.name)}</div>
+      <div class="patient-meta">
+        <h4>${p.name} &nbsp;<span class="badge badge-active">Active</span></h4>
+        <span>${p.id} &nbsp;·&nbsp; ${p.gender} &nbsp;·&nbsp; ${p.age} yrs &nbsp;·&nbsp; DOB: ${p.dob} &nbsp;·&nbsp; Blood: ${p.blood}</span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:0.6rem;flex-wrap:wrap;">
+        <button class="btn-outline btn-sm" onclick="openEditPatientModal()">✏️ Edit Record</button>
+        <button class="btn-outline btn-sm">✉ Message</button>
+        <button class="btn-primary btn-sm" onclick="window.location.href='Appointments_Page.html'">📅 Schedule</button>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><label>Phone</label><span>${p.phone}</span></div>
+      <div class="info-item" style="min-width:0;overflow:hidden;"><label>Email</label><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.email}">${p.email}</span></div>
+      <div class="info-item"><label>Insurance</label><span>${insHtml}</span></div>
+      <div class="info-item"><label>Primary Physician</label><span>${p.physician}</span></div>
+      <div class="info-item"><label>Last Visit</label><span>${p.lastVisit}</span></div>
+      <div class="info-item"><label>Next Appointment</label><span>${p.nextAppt}</span></div>
+    </div>
+    <div class="info-grid" style="margin-bottom:0;">
+      <div class="info-item"><label>Allergies</label><span>${allergyBadges(p.allergies)}</span></div>
+      <div class="info-item"><label>Active Conditions</label><span>${p.conditions}</span></div>
+      <div class="info-item"><label>Smoking Status</label><span>${p.smoking}</span></div>
+    </div>`;
+}
+
+// ─── VITALS TAB ──────────────────────────────────────────────────────
+function renderVitals(v) {
+  const container = document.getElementById('tab-vitals');
+  if (!v) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:2.5rem 1rem;color:var(--muted);">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem;">🩺</div>
+        <div style="font-weight:600;color:var(--text);margin-bottom:0.4rem;">No vitals recorded yet</div>
+        <div style="font-size:0.88rem;margin-bottom:1.2rem;">Record the patient's first set of vitals to begin monitoring.</div>
+        <button class="btn-primary" onclick="openAddVitalsModal()">＋ Record Vitals</button>
+      </div>`;
+    return;
+  }
+
+  // Compute flags
+  const flags = computeVitalFlags({
+    bp: v.bp, hr: parseFloat(v.hr), temp: parseFloat(v.temp),
+    spo2: parseFloat(v.spo2), rr: parseFloat(v.rr),
+    bmi: parseFloat(v.bmi), pain: v.pain != null ? parseFloat(v.pain) : null
+  });
+
+  const bpColor = flags.some(f => f.id==='bp' && f.sev==='critical') ? 'var(--danger)'
+    : flags.some(f => f.id==='bp') ? 'var(--accent2)' : 'var(--primary)';
+  const bpBadge = flags.some(f => f.id==='bp' && f.sev==='critical')
+    ? '<span class="badge badge-danger" style="font-size:0.7rem;">High</span>'
+    : flags.some(f => f.id==='bp') ? '<span class="badge badge-warning" style="font-size:0.7rem;">Elevated</span>' : '';
+
+  const hrColor = flags.some(f => f.id==='hr' && f.sev==='critical') ? 'var(--danger)'
+    : flags.some(f => f.id==='hr') ? 'var(--accent2)' : 'var(--primary)';
+  const tempColor = flags.some(f => f.id==='temp' && f.sev==='critical') ? 'var(--danger)'
+    : flags.some(f => f.id==='temp') ? 'var(--accent2)' : 'var(--primary)';
+  const spo2Color = flags.some(f => f.id==='spo2' && f.sev==='critical') ? 'var(--danger)'
+    : flags.some(f => f.id==='spo2') ? 'var(--accent2)' : 'var(--primary)';
+  const rrColor = flags.some(f => f.id==='rr') ? 'var(--accent2)' : 'var(--primary)';
+
+  const bmiNum = parseFloat(v.bmi);
+  const bmiValid = !isNaN(bmiNum) && bmiNum > 0;
+  const bmiCategory = !bmiValid ? {label:'', cls:''} :
+    bmiNum < 18.5 ? {label:'Underweight', cls:'badge-warning'} :
+    bmiNum < 25 ? {label:'Normal', cls:'badge-active'} :
+    bmiNum < 30 ? {label:'Overweight', cls:'badge-warning'} :
+    {label:'Obese', cls:'badge-danger'};
+
+  const flagsHtml = flags.length ? `
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#9a3412;margin-bottom:0.6rem;">⚠ Triage Flags</div>
+      ${flags.map(f => `<div style="font-size:0.84rem;color:${f.sev==='critical'?'#991b1b':'#92400e'};padding:3px 0;">
+        ${f.sev==='critical'?'🔴':'🟡'} ${f.msg}
+      </div>`).join('')}
+    </div>` : '';
+
+  const painHtml = v.pain != null ? `
+    <div class="vital-card">
+      <div class="vital-val" style="color:${parseFloat(v.pain)>=7?'var(--danger)':parseFloat(v.pain)>=4?'var(--accent2)':'var(--primary)'}">${v.pain}/10</div>
+      <div class="vital-label">Pain Score ${parseFloat(v.pain)>=7?'<span class="badge badge-danger" style="font-size:0.65rem;">Severe</span>':parseFloat(v.pain)>=4?'<span class="badge badge-warning" style="font-size:0.65rem;">Moderate</span>':''}</div>
+    </div>` : '';
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.2rem;">
+      <p style="color:var(--muted);font-size:0.85rem;margin:0;">
+        Last recorded: <strong>${v.recorded_at}</strong> &nbsp;·&nbsp; By: ${v.nurse}
+      </p>
+      <button class="btn-primary" style="font-size:0.82rem;padding:7px 14px;" onclick="openEditVitalsModal()">✏️ Update Vitals</button>
+    </div>
+    ${flagsHtml}
+    <div class="vitals-row">
+      <div class="vital-card">
+        <div class="vital-val" style="color:${bpColor}">${v.bp}</div>
+        <div class="vital-label">Blood Pressure ${bpBadge}<br><span class="vital-unit">mmHg</span></div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-val" style="color:${hrColor}">${v.hr}</div>
+        <div class="vital-label">Heart Rate <span class="vital-unit">bpm</span></div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-val" style="color:${tempColor}">${v.temp}</div>
+        <div class="vital-label">Temp <span class="vital-unit">°C</span></div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-val" style="color:${spo2Color}">${v.spo2}</div>
+        <div class="vital-label">SpO₂ <span class="vital-unit">%</span></div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-val" style="color:${rrColor}">${v.rr}</div>
+        <div class="vital-label">Resp. Rate <span class="vital-unit">/min</span></div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-val">${v.bmi}</div>
+        <div class="vital-label">BMI ${bmiValid ? `<span class="badge ${bmiCategory.cls}" style="font-size:0.65rem;">${bmiCategory.label}</span>` : ''}<br><span class="vital-unit">kg/m²</span></div>
+      </div>
+      ${painHtml}
+    </div>
+    <div style="background:var(--bg);border-radius:12px;padding:1rem;font-size:0.88rem;color:var(--muted);">
+      💡 <strong>Clinical Note:</strong> ${v.note || 'No note recorded.'}
+    </div>`;
+}
+
+// ─── VITAL FLAGS ENGINE (nurse logic) ────────────────────────────────
+function computeVitalFlags(v) {
+  const flags = [];
+  // BP
+  if (v.bp) {
+    const m = v.bp.match(/(\d+)\/(\d+)/);
+    if (m) {
+      const sys = parseInt(m[1]), dia = parseInt(m[2]);
+      if (sys >= 180 || dia >= 120) flags.push({ id:'bp', sev:'critical', msg: `Hypertensive crisis: BP ${v.bp} mmHg — immediate intervention required.` });
+      else if (sys >= 140 || dia >= 90) flags.push({ id:'bp', sev:'warning', msg: `Elevated BP: ${v.bp} mmHg — monitor closely.` });
+      else if (sys < 90 || dia < 60) flags.push({ id:'bp', sev:'critical', msg: `Hypotension: BP ${v.bp} mmHg — assess for shock.` });
+    }
+  }
+  // HR
+  if (!isNaN(v.hr)) {
+    if (v.hr > 120) flags.push({ id:'hr', sev:'critical', msg: `Tachycardia: HR ${v.hr} bpm — investigate cause.` });
+    else if (v.hr > 100) flags.push({ id:'hr', sev:'warning', msg: `Mild tachycardia: HR ${v.hr} bpm.` });
+    else if (v.hr < 50) flags.push({ id:'hr', sev:'critical', msg: `Bradycardia: HR ${v.hr} bpm — cardiac review needed.` });
+  }
+  // Temp
+  if (!isNaN(v.temp)) {
+    if (v.temp >= 39.5) flags.push({ id:'temp', sev:'critical', msg: `High fever: ${v.temp}°C — consider sepsis workup.` });
+    else if (v.temp >= 38.0) flags.push({ id:'temp', sev:'warning', msg: `Fever: ${v.temp}°C — monitor and investigate.` });
+    else if (v.temp < 36.0) flags.push({ id:'temp', sev:'warning', msg: `Hypothermia: ${v.temp}°C — warm patient and monitor.` });
+  }
+  // SpO2
+  if (!isNaN(v.spo2)) {
+    if (v.spo2 < 90) flags.push({ id:'spo2', sev:'critical', msg: `Critical hypoxia: SpO₂ ${v.spo2}% — supplemental O₂ urgently.` });
+    else if (v.spo2 < 95) flags.push({ id:'spo2', sev:'warning', msg: `Low SpO₂: ${v.spo2}% — assess respiratory status.` });
+  }
+  // RR
+  if (!isNaN(v.rr)) {
+    if (v.rr > 30) flags.push({ id:'rr', sev:'critical', msg: `Severe tachypnea: RR ${v.rr}/min — urgent respiratory assessment.` });
+    else if (v.rr > 20) flags.push({ id:'rr', sev:'warning', msg: `Tachypnea: RR ${v.rr}/min.` });
+    else if (v.rr < 10) flags.push({ id:'rr', sev:'critical', msg: `Bradypnea: RR ${v.rr}/min — airway at risk.` });
+  }
+  // Pain
+  if (v.pain != null && !isNaN(v.pain)) {
+    if (v.pain >= 8) flags.push({ id:'pain', sev:'critical', msg: `Severe pain: ${v.pain}/10 — immediate pain management needed.` });
+    else if (v.pain >= 5) flags.push({ id:'pain', sev:'warning', msg: `Moderate pain: ${v.pain}/10 — analgesic review recommended.` });
+  }
+  return flags;
+}
+
+// ─── VITALS MODAL LOGIC ───────────────────────────────────────────────
+let currentVitalsData = null;
+
+function openAddVitalsModal() {
+  currentVitalsData = null;
+  document.getElementById('vitalsModalTitle').textContent = '🩺 Record Vitals';
+  ['vt-bp-sys','vt-bp-dia','vt-hr','vt-temp','vt-spo2','vt-rr','vt-weight','vt-height','vt-pain','vt-nurse','vt-note'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('vt-bmi-display').value = '—';
+  document.getElementById('vt-triage-summary').style.display = 'none';
+  ['vt-bp-flag','vt-hr-flag','vt-temp-flag','vt-spo2-flag','vt-rr-flag','vt-pain-flag'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('vitalsModal').classList.add('open');
+}
+
+async function openEditVitalsModal() {
+  if (!activePatientId) return;
+  const res = await api({ action: 'get_vitals', patient_id: activePatientId });
+  const v = res.data;
+  currentVitalsData = v;
+  document.getElementById('vitalsModalTitle').textContent = '✏️ Update Vitals';
+  if (v) {
+    const bpParts = (v.bp || '').match(/(\d+)\/(\d+)/);
+    document.getElementById('vt-bp-sys').value = bpParts ? bpParts[1] : '';
+    document.getElementById('vt-bp-dia').value = bpParts ? bpParts[2] : '';
+    document.getElementById('vt-hr').value    = v.hr   || '';
+    document.getElementById('vt-temp').value  = v.temp || '';
+    document.getElementById('vt-spo2').value  = v.spo2 || '';
+    document.getElementById('vt-rr').value    = v.rr   || '';
+    document.getElementById('vt-pain').value  = v.pain != null ? v.pain : '';
+    document.getElementById('vt-nurse').value = v.nurse || '';
+    document.getElementById('vt-note').value  = v.note  || '';
+    // Re-derive weight/height from BMI is not possible, leave blank
+    document.getElementById('vt-bmi-display').value = v.bmi || '—';
+  }
+  onVitalsChange();
+  document.getElementById('vitalsModal').classList.add('open');
+}
+
+function closeVitalsModal() {
+  document.getElementById('vitalsModal').classList.remove('open');
+}
+
+function onVitalsChange() {
+  const sys    = parseFloat(document.getElementById('vt-bp-sys').value);
+  const dia    = parseFloat(document.getElementById('vt-bp-dia').value);
+  const hr     = parseFloat(document.getElementById('vt-hr').value);
+  const temp   = parseFloat(document.getElementById('vt-temp').value);
+  const spo2   = parseFloat(document.getElementById('vt-spo2').value);
+  const rr     = parseFloat(document.getElementById('vt-rr').value);
+  const weight = parseFloat(document.getElementById('vt-weight').value);
+  const height = parseFloat(document.getElementById('vt-height').value);
+  const pain   = parseFloat(document.getElementById('vt-pain').value);
+
+  // BMI auto-compute
+  if (!isNaN(weight) && !isNaN(height) && height > 0) {
+    const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
+    document.getElementById('vt-bmi-display').value = bmi;
+  }
+
+  // Inline field flags
+  const setFlag = (id, msg, color) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (msg) { el.style.display = 'block'; el.style.color = color; el.textContent = msg; }
+    else el.style.display = 'none';
+  };
+
+  // BP flag
+  if (!isNaN(sys) && !isNaN(dia)) {
+    if (sys >= 180 || dia >= 120) setFlag('vt-bp-flag', '🔴 Hypertensive crisis — immediate review!', 'var(--danger)');
+    else if (sys >= 140 || dia >= 90) setFlag('vt-bp-flag', '🟡 Stage 2 hypertension', 'var(--accent2)');
+    else if (sys < 90 || dia < 60) setFlag('vt-bp-flag', '🔴 Hypotension — assess for shock', 'var(--danger)');
+    else setFlag('vt-bp-flag', '✅ Within normal range', 'var(--success)');
+  } else setFlag('vt-bp-flag', null);
+
+  // HR flag
+  if (!isNaN(hr)) {
+    if (hr > 120) setFlag('vt-hr-flag', '🔴 Tachycardia — investigate', 'var(--danger)');
+    else if (hr > 100) setFlag('vt-hr-flag', '🟡 Mild tachycardia', 'var(--accent2)');
+    else if (hr < 50) setFlag('vt-hr-flag', '🔴 Bradycardia', 'var(--danger)');
+    else setFlag('vt-hr-flag', '✅ Normal', 'var(--success)');
+  } else setFlag('vt-hr-flag', null);
+
+  // Temp flag
+  if (!isNaN(temp)) {
+    if (temp >= 39.5) setFlag('vt-temp-flag', '🔴 High fever — possible sepsis', 'var(--danger)');
+    else if (temp >= 38.0) setFlag('vt-temp-flag', '🟡 Fever', 'var(--accent2)');
+    else if (temp < 36.0) setFlag('vt-temp-flag', '🟡 Hypothermia', 'var(--accent2)');
+    else setFlag('vt-temp-flag', '✅ Afebrile', 'var(--success)');
+  } else setFlag('vt-temp-flag', null);
+
+  // SpO2 flag
+  if (!isNaN(spo2)) {
+    if (spo2 < 90) setFlag('vt-spo2-flag', '🔴 Critical hypoxia — O₂ now!', 'var(--danger)');
+    else if (spo2 < 95) setFlag('vt-spo2-flag', '🟡 Low SpO₂ — monitor closely', 'var(--accent2)');
+    else setFlag('vt-spo2-flag', '✅ Adequate', 'var(--success)');
+  } else setFlag('vt-spo2-flag', null);
+
+  // RR flag
+  if (!isNaN(rr)) {
+    if (rr > 30 || rr < 10) setFlag('vt-rr-flag', '🔴 Abnormal — urgent assessment', 'var(--danger)');
+    else if (rr > 20) setFlag('vt-rr-flag', '🟡 Tachypnea', 'var(--accent2)');
+    else setFlag('vt-rr-flag', '✅ Normal', 'var(--success)');
+  } else setFlag('vt-rr-flag', null);
+
+  // Pain flag
+  if (!isNaN(pain)) {
+    if (pain >= 8) setFlag('vt-pain-flag', '🔴 Severe pain — pain management needed', 'var(--danger)');
+    else if (pain >= 5) setFlag('vt-pain-flag', '🟡 Moderate pain — analgesic review', 'var(--accent2)');
+    else if (pain > 0) setFlag('vt-pain-flag', '🟢 Mild pain — reassess', 'var(--success)');
+    else setFlag('vt-pain-flag', '✅ No pain', 'var(--success)');
+  } else setFlag('vt-pain-flag', null);
+
+  // Triage summary
+  const bp = (!isNaN(sys) && !isNaN(dia)) ? `${sys}/${dia}` : null;
+  const flagsList = computeVitalFlags({ bp, hr, temp, spo2, rr, bmi: null, pain: isNaN(pain) ? null : pain });
+  const summaryEl = document.getElementById('vt-triage-summary');
+  const listEl    = document.getElementById('vt-flags-list');
+  if (flagsList.length > 0) {
+    summaryEl.style.display = 'block';
+    summaryEl.style.background = flagsList.some(f => f.sev==='critical') ? '#fff1f2' : '#fffbeb';
+    summaryEl.style.borderColor = flagsList.some(f => f.sev==='critical') ? '#fecaca' : '#fde68a';
+    listEl.innerHTML = flagsList.map(f =>
+      `<div style="color:${f.sev==='critical'?'#991b1b':'#92400e'};">${f.sev==='critical'?'🔴':'🟡'} ${f.msg}</div>`
+    ).join('');
+  } else {
+    summaryEl.style.display = 'none';
+  }
+}
+
+async function saveVitals() {
+  const sys    = document.getElementById('vt-bp-sys').value.trim();
+  const dia    = document.getElementById('vt-bp-dia').value.trim();
+  const hr     = document.getElementById('vt-hr').value.trim();
+  const temp   = document.getElementById('vt-temp').value.trim();
+  const spo2   = document.getElementById('vt-spo2').value.trim();
+  const rr     = document.getElementById('vt-rr').value.trim();
+  const nurse  = document.getElementById('vt-nurse').value.trim();
+  const note   = document.getElementById('vt-note').value.trim();
+  const weight = document.getElementById('vt-weight').value.trim();
+  const height = document.getElementById('vt-height').value.trim();
+  const pain   = document.getElementById('vt-pain').value.trim();
+
+  if (!sys || !dia || !hr || !temp || !spo2 || !rr || !nurse) {
+    showToast('⚠ Please fill in all required vitals fields.', false); return;
+  }
+
+  const bmiVal = (weight && height)
+    ? (parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2)).toFixed(1)
+    : (currentVitalsData?.bmi || '');
+
+  const bpStr = `${sys}/${dia}`;
+  // Determine BP status for backend
+  const bpStatus = (parseInt(sys) >= 180 || parseInt(dia) >= 120) ? 'red'
+    : (parseInt(sys) >= 140 || parseInt(dia) >= 90) ? 'warn' : 'ok';
+
+  const payload = {
+    patient_id: activePatientId,
+    bp: bpStr, bp_status: bpStatus,
+    hr, temp, spo2, rr,
+    bmi: bmiVal || '—',
+    pain: pain || null,
+    nurse,
+    note
+  };
+
+  const res = await api({ action: currentVitalsData ? 'update_vitals' : 'save_vitals' }, 'POST', payload);
+  if (res.success) {
+    closeVitalsModal();
+    const freshVitals = await api({ action: 'get_vitals', patient_id: activePatientId });
+    renderVitals(freshVitals.data);
+    showToast('✅ Vitals saved successfully!', true);
+    refreshAlerts(); // ── CDSS: re-poll for any new alerts triggered by these vitals
+  } else {
+    showToast('⚠ Failed to save vitals. Check backend.', false);
+  }
+}
+
+// ─── HISTORY / TIMELINE TAB ──────────────────────────────────────────
+async function loadAndRenderHistory(p) {
+  const res = await api({ action: 'get_timeline', patient_id: p.id });
+  const items = res.success ? res.data : [];
+
+  const medHistSection = (p.pmh || p.fmh || p.surgical || p.vaccines || p.alcohol) ? `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.5rem;">
+      <div style="font-family:'Fraunces',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);margin-bottom:1rem;">📋 Medical History Summary</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        ${p.pmh ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Past Medical History</div><div style="font-size:0.88rem;">${p.pmh}</div></div>` : ''}
+        ${p.fmh ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Family History</div><div style="font-size:0.88rem;">${p.fmh}</div></div>` : ''}
+        ${p.surgical ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Surgical History</div><div style="font-size:0.88rem;">${p.surgical}</div></div>` : ''}
+        ${p.vaccines ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Vaccinations</div><div style="font-size:0.88rem;">${p.vaccines}</div></div>` : ''}
+        ${p.alcohol ? `<div><div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Alcohol Use</div><div style="font-size:0.88rem;">${p.alcohol}</div></div>` : ''}
+      </div>
+    </div>` : '';
+
+  const tlItems = items.length ? items.map(h => `
+    <div class="tl-item" id="tl-${h.id}">
+      <div class="tl-dot ${h.dot_type}"></div>
+      <div class="tl-date">${h.entry_date}</div>
+      <div class="tl-text">${h.entry_text}</div>
+      ${window._rbacReadOnly ? '' : `<button onclick="deleteTimelineEntry(${h.id})" title="Delete entry"
+        style="position:absolute;right:0;top:0;background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.75rem;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;"
+        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✕</button>`}
+    </div>`).join('') : `<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.9rem;">No timeline entries yet.</div>`;
+
+  document.getElementById('tab-history').innerHTML = `
+    ${medHistSection}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem;">
+      <div style="font-family:'Fraunces',sans-serif;font-size:0.92rem;font-weight:700;color:var(--primary-dark);">🕐 Clinical Timeline</div>
+      <button class="btn-primary btn-sm" onclick="openTimelineModal()" style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:1.1rem;line-height:1;">＋</span> Add Entry
+      </button>
+    </div>
+    <div class="timeline" id="timelineContainer" style="position:relative;">${tlItems}</div>`;
+}
+
+// ─── TIMELINE MODAL ──────────────────────────────────────────────────
+function openTimelineModal() {
+  document.getElementById('tl-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('tl-dot').value = '';
+  document.getElementById('tl-title').value = '';
+  document.getElementById('tl-details').value = '';
+  document.getElementById('timelineModal').classList.add('open');
+}
+function closeTimelineModal() {
+  document.getElementById('timelineModal').classList.remove('open');
+}
+async function saveTimelineEntry() {
+  const dateRaw  = document.getElementById('tl-date').value;
+  const dot      = document.getElementById('tl-dot').value;
+  const title    = document.getElementById('tl-title').value.trim();
+  const details  = document.getElementById('tl-details').value.trim();
+  if (!title || !dateRaw) { showToast('⚠ Date and Title are required.', false); return; }
+
+  const dateStr = new Date(dateRaw).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const text = details ? `<strong>${title}</strong> — ${details}` : `<strong>${title}</strong>`;
+
+  const res = await api({ action: 'add_timeline' }, 'POST', {
+    patient_id: activePatientId, entry_date: dateStr, dot_type: dot, entry_text: text
+  });
+  if (res.success) {
+    closeTimelineModal();
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderHistory(p);
+    showToast('✓ Timeline entry added!', true);
+  } else {
+    showToast('⚠ Failed to save entry.', false);
+  }
+}
+async function deleteTimelineEntry(id) {
+  if (!confirm('Delete this timeline entry?')) return;
+  const res = await api({ action: 'delete_timeline' }, 'POST', { id });
+  if (res.success) {
+    const el = document.getElementById('tl-' + id);
+    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }
+    showToast('✓ Entry deleted.', true);
+  }
+}
+
+// ─── MEDICATIONS TAB ─────────────────────────────────────────────────
+async function loadAndRenderMeds(p) {
+  const res = await api({ action: 'get_meds', patient_id: p.id });
+  const meds = res.success ? res.data : [];
+  const rows = meds.length ? meds.map(m => `
+    <tr>
+      <td><strong>${m.med_name}</strong></td>
+      <td>${m.dose}</td>
+      <td>${m.prescribed_by}</td>
+      <td>${m.start_date}</td>
+      <td>${badgeHtml(m.status)}</td>
+      <td>${window._rbacCanPrescribe !== false ? `<button onclick="deleteMed(${m.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;" title="Remove">🗑</button>` : ''}</td>
+    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem;">No medications on record.</td></tr>`;
+  document.getElementById('tab-meds').innerHTML = `
+    <table class="med-table">
+      <thead><tr><th>Medication</th><th>Dose / Frequency</th><th>Prescribed By</th><th>Start Date</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+      <button class="btn-primary" style="font-size:0.85rem;padding:9px 16px;" onclick="openEPrescribeModal()">💊 E-Prescribe New</button>
+      <button class="btn-outline" style="font-size:0.85rem;padding:9px 16px;" onclick="openRefillModal()">🔄 Request Refill</button>
+    </div>`;
+}
+
+async function deleteMed(id) {
+  if (!confirm('Remove this medication?')) return;
+  const res = await api({ action: 'delete_med' }, 'POST', { id });
+  if (res.success) {
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderMeds(p);
+    showToast('✓ Medication removed.', true);
+  }
+}
+
+// ─── E-PRESCRIBE ─────────────────────────────────────────────────────
+function openEPrescribeModal() {
+  if (!activePatientId) return;
+  document.getElementById('ePrescribeModal').classList.add('open');
+}
+function closeEPrescribeModal() {
+  document.getElementById('ePrescribeModal').classList.remove('open');
+  ['ep-name','ep-dose','ep-freq','ep-duration','ep-physician','ep-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('ep-route').value = 'Oral';
+}
+async function saveEPrescription() {
+  if (window._rbacCanPrescribe === false) {
+    showToast('⚠ Prescribing medications requires Doctor or Admin role.', false); return;
+  }
+  const name = document.getElementById('ep-name').value.trim();
+  const dose = document.getElementById('ep-dose').value.trim();
+  const freq = document.getElementById('ep-freq').value.trim();
+  const by   = document.getElementById('ep-physician').value.trim();
+  if (!name || !dose || !freq || !by) { showToast('⚠ Please fill in all required fields.', false); return; }
+
+  const route = document.getElementById('ep-route').value;
+  const dur   = document.getElementById('ep-duration').value.trim();
+  const fullDose = `${dose} · ${freq}${dur ? ' · ' + dur : ''}${route !== 'Oral' ? ' (' + route + ')' : ''}`;
+
+  const res = await api({ action: 'add_med' }, 'POST', {
+    patient_id: activePatientId, med_name: name, dose: fullDose,
+    prescribed_by: by, start_date: new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
+    status: 'active'
+  });
+  if (res.success) {
+    closeEPrescribeModal();
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderMeds(p);
+    showToast(`✓ Prescription for ${name} sent!`, true);
+  } else {
+    showToast('⚠ Failed to save prescription.', false);
+  }
+}
+
+// ─── REFILL ───────────────────────────────────────────────────────────
+async function openRefillModal() {
+  if (!activePatientId) return;
+  const res = await api({ action: 'get_meds', patient_id: activePatientId });
+  const meds = res.success ? res.data.filter(m => m.status === 'active') : [];
+  const sel = document.getElementById('rf-med');
+  sel.innerHTML = '<option value="">— Select medication —</option>';
+  meds.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.med_name;
+    opt.textContent = `${m.med_name} — ${m.dose}`;
+    sel.appendChild(opt);
+  });
+  document.getElementById('refillModal').classList.add('open');
+}
+function closeRefillModal() {
+  document.getElementById('refillModal').classList.remove('open');
+  ['rf-qty','rf-pharmacy','rf-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('rf-med').value = '';
+}
+async function saveRefill() {
+  const medName = document.getElementById('rf-med').value;
+  if (!medName) { showToast('⚠ Please select a medication.', false); return; }
+  const pharmacy = document.getElementById('rf-pharmacy').value.trim() || 'Pharos HIS Pharmacy';
+  const qty = document.getElementById('rf-qty').value.trim() || '30 days';
+  const res = await api({ action: 'request_refill' }, 'POST', {
+    patient_id: activePatientId, med_name: medName, pharmacy, qty
+  });
+  if (res.success) {
+    closeRefillModal();
+    showToast(`✓ Refill request for ${medName} sent to ${pharmacy}!`, true);
+  } else {
+    showToast('⚠ Failed to send refill request.', false);
+  }
+}
+
+// ─── LAB RESULTS TAB ─────────────────────────────────────────────────
+async function loadAndRenderLabs(p) {
+  const res = await api({ action: 'get_labs', patient_id: p.id });
+  const labs = res.success ? res.data : [];
+  const latestDate = labs.length ? labs[0].panel_date : 'No labs yet';
+
+  const rows = labs.length ? labs.map(r => {
+    const clr = r.color_type === 'success' ? 'var(--success)' : r.color_type === 'danger' ? 'var(--danger)' : 'var(--accent2)';
+    const badgeCls = r.color_type === 'success' ? 'badge-active' : r.color_type === 'danger' ? 'badge-danger' : 'badge-warning';
+    return `
+    <div class="lab-row">
+      <span><strong>${r.test_name}</strong></span>
+      <span style="color:${clr};font-weight:600;">${r.test_value} <span class="badge ${badgeCls}">${r.label}</span></span>
+      <div class="lab-bar-wrap"><div class="lab-bar ${r.cls}" style="width:${r.pct}%"></div></div>
+      <span style="font-size:0.8rem;color:var(--muted);">Ref: ${r.ref_range}</span>
+      <div style="display:flex;gap:4px;">
+        <button onclick="openEditLabModal(${r.id},'${r.test_name}','${r.test_value}','${r.ref_range}','${r.label}',${r.pct},'${r.cls}','${r.panel_date}')"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:2px 6px;border-radius:6px;transition:background 0.15s;"
+          onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">✏️</button>
+        ${window._rbacCanDeleteLab !== false ? `<button onclick="deleteLab(${r.id})"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:2px 6px;border-radius:6px;transition:background 0.15s;"
+          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">🗑</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : `<div style="text-align:center;color:var(--muted);padding:2rem;font-size:0.9rem;">No lab results on record.</div>`;
+
+  document.getElementById('tab-labs').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.2rem;">
+      <p style="color:var(--muted);font-size:0.85rem;margin:0;">Latest panel: <strong>${latestDate}</strong></p>
+      <button class="btn-primary" style="font-size:0.82rem;padding:7px 14px;" onclick="openAddLabModal()">＋ Add Lab Result</button>
+    </div>
+    ${rows}`;
+}
+
+// ─── LAB INTELLIGENCE ENGINE ──────────────────────────────────────────
+// Known test reference ranges + interpretation logic
+const LAB_PRESETS = {
+  'HbA1c': {
+    ref: '<7%', unit: '%', min: 0, max: 15, normalMax: 5.6,
+    ranges: [
+      { upTo: 5.6, cls: 'ok', label: 'Normal', tip: 'HbA1c within the normal range. No current concerns for diabetes.' },
+      { upTo: 6.4, cls: 'med', label: 'Pre-diabetic', tip: 'HbA1c in the pre-diabetes range (5.7–6.4%). Consider lifestyle modifications and monitoring every 6 months.' },
+      { upTo: 7.0, cls: 'med', label: 'At Target (Diabetic)', tip: 'HbA1c is at the ADA target for most diabetics. Continue current management.' },
+      { upTo: 8.0, cls: 'med', label: 'Above Target', tip: 'HbA1c is above the 7% target. Review diet, activity, and medication adherence.' },
+      { upTo: 9.0, cls: 'hi', label: 'Poorly Controlled', tip: 'HbA1c is significantly elevated. Consider intensifying therapy or specialist referral.' },
+      { upTo: 999, cls: 'hi', label: 'Very High', tip: '⚠ Critically elevated HbA1c. Urgent review of diabetic management recommended.' },
+    ]
+  },
+  'Glucose': {
+    ref: '70–99 mg/dL', unit: 'mg/dL', min: 0, max: 400, normalMin: 70, normalMax: 99,
+    ranges: [
+      { upTo: 54, cls: 'hi', label: 'Severe Hypoglycemia', tip: '⚠ Blood glucose critically low (<54 mg/dL). Immediate treatment required.' },
+      { upTo: 69, cls: 'hi', label: 'Hypoglycemia', tip: 'Blood glucose below normal. Monitor closely, provide glucose supplementation.' },
+      { upTo: 99, cls: 'ok', label: 'Normal', tip: 'Fasting glucose is within the normal range.' },
+      { upTo: 125, cls: 'med', label: 'Pre-diabetic', tip: 'Fasting glucose in the impaired fasting glucose range (100–125 mg/dL).' },
+      { upTo: 180, cls: 'med', label: 'Elevated', tip: 'Glucose above normal. If fasting, consider diabetes workup.' },
+      { upTo: 999, cls: 'hi', label: 'High', tip: '⚠ Significantly elevated glucose. Assess for diabetic ketoacidosis if symptomatic.' },
+    ]
+  },
+  'Total Cholesterol': {
+    ref: '<200 mg/dL', unit: 'mg/dL', min: 0, max: 400, normalMax: 200,
+    ranges: [
+      { upTo: 199, cls: 'ok', label: 'Desirable', tip: 'Total cholesterol is within the desirable range. Maintain a heart-healthy lifestyle.' },
+      { upTo: 239, cls: 'med', label: 'Borderline High', tip: 'Total cholesterol is borderline high. Consider dietary modifications and recheck in 6 months.' },
+      { upTo: 999, cls: 'hi', label: 'High', tip: '⚠ High total cholesterol. Cardiovascular risk assessment and possible statin therapy warranted.' },
+    ]
+  },
+  'LDL': {
+    ref: '<100 mg/dL', unit: 'mg/dL', min: 0, max: 250, normalMax: 100,
+    ranges: [
+      { upTo: 99,  cls: 'ok', label: 'Optimal', tip: 'LDL is optimal, especially for high-risk patients.' },
+      { upTo: 129, cls: 'ok', label: 'Near Optimal', tip: 'LDL is near-optimal for most patients. Review individual cardiovascular risk.' },
+      { upTo: 159, cls: 'med', label: 'Borderline High', tip: 'Borderline high LDL. Dietary changes and cardiovascular risk review recommended.' },
+      { upTo: 189, cls: 'hi', label: 'High', tip: '⚠ High LDL. Consider statin therapy depending on overall cardiovascular risk profile.' },
+      { upTo: 999, cls: 'hi', label: 'Very High', tip: '⚠ Very high LDL. Statin therapy and specialist referral strongly recommended.' },
+    ]
+  },
+  'HDL': {
+    ref: '>40 mg/dL (M) / >50 mg/dL (F)', unit: 'mg/dL', min: 0, max: 120, normalMin: 40, normalMax: 60, invertedBar: true,
+    ranges: [
+      { upTo: 39,  cls: 'hi', label: 'Low (Risk Factor)', tip: '⚠ Low HDL is an independent cardiovascular risk factor. Exercise and lifestyle modification advised.' },
+      { upTo: 59,  cls: 'med', label: 'Acceptable', tip: 'HDL within acceptable range. Higher HDL is generally cardioprotective.' },
+      { upTo: 999, cls: 'ok', label: 'High (Protective)', tip: 'High HDL is associated with reduced cardiovascular risk. Excellent result.' },
+    ]
+  },
+  'Creatinine': {
+    ref: '0.7–1.3 mg/dL', unit: 'mg/dL', min: 0, max: 10, normalMin: 0.7, normalMax: 1.3,
+    ranges: [
+      { upTo: 0.69, cls: 'med', label: 'Low', tip: 'Low creatinine may indicate reduced muscle mass or malnutrition.' },
+      { upTo: 1.3,  cls: 'ok',  label: 'Normal', tip: 'Creatinine within the normal range. Renal function appears adequate.' },
+      { upTo: 2.0,  cls: 'med', label: 'Mildly Elevated', tip: 'Mildly elevated creatinine. Monitor renal function and assess for early CKD.' },
+      { upTo: 4.0,  cls: 'hi',  label: 'Elevated', tip: '⚠ Elevated creatinine suggesting reduced kidney function. Nephrology consultation advised.' },
+      { upTo: 999,  cls: 'hi',  label: 'Severely Elevated', tip: '⚠ Severely elevated creatinine. Possible acute kidney injury or advanced CKD. Urgent evaluation required.' },
+    ]
+  },
+  'eGFR': {
+    ref: '>60 mL/min/1.73m²', unit: 'mL/min/1.73m²', min: 0, max: 120, normalMin: 60, invertedBar: true,
+    ranges: [
+      { upTo: 14,  cls: 'hi',  label: 'Kidney Failure (G5)', tip: '⚠ eGFR <15: Kidney failure. Dialysis or transplant evaluation urgently needed.' },
+      { upTo: 29,  cls: 'hi',  label: 'Severe Decline (G4)', tip: '⚠ Severe decrease in kidney function. Nephrology management essential.' },
+      { upTo: 44,  cls: 'hi',  label: 'Moderate-Severe (G3b)', tip: 'Moderately to severely decreased kidney function. Close nephrology follow-up.' },
+      { upTo: 59,  cls: 'med', label: 'Mild-Moderate (G3a)', tip: 'Mildly to moderately decreased kidney function. Monitor every 3–6 months.' },
+      { upTo: 89,  cls: 'med', label: 'Mildly Decreased (G2)', tip: 'Mild decrease in eGFR. Annual monitoring recommended.' },
+      { upTo: 999, cls: 'ok',  label: 'Normal (G1)', tip: 'eGFR within normal range. Kidney function is adequate.' },
+    ]
+  },
+  'Hemoglobin': {
+    ref: '13.5–17.5 g/dL (M) / 12–16 g/dL (F)', unit: 'g/dL', min: 0, max: 22, normalMin: 12, normalMax: 17.5,
+    ranges: [
+      { upTo: 7.9,  cls: 'hi',  label: 'Severe Anemia', tip: '⚠ Severe anemia. Transfusion and urgent investigation into cause required.' },
+      { upTo: 9.9,  cls: 'hi',  label: 'Moderate Anemia', tip: 'Moderate anemia. Investigate cause (iron, B12, folate, chronic disease) and initiate treatment.' },
+      { upTo: 11.9, cls: 'med', label: 'Mild Anemia', tip: 'Mild anemia. CBC with differential and iron studies recommended.' },
+      { upTo: 17.5, cls: 'ok',  label: 'Normal', tip: 'Hemoglobin within the normal range.' },
+      { upTo: 999,  cls: 'hi',  label: 'Elevated (Polycythemia?)', tip: '⚠ Elevated hemoglobin. Consider polycythemia vera or secondary causes (hypoxia, EPO use).' },
+    ]
+  },
+  'TSH': {
+    ref: '0.4–4.0 mIU/L', unit: 'mIU/L', min: 0, max: 10, normalMin: 0.4, normalMax: 4.0,
+    ranges: [
+      { upTo: 0.09, cls: 'hi',  label: 'Severely Suppressed', tip: '⚠ TSH critically suppressed. Overt hyperthyroidism — endocrinology referral required.' },
+      { upTo: 0.39, cls: 'med', label: 'Low (Hyperthyroid?)', tip: 'Low TSH suggests possible hyperthyroidism. Add free T4 and T3 levels.' },
+      { upTo: 4.0,  cls: 'ok',  label: 'Normal', tip: 'TSH within the normal range. Thyroid function is adequate.' },
+      { upTo: 10.0, cls: 'med', label: 'Elevated (Hypothyroid?)', tip: 'Elevated TSH. Possible hypothyroidism — check free T4. Consider levothyroxine if symptomatic.' },
+      { upTo: 999,  cls: 'hi',  label: 'Severely Elevated', tip: '⚠ TSH critically elevated. Overt hypothyroidism — urgent endocrine evaluation recommended.' },
+    ]
+  },
+  'ALT': {
+    ref: '7–56 U/L', unit: 'U/L', min: 0, max: 500, normalMin: 7, normalMax: 56,
+    ranges: [
+      { upTo: 56,  cls: 'ok',  label: 'Normal', tip: 'ALT within the normal range. No hepatocellular injury indicated.' },
+      { upTo: 112, cls: 'med', label: 'Mildly Elevated', tip: 'ALT mildly elevated (1–2× ULN). Evaluate for NAFLD, alcohol use, or medications.' },
+      { upTo: 280, cls: 'med', label: 'Moderately Elevated', tip: '⚠ ALT 2–5× ULN. Investigate for hepatitis, drug toxicity, or autoimmune liver disease.' },
+      { upTo: 999, cls: 'hi',  label: 'Severely Elevated', tip: '⚠ ALT >5× ULN. Significant hepatocellular injury — urgent hepatology evaluation.' },
+    ]
+  },
+  'WBC': {
+    ref: '4.5–11.0 ×10³/µL', unit: '×10³/µL', min: 0, max: 30, normalMin: 4.5, normalMax: 11.0,
+    ranges: [
+      { upTo: 2.9,  cls: 'hi',  label: 'Severe Leukopenia', tip: '⚠ Severely low WBC. Risk of infection — consider bone marrow pathology or drug effect.' },
+      { upTo: 4.4,  cls: 'med', label: 'Leukopenia', tip: 'Low WBC. Monitor closely; consider causes (viral, medications, autoimmune).' },
+      { upTo: 11.0, cls: 'ok',  label: 'Normal', tip: 'WBC within the normal range. No leukocytosis or leukopenia detected.' },
+      { upTo: 17.0, cls: 'med', label: 'Leukocytosis', tip: 'Elevated WBC. Consider infection, inflammation, or steroid use.' },
+      { upTo: 999,  cls: 'hi',  label: 'Severe Leukocytosis', tip: '⚠ Markedly elevated WBC. Rule out leukemia, severe sepsis, or steroid effect.' },
+    ]
+  },
+  'Sodium': {
+    ref: '136–145 mEq/L', unit: 'mEq/L', min: 110, max: 170, normalMin: 136, normalMax: 145,
+    ranges: [
+      { upTo: 124, cls: 'hi',  label: 'Severe Hyponatremia', tip: '⚠ Severe hyponatremia. Risk of cerebral edema — urgent correction required.' },
+      { upTo: 135, cls: 'med', label: 'Hyponatremia', tip: 'Low sodium. Assess fluid status, SIADH, diuretic use, and adrenal function.' },
+      { upTo: 145, cls: 'ok',  label: 'Normal', tip: 'Sodium is within the normal range.' },
+      { upTo: 154, cls: 'med', label: 'Hypernatremia', tip: 'Elevated sodium. Assess for dehydration, excessive sodium intake, or diabetes insipidus.' },
+      { upTo: 999, cls: 'hi',  label: 'Severe Hypernatremia', tip: '⚠ Severe hypernatremia. Risk of neurological damage — urgent management required.' },
+    ]
+  },
+};
+
+// Parse a numeric value out of a string like "7.4%", "10 mg/dL", "2.4", "< 5"
+function parseLabNum(str) {
+  if (!str) return NaN;
+  const m = str.match(/([\d.]+)/);
+  return m ? parseFloat(m[1]) : NaN;
+}
+
+// Parse ref range into {min, max} — supports "<7", ">40", "70-99", "4.5–11.0"
+function parseRefRange(refStr) {
+  if (!refStr) return { min: null, max: null };
+  const ltMatch = refStr.match(/^[<≤]\s*([\d.]+)/);
+  if (ltMatch) return { min: null, max: parseFloat(ltMatch[1]) };
+  const gtMatch = refStr.match(/^[>≥]\s*([\d.]+)/);
+  if (gtMatch) return { min: parseFloat(gtMatch[1]), max: null };
+  const rangeMatch = refStr.match(/([\d.]+)\s*[–\-to]+\s*([\d.]+)/);
+  if (rangeMatch) return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
+  return { min: null, max: null };
+}
+
+// Compute bar fill % from value, ref, and preset data
+function computeLabResult(testName, valueStr, refStr) {
+  const val = parseLabNum(valueStr);
+  if (isNaN(val)) return null;
+
+  // Find preset by case-insensitive match
+  const presetKey = Object.keys(LAB_PRESETS).find(k =>
+    k.toLowerCase() === testName.trim().toLowerCase()
+  );
+  const preset = presetKey ? LAB_PRESETS[presetKey] : null;
+
+  let cls = 'med', label = 'See Result', tip = null, pct = 50;
+
+  if (preset) {
+    // Use preset ranges
+    const range = preset.ranges.find(r => val <= r.upTo);
+    if (range) { cls = range.cls; label = range.label; tip = range.tip; }
+
+    // Compute bar %: scale val between preset.min and preset.max
+    const scaleMin = preset.min ?? 0;
+    const scaleMax = preset.max ?? 100;
+    let rawPct = ((val - scaleMin) / (scaleMax - scaleMin)) * 100;
+    if (preset.invertedBar) rawPct = 100 - rawPct; // For HDL/eGFR: higher = better → bar goes right
+    pct = Math.min(95, Math.max(5, Math.round(rawPct)));
+
+  } else {
+    // Generic mode: use ref range string
+    const ref = parseRefRange(refStr);
+    if (ref.max !== null) {
+      const scaleMax = ref.max * 2;
+      pct = Math.min(95, Math.max(5, Math.round((val / scaleMax) * 100)));
+      if (val <= ref.max * 0.9) { cls = 'ok'; label = 'Normal'; }
+      else if (val <= ref.max * 1.2) { cls = 'med'; label = 'Borderline'; }
+      else { cls = 'hi'; label = 'Elevated'; }
+    } else if (ref.min !== null) {
+      const scaleMax = ref.min * 2;
+      pct = Math.min(95, Math.max(5, Math.round((val / scaleMax) * 100)));
+      if (val >= ref.min) { cls = 'ok'; label = 'Normal'; }
+      else if (val >= ref.min * 0.8) { cls = 'med'; label = 'Low'; }
+      else { cls = 'hi'; label = 'Below Normal'; }
+    } else if (ref.min !== null && ref.max !== null) {
+      const range = ref.max - ref.min;
+      const scaleMax = ref.max + range * 0.5;
+      pct = Math.min(95, Math.max(5, Math.round(((val - ref.min) / (ref.max + range * 0.5)) * 100)));
+      if (val >= ref.min && val <= ref.max) { cls = 'ok'; label = 'Normal'; }
+      else if (val > ref.max) { cls = val > ref.max * 1.3 ? 'hi' : 'med'; label = val > ref.max * 1.3 ? 'High' : 'Borderline High'; }
+      else { cls = val < ref.min * 0.7 ? 'hi' : 'med'; label = val < ref.min * 0.7 ? 'Low' : 'Borderline Low'; }
+    }
+  }
+
+  const clsToColor = { ok: '#10b981', med: '#2bb8a8', hi: '#ef4444' };
+  const clsToColorType = { ok: 'success', med: 'warning', hi: 'danger' };
+
+  return { cls, label, pct, tip, color: clsToColor[cls], colorType: clsToColorType[cls] };
+}
+
+function applyPreset(testName) {
+  document.getElementById('lab-name').value = testName;
+  const preset = LAB_PRESETS[testName];
+  if (preset) {
+    document.getElementById('lab-ref').value = preset.ref;
+  }
+  // Highlight active quick button
+  document.querySelectorAll('.lab-quick-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent.trim() === testName ||
+      (testName === 'Total Cholesterol' && b.textContent.trim() === 'Cholesterol'));
+  });
+  onLabInputChange();
+}
+
+function onLabInputChange() {
+  const name = document.getElementById('lab-name').value.trim();
+  const val  = document.getElementById('lab-value').value.trim();
+  const ref  = document.getElementById('lab-ref').value.trim();
+
+  const previewCard = document.getElementById('labPreviewCard');
+  if (!name || !val) { previewCard.style.display = 'none'; return; }
+
+  const result = computeLabResult(name, val, ref);
+  if (!result) { previewCard.style.display = 'none'; return; }
+
+  // Store computed values in hidden fields
+  document.getElementById('lab-pct').value    = result.pct;
+  document.getElementById('lab-lbl').value    = result.label;
+  document.getElementById('lab-status').value = result.cls;
+
+  // Update preview UI
+  previewCard.style.display = 'block';
+  document.getElementById('prev-name').textContent  = name;
+  document.getElementById('prev-value').textContent = val;
+  document.getElementById('prev-ref').textContent   = ref || '—';
+
+  const badge = document.getElementById('prev-badge');
+  badge.textContent = result.label;
+  badge.className = 'badge ' + { ok: 'badge-active', med: 'badge-warning', hi: 'badge-danger' }[result.cls];
+
+  const bar = document.getElementById('prev-bar');
+  bar.style.width = result.pct + '%';
+  bar.style.background = result.color;
+
+  // Tip
+  const tipEl = document.getElementById('prev-tip');
+  if (result.tip) {
+    tipEl.style.display = 'block';
+    tipEl.style.borderLeftColor = result.color;
+    tipEl.innerHTML = '💡 ' + result.tip;
+  } else {
+    tipEl.style.display = 'none';
+  }
+}
+
+function openAddLabModal() {
+  editingLabId = null;
+  document.getElementById('labModalTitle').textContent = '➕ Add Lab Result';
+  ['lab-name','lab-value','lab-ref'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('lab-pct').value    = '';
+  document.getElementById('lab-lbl').value    = '';
+  document.getElementById('lab-status').value = '';
+  document.getElementById('lab-date').value   = new Date().toISOString().split('T')[0];
+  document.getElementById('labPreviewCard').style.display = 'none';
+  document.querySelectorAll('.lab-quick-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('labModal').classList.add('open');
+}
+
+function openEditLabModal(id, name, val, ref, lbl, pct, cls, pd) {
+  editingLabId = id;
+  document.getElementById('labModalTitle').textContent = '✏️ Edit Lab Result';
+  document.getElementById('lab-name').value  = name;
+  document.getElementById('lab-value').value = val;
+  document.getElementById('lab-ref').value   = ref;
+  document.getElementById('lab-pct').value   = pct;
+  document.getElementById('lab-lbl').value   = lbl;
+  document.getElementById('lab-status').value = cls;
+  try {
+    const d = new Date(pd); if (!isNaN(d)) document.getElementById('lab-date').value = d.toISOString().split('T')[0];
+  } catch(e) {}
+  // Highlight matching quick-pick button if exists
+  document.querySelectorAll('.lab-quick-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent.trim().toLowerCase() === name.toLowerCase() ||
+      (name === 'Total Cholesterol' && b.textContent.trim() === 'Cholesterol'));
+  });
+  // Run smart compute to show preview
+  onLabInputChange();
+  document.getElementById('labModal').classList.add('open');
+}
+function closeLabModal() { document.getElementById('labModal').classList.remove('open'); editingLabId = null; }
+
+async function saveLabResult() {
+  const name  = document.getElementById('lab-name').value.trim();
+  const val   = document.getElementById('lab-value').value.trim();
+  const ref   = document.getElementById('lab-ref').value.trim();
+  const pdRaw = document.getElementById('lab-date').value;
+  if (!name || !val || !ref) { showToast('⚠ Please fill in Test Name, Value, and Reference Range.', false); return; }
+
+  // Ensure computed values are up-to-date (re-run in case user typed without triggering oninput)
+  onLabInputChange();
+
+  let lbl = document.getElementById('lab-lbl').value.trim();
+  let pct = parseInt(document.getElementById('lab-pct').value) || 50;
+  let cls = document.getElementById('lab-status').value || 'med';
+  if (!lbl) lbl = 'See Result';
+
+  const pd = pdRaw ? new Date(pdRaw).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
+
+  const payload = { patient_id: activePatientId, test_name: name, test_value: val, ref_range: ref, label: lbl, pct, cls, panel_date: pd };
+  let res;
+  if (editingLabId) {
+    payload.id = editingLabId;
+    res = await api({ action: 'update_lab' }, 'POST', payload);
+  } else {
+    res = await api({ action: 'add_lab' }, 'POST', payload);
+  }
+  if (res.success) {
+    closeLabModal();
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderLabs(p);
+    showToast(editingLabId ? '✓ Lab result updated.' : `✓ Lab result for ${name} added.`, true);
+    refreshAlerts(); // ── CDSS: re-poll for any new alerts triggered by this lab result
+  } else {
+    showToast('⚠ Failed to save lab result.', false);
+  }
+}
+async function deleteLab(id) {
+  if (!confirm('Delete this lab result?')) return;
+  const res = await api({ action: 'delete_lab' }, 'POST', { id });
+  if (res.success) {
+    const p = patients.find(x => x.id === activePatientId);
+    await loadAndRenderLabs(p);
+    showToast('✓ Lab result deleted.', true);
+  }
+}
+
+// ─── NEW PATIENT MODAL ───────────────────────────────────────────────
+function openNewPatientModal() { document.getElementById('newPatientModal').classList.add('open'); }
+function closeModal() {
+  document.getElementById('newPatientModal').classList.remove('open');
+  ['np-fname','np-lname','np-dob','np-phone','np-email','np-insurance','np-physician','np-allergies','np-conditions','np-pmh','np-fmh','np-surgical','np-vaccines']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('np-gender').value  = '';
+  document.getElementById('np-blood').value   = '';
+  document.getElementById('np-smoking').value = 'Non-smoker';
+  document.getElementById('np-alcohol').value = 'None';
+}
+
+async function saveNewPatient() {
+  const fname  = document.getElementById('np-fname').value.trim();
+  const lname  = document.getElementById('np-lname').value.trim();
+  const dob    = document.getElementById('np-dob').value;
+  const gender = document.getElementById('np-gender').value;
+  if (!fname || !lname || !dob || !gender) { showToast('⚠ Please fill in all required fields.', false); return; }
+
+  const res = await api({ action: 'add_patient' }, 'POST', {
+    first_name: fname, last_name: lname, dob, gender,
+    blood_type:  document.getElementById('np-blood').value || 'Unknown',
+    phone:       document.getElementById('np-phone').value,
+    email:       document.getElementById('np-email').value,
+    insurance:   document.getElementById('np-insurance').value,
+    physician:   document.getElementById('np-physician').value,
+    allergies:   document.getElementById('np-allergies').value,
+    conditions:  document.getElementById('np-conditions').value,
+    smoking:     document.getElementById('np-smoking').value,
+    alcohol:     document.getElementById('np-alcohol').value,
+    pmh:         document.getElementById('np-pmh').value,
+    fmh:         document.getElementById('np-fmh').value,
+    surgical:    document.getElementById('np-surgical').value,
+    vaccines:    document.getElementById('np-vaccines').value,
+  });
+
+  if (res.success) {
+    closeModal();
+    await loadPatients();
+    showToast(`✓ ${res.message}`, true);
+    setTimeout(() => selectPatient(res.patient_id), 400);
+  } else {
+    showToast('⚠ ' + (res.message || 'Failed to register patient.'), false);
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+function showToast(msg, success = true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (success ? ' success' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── CLOSE MODALS ON OVERLAY CLICK ───────────────────────────────────
+['newPatientModal','editPatientModal','ePrescribeModal','refillModal','labModal','timelineModal'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', function(e) {
+    if (e.target === this) {
+      if (id === 'newPatientModal') closeModal();
+      else if (id === 'ePrescribeModal') closeEPrescribeModal();
+      else if (id === 'refillModal') closeRefillModal();
+      else if (id === 'labModal') closeLabModal();
+      else if (id === 'editPatientModal') closeEditPatientModal();
+      else if (id === 'timelineModal') closeTimelineModal();
+    }
+  });
+});
+
+
+// ─── EDIT PATIENT MODAL ──────────────────────────────────────────────
+function switchEditTab(btn, sectionId) {
+  document.querySelectorAll('.epm-tab').forEach(t => {
+    t.classList.remove('epm-tab-active');
+    t.style.color = 'var(--muted)';
+    t.style.borderBottomColor = 'transparent';
+  });
+  document.querySelectorAll('.epm-section').forEach(s => s.style.display = 'none');
+  btn.classList.add('epm-tab-active');
+  btn.style.color = 'var(--primary)';
+  btn.style.borderBottomColor = 'var(--primary)';
+  document.getElementById(sectionId).style.display = '';
+}
+
+function openEditPatientModal() {
+  if (!activePatientId) return;
+  const p = patients.find(x => x.id === activePatientId);
+  if (!p) return;
+
+  // Badge
+  document.getElementById('ep2-patient-id-badge').textContent = p.id;
+
+  // Basic Info
+  document.getElementById('epm-fname').value      = p.first_name || p.name.split(' ')[0] || '';
+  document.getElementById('epm-lname').value      = p.last_name  || p.name.split(' ').slice(1).join(' ') || '';
+  document.getElementById('epm-blood').value      = p.blood !== 'Unknown' ? p.blood : '';
+  document.getElementById('epm-physician').value  = p.physician !== '—' ? p.physician : '';
+  document.getElementById('epm-insurance').value  = p.insurance !== '—' ? p.insurance : '';
+  document.getElementById('epm-lastvisit').value  = p.lastVisit !== 'Not yet visited' ? p.lastVisit : '';
+  // Populate date+time pickers for Next Appointment
+  (function() {
+    const raw = (p.nextAppt && p.nextAppt !== 'None scheduled') ? p.nextAppt : '';
+    let dateVal = '', timeVal = '';
+    if (raw) {
+      // Try to parse formats like "15 Jul 2026 – 10:30 AM" or ISO "2026-07-15T10:30"
+      const isoMatch = raw.match(/(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}))?/);
+      const humanMatch = raw.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:.*?(\d{1,2}:\d{2}\s*(?:AM|PM)?))?/i);
+      if (isoMatch) {
+        dateVal = isoMatch[1];
+        timeVal = isoMatch[2] || '';
+      } else if (humanMatch) {
+        const months = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',
+                        jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+        const mm = months[humanMatch[2].toLowerCase().slice(0,3)] || '01';
+        dateVal = `${humanMatch[3]}-${mm}-${humanMatch[1].padStart(2,'0')}`;
+        if (humanMatch[4]) {
+          // Convert 12h to 24h
+          const t = humanMatch[4].trim();
+          const isPM = /pm/i.test(t);
+          const parts = t.replace(/[APMapm\s]/g,'').split(':');
+          let h = parseInt(parts[0]);
+          if (isPM && h !== 12) h += 12;
+          if (!isPM && h === 12) h = 0;
+          timeVal = `${String(h).padStart(2,'0')}:${parts[1]||'00'}`;
+        }
+      }
+    }
+    document.getElementById('epm-nextappt-date').value = dateVal;
+    document.getElementById('epm-nextappt-time').value = timeVal;
+  })();
+
+  // Contact
+  document.getElementById('epm-phone').value = p.phone !== '—' ? p.phone : '';
+  document.getElementById('epm-email').value = p.email !== '—' ? p.email : '';
+
+  // Clinical
+  document.getElementById('epm-allergies').value  = p.allergies ? p.allergies.join(', ') : '';
+  document.getElementById('epm-conditions').value = p.conditions !== 'None recorded' ? p.conditions : '';
+  document.getElementById('epm-smoking').value    = p.smoking !== 'Not recorded' ? p.smoking : 'Not recorded';
+  document.getElementById('epm-alcohol').value    = p.alcohol !== 'Not recorded' ? p.alcohol : 'Not recorded';
+  document.getElementById('epm-vaccines').value   = p.vaccines || '';
+
+  // History
+  document.getElementById('epm-pmh').value     = p.pmh || '';
+  document.getElementById('epm-fmh').value     = p.fmh || '';
+  document.getElementById('epm-surgical').value= p.surgical || '';
+
+  // Status
+  document.getElementById('epm-status-val').value = p.status || 'active';
+
+  // Reset to first tab
+  document.querySelectorAll('.epm-tab').forEach((t,i) => {
+    t.classList.toggle('epm-tab-active', i === 0);
+    t.style.color = i === 0 ? 'var(--primary)' : 'var(--muted)';
+    t.style.borderBottomColor = i === 0 ? 'var(--primary)' : 'transparent';
+  });
+  document.querySelectorAll('.epm-section').forEach((s,i) => s.style.display = i === 0 ? '' : 'none');
+
+  document.getElementById('editPatientModal').classList.add('open');
+}
+
+function closeEditPatientModal() {
+  document.getElementById('editPatientModal').classList.remove('open');
+}
+
+async function saveEditedPatient() {
+  const fn = document.getElementById('epm-fname').value.trim();
+  const ln = document.getElementById('epm-lname').value.trim();
+  if (!fn || !ln) { showToast('⚠ First name and last name are required.', false); return; }
+
+  const payload = {
+    patient_id:  activePatientId,
+    first_name:  fn,
+    last_name:   ln,
+    blood_type:  document.getElementById('epm-blood').value,
+    physician:   document.getElementById('epm-physician').value.trim(),
+    insurance:   document.getElementById('epm-insurance').value.trim(),
+    last_visit:  document.getElementById('epm-lastvisit').value.trim(),
+    next_appt:   (function() {
+      const d = document.getElementById('epm-nextappt-date').value;
+      const t = document.getElementById('epm-nextappt-time').value;
+      if (!d) return '';
+      // Format date as "15 Jul 2026"
+      const dateObj = new Date(d + 'T00:00:00');
+      const dayStr  = dateObj.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+      if (!t) return dayStr;
+      // Format time as "10:30 AM"
+      const [hh, mm] = t.split(':').map(Number);
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      const h12  = hh % 12 || 12;
+      return `${dayStr} – ${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+    })(),
+    phone:       document.getElementById('epm-phone').value.trim(),
+    email:       document.getElementById('epm-email').value.trim(),
+    allergies:   document.getElementById('epm-allergies').value.trim(),
+    conditions:  document.getElementById('epm-conditions').value.trim(),
+    smoking:     document.getElementById('epm-smoking').value,
+    alcohol:     document.getElementById('epm-alcohol').value,
+    vaccines:    document.getElementById('epm-vaccines').value.trim(),
+    pmh:         document.getElementById('epm-pmh').value.trim(),
+    fmh:         document.getElementById('epm-fmh').value.trim(),
+    surgical:    document.getElementById('epm-surgical').value.trim(),
+    status:      document.getElementById('epm-status-val').value,
+  };
+
+  const res = await api({ action: 'update_patient' }, 'POST', payload);
+  if (res.success) {
+    closeEditPatientModal();
+    // Refresh local patient list from DB and re-render overview
+    await loadPatients();
+    const updated = patients.find(x => x.id === activePatientId);
+    if (updated) renderOverview(updated);
+    showToast('✓ Patient record updated successfully!', true);
+  } else {
+    showToast('⚠ Failed to save: ' + (res.message || 'Unknown error'), false);
+  }
+}
+
+async function deletePatientRecord() {
+  if ((window._ehrRole || '') !== 'admin') {
+    showToast('⚠ Deleting patient records requires Admin role.', false); return;
+  }
+  if (!activePatientId) return;
+  const p = patients.find(x => x.id === activePatientId);
+  const name = p ? p.name : activePatientId;
+  if (!confirm(`⚠ PERMANENTLY delete the record for ${name}?\n\nThis cannot be undone. All vitals, medications, labs, and timeline entries will be deleted.`)) return;
+
+  const res = await api({ action: 'delete_patient' }, 'POST', { patient_id: activePatientId });
+  if (res.success) {
+    closeEditPatientModal();
+    activePatientId = null;
+    document.getElementById('recordPanel').style.display = 'none';
+    document.getElementById('emptyState').style.display = '';
+    await loadPatients();
+    showToast(`✓ Patient record for ${name} deleted.`, true);
+  } else {
+    showToast('⚠ Failed to delete patient.', false);
+  }
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────
+init();
+
+// ═══════════════════════════════════════════════════════════════════════
+// ACTIVE CLINICAL ALERTS  —  Database-driven via CDSS engine
+//
+// Primary path  (patient selected):
+//   GET ?action=get_clinical_alerts&patient_id=P-XXXXX
+//   Reads patient_alert_states JOIN clinical_rules — real rows written by
+//   CdssEngine::onNewObservation() every time a lab or vital is saved.
+//
+// Fallback path (no patient selected):
+//   Calls the Anthropic API to generate ambient contextual alerts so the
+//   panel is never empty when browsing the page without a patient open.
+//
+// Auto-triggers:
+//   selectPatient()  → refreshAlerts() when switching patient
+//   saveVitals()     → refreshAlerts() after vitals saved
+//   saveLabResult()  → refreshAlerts() after lab result saved
+// ═══════════════════════════════════════════════════════════════════════
+
+const ALERT_REFRESH_MS = 60 * 1000; // auto-refresh every 60 s while a patient is open
+
+let alertData        = [];
+let dismissedAlerts  = new Set();
+let activeFilter     = 'all';
+let alertRefreshTimer = null;
+let alertTimeTicker  = null;   // setInterval handle for live relative-time updates
+
+/* ── Convert a stored timestamp to a human-readable relative string ── */
+function relativeTime(ts) {
+  if (!ts) return 'Just now';
+  const diff = Math.floor((Date.now() - ts) / 1000); // seconds elapsed
+  if (diff < 5)   return 'Just now';
+  if (diff < 60)  return diff + 's ago';
+  const mins = Math.floor(diff / 60);
+  if (mins < 60)  return mins + ' min' + (mins === 1 ? '' : 's') + ' ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs  < 24)  return hrs  + ' hr'  + (hrs  === 1 ? '' : 's')  + ' ago';
+  const days = Math.floor(hrs / 24);
+  return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+}
+
+/* ── Tick: update every visible alert-time span without re-rendering ── */
+function tickAlertTimes() {
+  document.querySelectorAll('#alertsList .alert-time-rel').forEach(el => {
+    const ts = Number(el.dataset.ts);
+    if (ts) el.textContent = relativeTime(ts);
+  });
+}
+
+/* ── Start/restart the 1-second ticker ── */
+function startAlertTimeTicker() {
+  if (alertTimeTicker) clearInterval(alertTimeTicker);
+  alertTimeTicker = setInterval(tickAlertTimes, 1000);
+}
+
+/* ── severity display metadata ── */
+const SEVERITY_META = {
+  critical: { icon: '🔴', label: 'Critical' },
+  warning:  { icon: '🟡', label: 'Warning'  },
+  info:     { icon: '🔵', label: 'Info'      },
+  resolved: { icon: '🟢', label: 'Resolved'  },
+};
+
+/* ─────────────────────────────────────────────────────────────────────
+   fetchDbAlerts()
+   PRIMARY path: queries patient_alert_states for the active patient.
+   Falls back to fetchAIAlerts() when no patient is selected or if the
+   CDSS endpoint is unreachable.
+───────────────────────────────────────────────────────────────────── */
+async function fetchDbAlerts() {
+  const btn       = document.getElementById('refreshAlertsBtn');
+  const icon      = document.getElementById('refreshIcon');
+  const loadingEl = document.getElementById('alertsLoading');
+  const listEl    = document.getElementById('alertsList');
+
+  btn.disabled = true;
+  icon.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;vertical-align:middle;"></span>';
+  loadingEl.style.display = 'flex';
+  listEl.style.opacity = '0.35';
+
+  // No patient open → fall back to AI ambient alerts
+  if (!activePatientId) {
+    await fetchAIAlerts();
+    btn.disabled = false;
+    icon.textContent = '⟳';
+    loadingEl.style.display = 'none';
+    listEl.style.opacity = '1';
+    return;
+  }
+
+  try {
+    // Call the CDSS alerts endpoint — same api() helper used everywhere
+    const res = await api({ action: 'get_clinical_alerts', patient_id: activePatientId });
+
+    if (!res.success) throw new Error(res.message || 'get_clinical_alerts failed');
+
+    // Clock-drift correction: if the server clock differs from the browser clock,
+    // all relative times would be off by that delta. We compensate by computing
+    // how far the server's "now" is from the browser's "now" and baking that in.
+    const serverNowMs  = (res.server_time || 0) * 1000;  // PHP time() → ms
+    const clientNowMs  = Date.now();
+    const clockDriftMs = serverNowMs ? (clientNowMs - serverNowMs) : 0;
+    // triggered_at is a Unix epoch integer (seconds) from UNIX_TIMESTAMP() in MySQL.
+    // Multiply by 1000 for ms, then add drift so the browser clock is the reference.
+
+    // Map DB rows to the shape renderAlerts() expects.
+    // res.data comes from getClinicalAlerts() in EHR_System.php.
+    alertData = res.data.map(a => ({
+      id:              a.id,                        // "ALT-47" or "ALT-NOMINAL"
+      type:            a.rule_name || a.type,       // human-readable rule name
+      severity:        a.severity,                  // 'critical'|'warning'|'info'|'resolved'
+      patient_id:      a.patient_id || null,        // patient this alert belongs to
+      message:         a.message,                   // description from clinical_rules
+      // triggered_at is a Unix epoch (seconds) from the DB — unambiguous, no timezone issues.
+      // Adding clockDriftMs corrects for server/browser clock skew.
+      fetchedAt:       a.triggered_at ? (a.triggered_at * 1000 + clockDriftMs) : Date.now(),
+      trigger_detail:  a.trigger_detail || '',      // "Serum Potassium: 5.9 mEq/L (threshold: > 5.5)"
+      alert_state_id:  a.alert_state_id,
+      severity_tier:   a.severity_tier,
+      rule_code:       a.rule_code,
+      requires_acknowledgment: a.requires_acknowledgment,
+    }));
+
+    // Clear in-memory dismissals — the DB is now the source of truth
+    dismissedAlerts.clear();
+    renderAlerts();
+    startAlertTimeTicker();
+    scheduleAutoRefresh();
+
+  } catch (err) {
+    console.warn('[CDSS] DB alert fetch failed, falling back to AI:', err);
+    // Graceful degradation: if the CDSS tables don't exist yet or the
+    // PHP returns an error, show AI-generated alerts instead of a blank panel.
+    await fetchAIAlerts();
+  } finally {
+    btn.disabled = false;
+    icon.textContent = '⟳';
+    loadingEl.style.display = 'none';
+    listEl.style.opacity = '1';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   fetchAIAlerts()
+   FALLBACK path: used when no patient is selected, or when the CDSS
+   endpoint is unavailable. Generates contextual ambient alerts via the
+   Anthropic API. Kept fully intact from the original.
+───────────────────────────────────────────────────────────────────── */
+async function fetchAIAlerts() {
+  let patientContext = '';
+  if (typeof patients !== 'undefined' && patients.length) {
+    const sample = patients.slice(0, 6).map(p =>
+      `${p.patient_id || p.id}: ${p.name}, ${p.age || '?'}y, conditions: ${p.conditions || 'none'}, meds: ${(p.medications||[]).map(m=>m.name||m).join(', ')||'none'}`
+    ).join('\n');
+    patientContext = `\n\nCurrent patients in the system (sample):\n${sample}`;
+  }
+
+  const systemPrompt = `You are a clinical decision support system for a hospital EHR.
+Your task is to generate realistic clinical alerts based on the patient data provided.
+Return ONLY a valid JSON array — no markdown, no preamble.
+Each alert must have:
+  "id": unique string like "ALT-001",
+  "type": short title (e.g. "Drug Interaction Warning"),
+  "severity": one of "critical", "warning", "info", "resolved",
+  "message": 1-sentence clinical detail referencing realistic patient IDs (P-XXXXX) or counts,
+  "time": relative time string like "Just now", "2 mins ago", "1 hr ago", "3 hrs ago", "5 hrs ago"
+Generate 5–7 varied, realistic alerts covering different categories:
+drug interactions, overdue labs, critical vitals, appointment reminders,
+lab results, prescription refills, infection control notices.`;
+
+  const userPrompt = `Generate today's active clinical alerts for the Pharos HIS EHR.${patientContext}
+Make them realistic and varied. Return JSON array only.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    const data    = await res.json();
+    const text    = (data.content || []).map(b => b.text || '').join('');
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    const parsed  = JSON.parse(cleaned);
+
+    /* Convert the AI's relative-time string to a real timestamp so the
+       live ticker works the same way for AI-generated alerts.           */
+    function parseAiTime(str = '') {
+      const s = str.toLowerCase().trim();
+      if (!s || s === 'just now' || s === 'now') return Date.now();
+      let m;
+      if ((m = s.match(/(\d+)\s*s(?:ec)?/)))   return Date.now() - m[1]*1000;
+      if ((m = s.match(/(\d+)\s*min/)))         return Date.now() - m[1]*60000;
+      if ((m = s.match(/(\d+)\s*hr/)))          return Date.now() - m[1]*3600000;
+      if ((m = s.match(/(\d+)\s*day/)))         return Date.now() - m[1]*86400000;
+      return Date.now();
+    }
+
+    alertData = parsed.map(a => ({
+      ...a,
+      // Prefer a real triggered_at from the server if present; fall back to parsing the text string
+      fetchedAt: a.triggered_at
+        ? new Date(a.triggered_at).getTime()
+        : parseAiTime(a.time),
+      severity: a.severity ? a.severity.toLowerCase() : severityFromType(a.type)
+    }));
+
+    dismissedAlerts.clear();
+    renderAlerts();
+    startAlertTimeTicker();
+    scheduleAutoRefresh();
+
+  } catch (err) {
+    console.warn('AI alert fetch failed, using static fallback:', err);
+    alertData = getFallbackAlerts();
+    renderAlerts();
+    startAlertTimeTicker();
+  }
+}
+
+function severityFromType(type = '') {
+  const t = type.toLowerCase();
+  if (t.includes('critical') || t.includes('danger') || t.includes('drug interaction') || t.includes('emergency')) return 'critical';
+  if (t.includes('warning')  || t.includes('overdue') || t.includes('abnormal'))  return 'warning';
+  if (t.includes('resolved') || t.includes('ready')   || t.includes('completed')) return 'resolved';
+  return 'info';
+}
+
+/* ── static last-resort fallback ── */
+function getFallbackAlerts() {
+  const now = Date.now();
+  return [
+    { id:'ALT-F1', type:'Drug Interaction Warning', severity:'critical', message:'Potential interaction between Losartan and Ibuprofen for Patient P-00412. Review required.',       fetchedAt: now                  },
+    { id:'ALT-F2', type:'Overdue Lab Follow-up',    severity:'warning',  message:'Patient P-00389 – Thyroid panel ordered 14 days ago with no result yet.',                        fetchedAt: now - 2*3600000      },
+    { id:'ALT-F3', type:'Appointment Reminder',     severity:'info',     message:'12 patients have appointments tomorrow. 3 have outstanding pre-visit forms.',                    fetchedAt: now - 3*3600000      },
+    { id:'ALT-F4', type:'Lab Results Ready',        severity:'resolved', message:'Lipid panel and CBC results for Patient P-00401 are now available for review.',                 fetchedAt: now - 5*3600000      },
+    { id:'ALT-F5', type:'Critical Vitals Flagged',  severity:'critical', message:'Patient P-00376 BP reading 185/112 mmHg recorded 30 min ago – immediate review recommended.',  fetchedAt: now - 30*60000       },
+  ];
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   renderAlerts() — renders both DB-sourced and AI-sourced alert arrays.
+   DB alerts show an extra trigger_detail line with the exact value that
+   fired the rule (e.g. "Serum Potassium: 5.9 mEq/L (threshold: > 5.5)").
+───────────────────────────────────────────────────────────────────── */
+function renderAlerts() {
+  const listEl   = document.getElementById('alertsList');
+  const emptyEl  = document.getElementById('alertsEmpty');
+  const footerEl = document.getElementById('alertsFooter');
+  const countEl  = document.getElementById('alertsCount');
+  const tsEl     = document.getElementById('alertsLastUpdated');
+
+  const visible = alertData.filter(a => {
+    if (dismissedAlerts.has(a.id)) return false;
+    if (activeFilter === 'all') return true;
+    return a.severity === activeFilter;
+  });
+
+  listEl.innerHTML = '';
+
+  if (visible.length === 0) {
+    emptyEl.style.display  = 'block';
+    footerEl.style.display = 'none';
+  } else {
+    emptyEl.style.display  = 'none';
+    footerEl.style.display = 'flex';
+    countEl.textContent = visible.length;
+    tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    visible.forEach(alert => {
+      const meta = SEVERITY_META[alert.severity] || SEVERITY_META.info;
+      const row  = document.createElement('div');
+      row.className  = 'alert-row';
+      row.dataset.id = alert.id;
+      if (alert.patient_id && alert.id !== 'ALT-NOMINAL') {
+        row.style.cursor = 'pointer';
+        row.title = 'Click to open patient record';
+        row.addEventListener('click', (e) => {
+          if (e.target.classList.contains('alert-dismiss')) return;
+          navigateToAlertPatient(alert.patient_id);
+        });
+      }
+
+      // Show the exact triggering value for DB-sourced alerts
+      const detailLine = alert.trigger_detail
+        ? `<span style="display:block;font-size:0.76rem;color:var(--muted);margin-top:3px;font-style:italic;">${escapeHtml(alert.trigger_detail)}</span>`
+        : '';
+
+      const navHint = (alert.patient_id && alert.id !== 'ALT-NOMINAL')
+        ? `<span style="font-size:0.72rem;color:var(--primary);font-weight:600;margin-top:4px;display:block;">↗ View Patient ${escapeHtml(alert.patient_id)}</span>`
+        : '';
+
+      row.innerHTML = `
+        <div class="alert-icon">${meta.icon}</div>
+        <div class="alert-body">
+          <strong>${escapeHtml(alert.type)}</strong>
+          <span>${escapeHtml(alert.message)}</span>
+          ${detailLine}
+          ${navHint}
+        </div>
+        <div class="alert-time"><span class="alert-time-rel" data-ts="${alert.fetchedAt || ''}">${relativeTime(alert.fetchedAt)}</span></div>
+        ${window._rbacCanDismissAlert !== false ? `<button class="alert-dismiss" title="Dismiss alert"
+          onclick="dismissAlert('${alert.id}', this.closest('.alert-row'))">✕</button>` : ''}
+      `;
+      listEl.appendChild(row);
+    });
+  }
+}
+
+function escapeHtml(s = '') {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── dismiss single alert (UI only) ── */
+function dismissAlert(id, rowEl) {
+  rowEl.classList.add('dismissing');
+  setTimeout(() => {
+    dismissedAlerts.add(id);
+    renderAlerts();
+  }, 300);
+}
+
+/* ── clear all visible alerts ── */
+function clearAllAlerts() {
+  const visible = alertData.filter(a => {
+    if (dismissedAlerts.has(a.id)) return false;
+    if (activeFilter === 'all') return true;
+    return a.severity === activeFilter;
+  });
+  document.querySelectorAll('#alertsList .alert-row').forEach(r => r.classList.add('dismissing'));
+  setTimeout(() => {
+    visible.forEach(a => dismissedAlerts.add(a.id));
+    renderAlerts();
+  }, 320);
+}
+
+/* ── filter chips ── */
+function setAlertFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlerts();
+}
+
+/* ── manual Refresh button ── */
+function refreshAlerts() {
+  if (alertRefreshTimer) { clearTimeout(alertRefreshTimer); alertRefreshTimer = null; }
+  fetchDbAlerts();
+}
+
+/* ── Fix Rules: reseed CDSS rules + clear stale suppression, then refresh ── */
+async function reseedAndRefresh() {
+  const btn = document.getElementById('reseedRulesBtn');
+  btn.disabled = true; btn.textContent = '⏳ Fixing…';
+  try {
+    await fetch(API + '?action=reseed_cdss_rules', { credentials: 'include' });
+    showToast('✅ CDSS rules reseeded. Re-evaluating alerts…', true);
+  } catch(e) {}
+  btn.disabled = false; btn.innerHTML = '🔧 Fix Rules';
+  await new Promise(r => setTimeout(r, 500));
+  refreshAlerts();
+}
+
+/* ── auto-refresh timer ── */
+function scheduleAutoRefresh() {
+  if (alertRefreshTimer) clearTimeout(alertRefreshTimer);
+  alertRefreshTimer = setTimeout(fetchDbAlerts, ALERT_REFRESH_MS);
+}
+
+/* ── navigate to patient from alert click ── */
+async function navigateToAlertPatient(patientId) {
+  // Ensure patients list is loaded
+  if (!patients || !patients.length) await loadPatients();
+
+  // Find patient by patient_id string (e.g. "P-00001") or internal id
+  let target = patients.find(p => p.patient_id === patientId || p.id === patientId);
+
+  if (!target) {
+    // Try searching if not in current list
+    await loadPatients(patientId);
+    target = patients.find(p => p.patient_id === patientId || p.id === patientId);
+  }
+
+  if (!target) {
+    showToast('⚠ Patient ' + patientId + ' not found.', false);
+    return;
+  }
+
+  // Select the patient (highlights card, shows record panel)
+  await selectPatient(target.id);
+
+  // Navigate to Lab Results tab
+  await new Promise(r => setTimeout(r, 300)); // allow DOM to settle
+  const labTab = [...document.querySelectorAll('.demo-tab')].find(t => t.textContent.includes('Lab'));
+  if (labTab) {
+    const tabId = labTab.getAttribute('onclick')?.match(/switchTab\(this,'([^']+)'\)/)?.[1];
+    if (tabId) {
+      await switchTab(labTab, tabId);
+      labTab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Scroll record panel into view
+  document.getElementById('recordPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+// ─── PROFILE MODAL (doctor / nurse / manager) ────────────────────────────────
+let pendingEditField = null;
+
+function setupProfileFab() {
+  const role = (window.EHR_USER || {}).role;
+  const fab  = document.getElementById('profileFab');
+  if (!fab) return;
+  // Admins use the Admin Dashboard for their own settings
+  if (role === 'admin') { fab.style.display = 'none'; return; }
+  fab.style.display = 'flex';
+  // Show dot if any pending requests exist
+  loadMyProfileRequests(true);
+}
+
+function openProfileModal() {
+  const u = window.EHR_USER || {};
+  document.getElementById('prCurrentName').textContent = u.name || '—';
+  document.getElementById('prCurrentSpecialty').textContent = u.specialty || '— (not set)';
+  // Managers have no clinical specialty
+  document.getElementById('prSpecialtyRow').style.display = (u.role === 'manager') ? 'none' : 'flex';
+  document.getElementById('profileModalError').style.display = 'none';
+  cancelEditField();
+  document.getElementById('profileModal').classList.add('open');
+  loadMyProfileRequests(false);
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('open');
+}
+
+document.getElementById('profileModal').addEventListener('click', function(e) {
+  if (e.target.id === 'profileModal') closeProfileModal();
+});
+
+function startEditField(field, currentVal) {
+  pendingEditField = field;
+  document.getElementById('prEditLabel').textContent = field === 'full_name' ? 'New full name' : 'New specialty';
+  const clean = (currentVal || '').replace(/^—.*$/, '');
+  document.getElementById('prEditInput').value = clean;
+  document.getElementById('prEditForm').style.display = 'block';
+  document.getElementById('prEditInput').focus();
+}
+
+function cancelEditField() {
+  pendingEditField = null;
+  document.getElementById('prEditForm').style.display = 'none';
+  document.getElementById('prEditInput').value = '';
+}
+
+async function submitProfileChange() {
+  const errEl    = document.getElementById('profileModalError');
+  const btn      = document.getElementById('prSubmitBtn');
+  const newValue = document.getElementById('prEditInput').value.trim();
+  errEl.style.display = 'none';
+  if (!pendingEditField || !newValue) {
+    errEl.textContent = 'Please enter a value.';
+    errEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  try {
+    const res = await api({ action: 'submit_profile_request' }, 'POST', {
+      field: pendingEditField, new_value: newValue
+    });
+    if (res.success) {
+      showToast('✅ Request submitted — waiting for admin approval.');
+      cancelEditField();
+      loadMyProfileRequests(false);
+    } else {
+      errEl.textContent = res.message || 'Could not submit request.';
+      errEl.style.display = 'block';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit for Approval';
+  }
+}
+
+async function loadMyProfileRequests(dotOnly = false) {
+  try {
+    const res  = await api({ action: 'get_my_profile_requests' });
+    const dot  = document.getElementById('profileFabDot');
+    const list = document.getElementById('prHistoryList');
+
+    if (!res.success || !res.data) {
+      if (!dotOnly && list) list.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0;">No requests yet.</div>';
+      return;
+    }
+
+    const hasPending = res.data.some(function(r) { return r.status === 'pending'; });
+    if (dot) dot.classList.toggle('show', hasPending);
+    if (dotOnly) return;
+
+    if (!res.data.length) {
+      list.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0;">No requests yet.</div>';
+      return;
+    }
+    list.innerHTML = res.data.map(function(r) {
+      const fieldLabel = r.field === 'full_name' ? 'Name' : 'Specialty';
+      const date = new Date(r.created_at).toLocaleDateString();
+      return '<div class="pr-history-item">'
+        + '<span>' + escapeHtml(fieldLabel) + ': <strong>' + escapeHtml(r.new_value) + '</strong>'
+        + ' <span style="color:var(--muted);">(' + date + ')</span></span>'
+        + '<span class="pr-status-pill pr-status-' + escapeHtml(r.status) + '">' + escapeHtml(r.status) + '</span>'
+        + '</div>';
+    }).join('');
+  } catch (e) {
+    const list = document.getElementById('prHistoryList');
+    if (list && !dotOnly) list.innerHTML = '<div style="font-size:0.82rem;color:#ef4444;">Could not load history.</div>';
+  }
+}
+
+/* ── boot on page load ── */
+document.addEventListener('DOMContentLoaded', () => {
+  fetchDbAlerts();
+});
+</script>
+
+<!-- FLOATING PROFILE BUTTON (doctor / nurse / manager only — hidden for admin) -->
+<button id="profileFab" onclick="openProfileModal()" title="My Profile" style="display:none;">
+  &#x1F464;<span class="fab-dot" id="profileFabDot"></span>
+</button>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal" style="max-width:480px;">
+    <h3>&#x1F464; My Profile</h3>
+    <p class="sub">Changes to your name or specialty require admin approval before they take effect.</p>
+    <div class="modal-error" id="profileModalError"></div>
+
+    <div class="pr-row">
+      <div>
+        <div class="pr-field-label">Full Name</div>
+        <div class="pr-current" id="prCurrentName">&mdash;</div>
+      </div>
+      <button class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;flex-shrink:0;"
+              onclick="startEditField('full_name', document.getElementById('prCurrentName').textContent)">&#x270F;&#xFE0F; Request Change</button>
+    </div>
+
+    <div class="pr-row" id="prSpecialtyRow">
+      <div>
+        <div class="pr-field-label">Specialty</div>
+        <div class="pr-current" id="prCurrentSpecialty">&mdash;</div>
+      </div>
+      <button class="btn-secondary" style="padding:6px 14px;font-size:0.82rem;flex-shrink:0;"
+              onclick="startEditField('specialty', document.getElementById('prCurrentSpecialty').textContent)">&#x270F;&#xFE0F; Request Change</button>
+    </div>
+
+    <!-- Inline edit form -->
+    <div id="prEditForm" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+      <div class="form-group">
+        <label id="prEditLabel">New value</label>
+        <input type="text" id="prEditInput" placeholder="Enter new value..." />
+      </div>
+      <div class="modal-footer" style="margin-top:0.8rem;">
+        <button class="btn-secondary" onclick="cancelEditField()">Cancel</button>
+        <button class="btn-submit" id="prSubmitBtn" onclick="submitProfileChange()">Submit for Approval</button>
+      </div>
+    </div>
+
+    <!-- Recent request history -->
+    <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid var(--border);">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.04em;margin-bottom:0.5rem;">Recent Requests</div>
+      <div id="prHistoryList" style="max-height:180px;overflow-y:auto;">
+        <div style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0;">Loading...</div>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="margin-top:1.2rem;">
+      <button class="btn-secondary" onclick="closeProfileModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
