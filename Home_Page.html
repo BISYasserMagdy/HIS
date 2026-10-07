@@ -492,8 +492,14 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
-      header { padding: 1rem 1.5rem; }
+      header {
+        padding: 0.65rem 0.75rem;
+        transition: background 0.4s, border-color 0.4s;
+      }
       nav a { display: none; }
+      header .logo-wrap img { display: none; }
+      .theme-toggle .toggle-label { display: none; }
+      .nav-right > .nav-cta { display: none; }
       .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
     }
     @media (max-width: 660px) {
@@ -930,8 +936,8 @@
     window.addEventListener('scroll', () => {
       const isScrolled = window.scrollY > 60;
       header.style.padding = isScrolled
-        ? (window.innerWidth > 900 ? '0.75rem 3rem' : window.innerWidth <= 660 ? '0.65rem 0.75rem' : '0.75rem 1.5rem')
-        : (window.innerWidth > 900 ? '1.1rem 3rem'  : window.innerWidth <= 660 ? '0.65rem 0.75rem' : '1rem 1.5rem');
+        ? (window.innerWidth > 900 ? '0.75rem 3rem' : window.innerWidth <= 900 ? '0.65rem 0.75rem' : '0.75rem 1.5rem')
+        : (window.innerWidth > 900 ? '1.1rem 3rem'  : window.innerWidth <= 900 ? '0.65rem 0.75rem' : '1rem 1.5rem');
     }, { passive: true });
     /* ── EHR LOGIN MODAL ── */
     const EHR_API = '../Back End/EHR_System.php'; // matches the path used in EHR_Page.html
