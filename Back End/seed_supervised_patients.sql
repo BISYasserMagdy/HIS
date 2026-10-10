@@ -6,19 +6,18 @@
 -- `users`, `patients`, and `patient_observations` tables, including the
 -- `physician_id` FK on `patients`, already exist).
 --
--- Idempotent: uses INSERT IGNORE / ON DUPLICATE KEY where sensible, and
+-- PostgreSQL seed data. The patient upserts are idempotent and use
+-- ON CONFLICT against the unique patient_id constraint.
 -- predictable patient_ids (P-90001, P-90002) so re-running is safe.
 -- =============================================================================
 
--- NOTE: All tables (users, patients, timeline, patient_observations,
--- clinical_rules, etc.) live in the `healthcare_ehr` database as created
--- by EHR_System.php's getConn(). Run this against that database
--- (e.g. `USE healthcare_ehr;` first, or pass it on the mysql command line).
+-- NOTE: Run this while connected to the PostgreSQL database containing the
+-- users, patients, timeline, and patient_observations tables.
 
 
 -- ── Patient 1: assigned to Dr. Sarah Smith (dr_smith) ───────────────────────
 -- Will trigger: HYPER-K-001 (Hyperkalemia), HYPERTENSION-001 (Hypertensive Crisis)
-INSERT INTO `patients`
+INSERT INTO patients
     (patient_id, first_name, last_name, dob, gender, blood_type, phone, email,
      insurance, physician, physician_id, allergies, conditions, smoking, alcohol,
      pmh, fmh, surgical, vaccines, avatar_color, status, last_visit, next_appt)
@@ -30,14 +29,14 @@ SELECT
     'CKD stage 3, diagnosed 2021', 'Father: hypertension', 'Appendectomy (2005)',
     'Influenza (2025), Tetanus (2022)', '#ef4444', 'active',
     'Jun 09, 2026', 'Jun 20, 2026'
-FROM `users` u
+FROM users u
 WHERE u.full_name = 'Dr. Sarah Smith'
-ON DUPLICATE KEY UPDATE
-    physician = VALUES(physician),
-    physician_id = VALUES(physician_id);
+ON CONFLICT (patient_id) DO UPDATE SET
+    physician = EXCLUDED.physician,
+    physician_id = EXCLUDED.physician_id;
 
 -- Observations for P-90001
-INSERT INTO `patient_observations`
+INSERT INTO patient_observations
     (patient_id, observation_type, loinc_code, parameter_key, numeric_value, unit,
      reference_range_low, reference_range_high, status, recorded_by)
 VALUES
@@ -51,15 +50,15 @@ VALUES
     ('P-90001', 'vital_sign', '8310-5', 'body_temperature', 37.1, 'C', 36.1, 37.2, 'final', 'Dr. Sarah Smith');
 
 -- Timeline entry for P-90001
-INSERT INTO `timeline` (patient_id, entry_date, dot_type, entry_text)
-SELECT 'P-90001', DATE_FORMAT(NOW(), '%d %b %Y'), 'warn',
+INSERT INTO timeline (patient_id, entry_date, dot_type, entry_text)
+SELECT 'P-90001', TO_CHAR(CURRENT_TIMESTAMP, 'DD Mon YYYY'), 'warn',
        '<strong>Lab Review</strong> — Elevated potassium and blood pressure flagged for follow-up.'
-WHERE EXISTS (SELECT 1 FROM `patients` WHERE patient_id = 'P-90001');
+WHERE EXISTS (SELECT 1 FROM patients WHERE patient_id = 'P-90001');
 
 
 -- ── Patient 2: assigned to Nurse Emily Jones (nurse_jones) ──────────────────
 -- Will trigger: TACHYCARDIA-001 (Critical Tachycardia), HYPOXIA-001 (Critical Hypoxia)
-INSERT INTO `patients`
+INSERT INTO patients
     (patient_id, first_name, last_name, dob, gender, blood_type, phone, email,
      insurance, physician, physician_id, allergies, conditions, smoking, alcohol,
      pmh, fmh, surgical, vaccines, avatar_color, status, last_visit, next_appt)
@@ -71,14 +70,14 @@ SELECT
     'Asthma since childhood', 'Mother: asthma', 'None',
     'COVID-19 booster (2025)', '#10b981', 'active',
     'Jun 11, 2026', 'Jun 25, 2026'
-FROM `users` u
+FROM users u
 WHERE u.full_name = 'Nurse Emily Jones'
-ON DUPLICATE KEY UPDATE
-    physician = VALUES(physician),
-    physician_id = VALUES(physician_id);
+ON CONFLICT (patient_id) DO UPDATE SET
+    physician = EXCLUDED.physician,
+    physician_id = EXCLUDED.physician_id;
 
 -- Observations for P-90002
-INSERT INTO `patient_observations`
+INSERT INTO patient_observations
     (patient_id, observation_type, loinc_code, parameter_key, numeric_value, unit,
      reference_range_low, reference_range_high, status, recorded_by)
 VALUES
@@ -91,7 +90,7 @@ VALUES
     ('P-90002', 'vital_sign', '8310-5', 'body_temperature', 37.0, 'C', 36.1, 37.2, 'final', 'Nurse Emily Jones');
 
 -- Timeline entry for P-90002
-INSERT INTO `timeline` (patient_id, entry_date, dot_type, entry_text)
-SELECT 'P-90002', DATE_FORMAT(NOW(), '%d %b %Y'), 'alert',
+INSERT INTO timeline (patient_id, entry_date, dot_type, entry_text)
+SELECT 'P-90002', TO_CHAR(CURRENT_TIMESTAMP, 'DD Mon YYYY'), 'alert',
        '<strong>Vitals Check</strong> — Tachycardia and low SpO2 detected during routine monitoring.'
-WHERE EXISTS (SELECT 1 FROM `patients` WHERE patient_id = 'P-90002');
+WHERE EXISTS (SELECT 1 FROM patients WHERE patient_id = 'P-90002');
