@@ -899,7 +899,7 @@
         : (window.innerWidth > 900 ? '1.1rem 3rem'  : '1rem 1.5rem');
     }, { passive: true });
     /* ── EHR LOGIN MODAL ── */
-    const EHR_API = '../Back End/EHR_System.php'; // matches the path used in EHR_Page.html
+    const EHR_API = '/api/ehr';
 
     const ehrOverlay  = document.getElementById('ehrLoginOverlay');
     const ehrForm     = document.getElementById('ehrLoginForm');

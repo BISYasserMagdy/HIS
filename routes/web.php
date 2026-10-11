@@ -10,6 +10,7 @@ use App\Http\Controllers\SubscriptionController;
 
 Route::view('/', 'home');
 Route::get('/dashboard', [DashboardController::class, 'index']);
+Route::match(['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], '/api/ehr', [EhrApiController::class, 'handle']);
 Route::match(['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], '/Back End/EHR_System.php', [EhrApiController::class, 'handle']);
 Route::match(['GET', 'POST', 'OPTIONS'], '/Back End/ERP_Pharmacy_System.php', [ErpPharmacyApiController::class, 'handle']);
 Route::match(['GET', 'POST', 'OPTIONS'], '/Back End/Online_Consultation_API.php', [OnlineConsultationApiController::class, 'handle']);

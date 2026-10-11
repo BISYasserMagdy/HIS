@@ -471,7 +471,7 @@
 
 
 <script>
-const API = '../Back End/EHR_System.php';
+const API = '/api/ehr';
 
 let allStaff   = [];
 let currentFilter = 'all';

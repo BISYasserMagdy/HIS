@@ -1079,7 +1079,7 @@
 //   └── Back End/
 //       └── EHR_System.php  ← backend
 // We go up one level with ../ then into Back End/
-const API = '../Back End/EHR_System.php';
+const API = '/api/ehr';
 
 // ─── STATE ───────────────────────────────────────────────────────────
 let patients = [];
