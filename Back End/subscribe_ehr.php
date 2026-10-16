@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/db_config.php';
 /**
  * subscribe_ehr.php
  * ════════════════════════════════════════════════════════════════════════════
@@ -34,7 +35,7 @@ require __DIR__ . '/mailer_config.php';
 use PHPMailer\PHPMailer\Exception as MailException;
 
 // ── Database ──────────────────────────────────────────────────────────────────
-$conn = new mysqli('localhost', 'root', '', 'healthcare_ehr');
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'DB connection failed: ' . $conn->connect_error]);
     exit;

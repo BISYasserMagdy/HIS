@@ -40,7 +40,8 @@ $EHR_ALLOWED_ORIGINS = [
 ];
 
 $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (in_array($requestOrigin, $EHR_ALLOWED_ORIGINS, true)) {
+$sameHost = $requestOrigin !== '' && parse_url($requestOrigin, PHP_URL_HOST) === ($_SERVER['HTTP_HOST'] ?? '');
+if ($sameHost || in_array($requestOrigin, $EHR_ALLOWED_ORIGINS, true)) {
     $allowedOrigin = $requestOrigin;
 } else {
     // Unknown/no Origin (e.g. same-origin or server-to-server call): don't
@@ -79,10 +80,7 @@ require_once __DIR__ . '/CdssCrossDomainAndFatigue.php';
 require_once __DIR__ . '/auth.php';  // calls session_start() only if not already started
 
 // ─── DB CONFIG ───────────────────────────────────────────────────────────────
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'healthcare_ehr');
+require_once __DIR__ . '/db_config.php';
 
 // ─── GET CONNECTION (with strict mode OFF) ───────────────────────────────────
 function getConn() {
@@ -100,13 +98,9 @@ function getConn() {
 
 // ─── INIT DB ─────────────────────────────────────────────────────────────────
 function initDB() {
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS);
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     if ($conn->connect_error) { return; }
-
     $conn->query("SET SESSION sql_mode = ''");
-    $conn->query("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "`
-                  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    if (!$conn->select_db(DB_NAME)) { $conn->close(); return; }
     $conn->set_charset('utf8mb4');
 
     // ── Hospitals: created on subscription, holds branding (logo/name) ──────
@@ -123,6 +117,29 @@ function initDB() {
     ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
 
+    // ── RBAC: staff accounts table ───────────────────────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `users` (
+        id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+        username      VARCHAR(80)     NOT NULL,
+        email         VARCHAR(120)    NOT NULL,
+        password_hash VARCHAR(255)    NOT NULL,
+        role          ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse',
+        hospital      VARCHAR(120)    NOT NULL DEFAULT 'General Hospital',
+        full_name     VARCHAR(160)    NULL,
+        specialty     VARCHAR(100)    NULL,
+        is_active     TINYINT(1)      NOT NULL DEFAULT 1,
+        created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_username (username),
+        UNIQUE KEY uq_email    (email),
+        KEY idx_role (role),
+        KEY idx_hospital (hospital)
+    ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+    // ── Migration: widen role ENUM to include 'manager' on pre-existing installs ──
+    $conn->query("ALTER TABLE users MODIFY role ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse'");
+
     $conn->query("CREATE TABLE IF NOT EXISTS patients (
         id           INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
         patient_id   VARCHAR(20)  NOT NULL,
@@ -135,7 +152,7 @@ function initDB() {
         email        VARCHAR(120) NULL,
         insurance    VARCHAR(100) NULL,
         physician    VARCHAR(100) NULL,
-        physician_id INT          NULL,
+        physician_id INT UNSIGNED NULL,
         allergies    TEXT         NULL,
         conditions   TEXT         NULL,
         smoking      VARCHAR(80)  NULL,
@@ -158,7 +175,7 @@ function initDB() {
     // ── Migration: add physician_id to pre-existing installs that lack it ──
     $colCheck = $conn->query("SHOW COLUMNS FROM patients LIKE 'physician_id'");
     if ($colCheck && $colCheck->num_rows === 0) {
-        $conn->query("ALTER TABLE patients ADD COLUMN physician_id INT NULL AFTER physician");
+        $conn->query("ALTER TABLE patients ADD COLUMN physician_id INT UNSIGNED NULL AFTER physician");
         $conn->query("ALTER TABLE patients ADD KEY idx_physician_id (physician_id)");
         $conn->query("ALTER TABLE patients ADD CONSTRAINT fk_patients_physician
                        FOREIGN KEY (physician_id) REFERENCES users(id) ON DELETE SET NULL");
@@ -225,28 +242,6 @@ function initDB() {
         FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
     ) ENGINE=InnoDB");
 
-    // ── RBAC: staff accounts table ───────────────────────────────────────────
-    $conn->query("CREATE TABLE IF NOT EXISTS `users` (
-        id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-        username      VARCHAR(80)     NOT NULL,
-        email         VARCHAR(120)    NOT NULL,
-        password_hash VARCHAR(255)    NOT NULL,
-        role          ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse',
-        hospital      VARCHAR(120)    NOT NULL DEFAULT 'General Hospital',
-        full_name     VARCHAR(160)    NULL,
-        specialty     VARCHAR(100)    NULL,
-        is_active     TINYINT(1)      NOT NULL DEFAULT 1,
-        created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        UNIQUE KEY uq_username (username),
-        UNIQUE KEY uq_email    (email),
-        KEY idx_role (role),
-        KEY idx_hospital (hospital)
-    ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-
-    // ── Migration: widen role ENUM to include 'manager' on pre-existing installs ──
-    $conn->query("ALTER TABLE users MODIFY role ENUM('admin','manager','doctor','nurse') NOT NULL DEFAULT 'nurse'");
 
     // ── Migration: add `specialty` column for pre-existing installs ──
     $specCheck = $conn->query("SHOW COLUMNS FROM users LIKE 'specialty'");
@@ -367,7 +362,6 @@ function initDB() {
         string_match_pattern VARCHAR(500)   NULL,
         logic_join          VARCHAR(3)      NOT NULL DEFAULT 'AND',
         sort_order          TINYINT UNSIGNED NOT NULL DEFAULT 0,
-        PRIMARY KEY (id),
         KEY idx_rule_id (rule_id)
     ) ENGINE=InnoDB");
 
